@@ -1,4 +1,4 @@
-package test
+package testUtils
 
 import (
 	"reflect"
@@ -8,7 +8,7 @@ import (
 
 // Basic assert
 // Return true iff data type equal and value equal
-func assert_equal(a interface{}, b interface{}) bool {
+func Assert_equal(a interface{}, b interface{}) bool {
 	if reflect.TypeOf(a) != reflect.TypeOf(b) {
 		return false
 	}
