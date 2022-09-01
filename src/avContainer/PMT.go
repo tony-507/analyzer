@@ -1,8 +1,9 @@
 package avContainer
 
 import (
-	"common"
 	"fmt"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type Descriptor struct {

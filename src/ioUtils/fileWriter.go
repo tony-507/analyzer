@@ -2,11 +2,12 @@ package ioUtils
 
 import (
 	"bufio"
-	"common"
 	"fmt"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 /*

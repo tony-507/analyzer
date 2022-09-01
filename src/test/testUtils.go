@@ -1,4 +1,4 @@
-package main
+package test
 
 import "fmt"
 
@@ -41,7 +41,7 @@ type testCaseMgr struct {
 }
 
 // The struct that actually runs tests
-type tester struct {
+type Tester struct {
 	suites []testSuite
 }
 
@@ -56,13 +56,18 @@ func (tmg *testCaseMgr) addTest(flow testcase, tags []string) {
 	tmg.testcases = append(tmg.testcases, flow)
 }
 
-func (t *tester) addSuite(suiteName string, tests []testcase) {
+func (t *Tester) addSuite(suiteName string, tests []testcase) {
 	ts := testSuite{suiteName: suiteName, tests: tests}
 	t.suites = append(t.suites, ts)
 }
 
+func GetTester() Tester {
+	t := Tester{suites: make([]testSuite, 0)}
+	return t
+}
+
 // Function that runs all selected tests
-func (t *tester) runTests() {
+func (t *Tester) RunTests() {
 	for _, suite := range t.suites {
 		fmt.Println("\nSuite:", suite.suiteName)
 		for _, test := range suite.tests {

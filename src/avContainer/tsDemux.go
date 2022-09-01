@@ -1,10 +1,11 @@
 package avContainer
 
 import (
-	"common"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type PKT_TYPE int
@@ -252,7 +253,7 @@ func (m_pMux *TsDemuxer) FetchUnit() common.IOUnit {
 	return rv
 }
 
-func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.IOUnit) {
+func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	// Perform demuxing on the received TS packet
 	inBuf, _ := inUnit.GetBuf().([]byte)
 	r := common.GetBufferReader(inBuf)

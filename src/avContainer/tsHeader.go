@@ -1,7 +1,7 @@
 package avContainer
 
 import (
-	"common"
+	"github.com/tony-507/analyzers/src/common"
 )
 
 // Keep header data I want

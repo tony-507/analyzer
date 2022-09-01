@@ -1,8 +1,9 @@
 package main
 
 import (
-	"avContainer"
-	"ioUtils"
+	"github.com/tony-507/analyzers/src/avContainer"
+	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/ioUtils"
 )
 
 // Maybe use a wrapper to make them all implement same interface?
@@ -12,13 +13,22 @@ func main() {
 	demuxer := avContainer.GetTsDemuxer()
 	writer := ioUtils.GetFileWriter("D:\\workspace\\analyzers\\output\\NG-67963_ASI\\")
 
+	dummy := common.IOUnit{}
+
 	for {
 		if inputReader.DataAvailable() {
-			unit := inputReader.Feed()
-			demuxer.DeliverUnit(unit)
+			inputReader.DeliverUnit(dummy)
 		} else {
 			break
 		}
+	}
+
+	for {
+		unit := inputReader.FetchUnit()
+		if unit.GetField("type") == 0 {
+			break
+		}
+		demuxer.DeliverUnit(unit)
 	}
 
 	for {

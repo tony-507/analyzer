@@ -5,8 +5,9 @@ package avContainer
 // * Not support PAT with size > 1 TS packet
 
 import (
-	"common"
 	"errors"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type PAT struct {

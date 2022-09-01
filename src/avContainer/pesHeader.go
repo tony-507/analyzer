@@ -1,9 +1,10 @@
 package avContainer
 
 import (
-	"common"
 	"errors"
 	"fmt"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type OptionalHeader struct {

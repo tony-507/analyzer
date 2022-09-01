@@ -1,10 +1,11 @@
 package ioUtils
 
 import (
-	"common"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/tony-507/analyzers/src/common"
 )
 
 const (
