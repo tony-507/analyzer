@@ -70,10 +70,10 @@ func (m_writer *FileWriter) StopPlugin() {
 	m_writer.wg.Wait()
 }
 
-func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) {
+func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) (bool, error) {
 	outId, _ := unit.GetField("id").(int)
 	if outId == 1 {
-		return
+		return true, nil
 	}
 	idIdx := -1
 	for idx, id := range m_writer.idMapping {
@@ -101,6 +101,7 @@ func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) {
 	}
 	m_writer.writerMap[idIdx] <- unit
 
+	return true, nil
 }
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
@@ -194,8 +195,12 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	}
 }
 
-func GetFileWriter(outFolder string) *FileWriter {
-	writer := FileWriter{outFolder: outFolder}
-	writer._setup()
-	return &writer
+func (m_writer *FileWriter) SetFolder(outFolder string) {
+	m_writer.outFolder = outFolder
+	m_writer._setup()
+}
+
+func GetFileWriter() *FileWriter {
+	rv := FileWriter{}
+	return &rv
 }

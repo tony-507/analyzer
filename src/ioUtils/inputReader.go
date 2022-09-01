@@ -90,9 +90,11 @@ func (fr *FileReader) DataAvailable() bool {
 	return fr.outCnt*TS_PKT_SIZE < fSize
 }
 
+func (fr *FileReader) SetFileHandle(fname string) {
+	fr._setup(fname)
+}
+
 // Wrapper to skip initialization line outside package
-func GetReader(fname string) FileReader {
-	rv := FileReader{}
-	rv._setup(fname)
-	return rv
+func GetReader() FileReader {
+	return FileReader{}
 }

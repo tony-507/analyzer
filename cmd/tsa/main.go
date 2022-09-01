@@ -9,9 +9,11 @@ import (
 // Maybe use a wrapper to make them all implement same interface?
 
 func main() {
-	inputReader := ioUtils.GetReader("C:\\Users\\tchan\\Desktop\\proj\\Jira\\NG-67963\\ASI_out.ts")
+	inputReader := ioUtils.GetReader()
+	inputReader.SetFileHandle("C:\\Users\\tchan\\Desktop\\proj\\Jira\\NG-67963\\ASI_out.ts")
 	demuxer := avContainer.GetTsDemuxer()
-	writer := ioUtils.GetFileWriter("D:\\workspace\\analyzers\\output\\NG-67963_ASI\\")
+	writer := ioUtils.GetFileWriter()
+	writer.SetFolder("D:\\workspace\\analyzers\\output\\NG-67963_ASI\\")
 
 	dummy := common.IOUnit{}
 
