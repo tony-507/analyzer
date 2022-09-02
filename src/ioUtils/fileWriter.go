@@ -23,7 +23,17 @@ type FileWriter struct {
 	idMapping []int                // This maps id to channel index
 	outFolder string
 	isRunning bool
+	name      string
 	wg        sync.WaitGroup
+}
+
+func (m_writer *FileWriter) SetParameter(m_parameter interface{}) {
+	writerParam, isWriterParam := m_parameter.(IOWriterParam)
+	if !isWriterParam {
+		panic("Writer param has unknown format")
+	}
+	m_writer.outFolder = writerParam.OutFolder
+	m_writer._setup()
 }
 
 func (m_writer *FileWriter) _setup() {
@@ -70,10 +80,14 @@ func (m_writer *FileWriter) StopPlugin() {
 	m_writer.wg.Wait()
 }
 
-func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) (bool, error) {
+func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) common.CmUnit {
+	if unit == nil {
+		return nil
+	}
+
 	outId, _ := unit.GetField("id").(int)
 	if outId == 1 {
-		return true, nil
+		return nil
 	}
 	idIdx := -1
 	for idx, id := range m_writer.idMapping {
@@ -96,12 +110,13 @@ func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) (bool, error) {
 			m_writer.wg.Add(1)
 			go m_writer._processJsonOutput(outId, idIdx)
 		default:
+			fmt.Println(outId, outType, m_writer.idMapping)
 			panic("Unknown output type")
 		}
 	}
 	m_writer.writerMap[idIdx] <- unit
 
-	return true, nil
+	return nil
 }
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
@@ -195,12 +210,11 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	}
 }
 
-func (m_writer *FileWriter) SetFolder(outFolder string) {
-	m_writer.outFolder = outFolder
-	m_writer._setup()
+func (m_writer *FileWriter) FetchUnit() common.CmUnit {
+	return nil
 }
 
-func GetFileWriter() *FileWriter {
-	rv := FileWriter{}
-	return &rv
+func GetFileWriter(name string) FileWriter {
+	rv := FileWriter{name: name}
+	return rv
 }

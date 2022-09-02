@@ -96,7 +96,11 @@ func (pb *PesBuf) GetField(name string) interface{} {
 
 func (pb *PesBuf) SetPcr(pcr int) {
 	pb.pcr = pcr
-	pb.delay = pb.dts - pb.pcr/300
+	if pcr != -1 {
+		pb.delay = pb.dts - pb.pcr/300
+	} else {
+		pb.delay = -1
+	}
 }
 
 func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int) PesBuf {

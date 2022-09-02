@@ -68,7 +68,12 @@ type TsDemuxer struct {
 	outputQueue []common.IOUnit        // Outputs to other plugins
 	isRunning   int                    // Counting channels, similar to waitGroup
 	pktCnt      int                    // The index of currently fed packet
+	name        string
 	wg          sync.WaitGroup
+}
+
+func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
+	m_pMux._setup()
 }
 
 func (m_pMux *TsDemuxer) _setup() {
@@ -203,7 +208,7 @@ func (m_pMux *TsDemuxer) StopPlugin() {
 	fmt.Println("Demuxer done")
 }
 
-func (m_pMux *TsDemuxer) FetchUnit() common.IOUnit {
+func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 	outLen := len(m_pMux.outputQueue)
 
 	if outLen != 0 {
@@ -249,11 +254,10 @@ func (m_pMux *TsDemuxer) FetchUnit() common.IOUnit {
 		return rv
 	}
 
-	rv := common.IOUnit{IoType: 0}
-	return rv
+	return nil
 }
 
-func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
+func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
 	// Perform demuxing on the received TS packet
 	inBuf, _ := inUnit.GetBuf().([]byte)
 	r := common.GetBufferReader(inBuf)
@@ -262,10 +266,16 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.demuxPipe.handleUnit(r.GetRemainedBuffer(), tsHeader, m_pMux.pktCnt)
 
 	m_pMux.pktCnt += 1
+
+	// Start fetching after clock is ready
+	if len(m_pMux.demuxPipe.programs) != 0 {
+		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+		return reqUnit
+	} else {
+		return nil
+	}
 }
 
-func GetTsDemuxer() *TsDemuxer {
-	m_pMux := TsDemuxer{}
-	m_pMux._setup()
-	return &m_pMux
+func GetTsDemuxer(name string) TsDemuxer {
+	return TsDemuxer{name: name}
 }

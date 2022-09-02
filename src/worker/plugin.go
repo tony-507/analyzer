@@ -3,9 +3,7 @@ package worker
 import (
 	"strings"
 
-	"github.com/tony-507/analyzers/src/avContainer"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/ioUtils"
 )
 
 // A plugin provides unified interface to perform different functionalities
@@ -24,23 +22,37 @@ func GetPluginByName(inputName string) Plugin {
 
 	switch splitName[0] {
 	case "FileReader":
-		work := ioUtils.GetReader()
+		work := GetInputReaderPlugin(inputName)
 		interfaces["DeliverUnit"] = work.DeliverUnit
 		interfaces["FetchUnit"] = work.FetchUnit
+		interfaces["SetCallback"] = work.SetCallback
+		interfaces["StopPlugin"] = work.StopPlugin
+		interfaces["SetParameter"] = work.SetParameter
 		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
 	case "FileWriter":
-		work := ioUtils.GetFileWriter()
+		work := GetFileWriterPlugin(inputName)
 		interfaces["DeliverUnit"] = work.DeliverUnit
+		interfaces["FetchUnit"] = work.FetchUnit
+		interfaces["SetCallback"] = work.SetCallback
+		interfaces["StopPlugin"] = work.StopPlugin
+		interfaces["SetParameter"] = work.SetParameter
 		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
 	case "TsDemuxer":
-		work := avContainer.GetTsDemuxer()
+		work := GetTsDemuxPlugin(inputName)
 		interfaces["DeliverUnit"] = work.DeliverUnit
 		interfaces["FetchUnit"] = work.FetchUnit
+		interfaces["SetCallback"] = work.SetCallback
+		interfaces["StopPlugin"] = work.StopPlugin
+		interfaces["SetParameter"] = work.SetParameter
 		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
 	case "Dummy":
-		work := GetDummyPlugin()
+		work := GetDummyPlugin(inputName)
+		// work.SetCallback(&rv)
 		interfaces["DeliverUnit"] = work.DeliverUnit
 		interfaces["FetchUnit"] = work.FetchUnit
+		interfaces["SetCallback"] = work.SetCallback
+		interfaces["StopPlugin"] = work.StopPlugin
+		interfaces["SetParameter"] = work.SetParameter
 		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
 	default:
 		panic("Unknown plugin name received")
@@ -48,12 +60,29 @@ func GetPluginByName(inputName string) Plugin {
 	return rv
 }
 
+// Plugin unified interfaces
+
+func (pn *Plugin) StopPlugin() {
+	f := pn.interfaces["StopPlugin"].(func())
+	f()
+}
+
+func (pn *Plugin) SetParameter(m_parameter interface{}) {
+	f := pn.interfaces["SetParameter"].(func(interface{}))
+	f(m_parameter)
+}
+
 func (pn *Plugin) DeliverUnit(unit common.CmUnit) (bool, error) {
 	f := pn.interfaces["DeliverUnit"].(func(common.CmUnit) (bool, error))
 	return f(unit)
 }
 
-func (pn *Plugin) FetchUnit() (common.CmUnit, error) {
-	f := pn.interfaces["FetchUnit"].(func() (common.CmUnit, error))
+func (pn *Plugin) FetchUnit() common.CmUnit {
+	f := pn.interfaces["FetchUnit"].(func() common.CmUnit)
 	return f()
+}
+
+func (pn *Plugin) SetCallback(w *Worker) {
+	f := pn.interfaces["SetCallback"].(func(*Worker))
+	f(w)
 }

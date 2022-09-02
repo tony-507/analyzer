@@ -33,6 +33,17 @@ type FileReader struct {
 	outputQueue []common.CmUnit
 	ext         INPUT_TYPE
 	outCnt      int
+	name        string
+}
+
+func (fr *FileReader) StopPlugin() {}
+
+func (fr *FileReader) SetParameter(m_parameter interface{}) {
+	param, isInputParam := m_parameter.(IOReaderParam)
+	if !isInputParam {
+		panic("File reader param has unknown format")
+	}
+	fr._setup(param.Fname)
 }
 
 func (fr *FileReader) _setup(fname string) {
@@ -58,15 +69,22 @@ func (fr *FileReader) _setup(fname string) {
 	}
 }
 
-func (fr *FileReader) DeliverUnit(unit common.IOUnit) {
+func (fr *FileReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
 	// Parse the data to have it in the form of a TS packet
 	if fr.ext != INPUT_TS {
 		panic("Input file type not supported. Please check the extension")
 	}
-	processedUnit := common.IOUnit{IoType: 1, Buf: fr.fHandle[(fr.outCnt * TS_PKT_SIZE):((fr.outCnt + 1) * TS_PKT_SIZE)]}
-	fr.outputQueue = append(fr.outputQueue, processedUnit)
 
-	fr.outCnt += 1
+	if fr.DataAvailable() {
+		processedUnit := common.IOUnit{IoType: 1, Buf: fr.fHandle[(fr.outCnt * TS_PKT_SIZE):((fr.outCnt + 1) * TS_PKT_SIZE)]}
+		fr.outputQueue = append(fr.outputQueue, processedUnit)
+		fr.outCnt += 1
+		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+		return reqUnit
+	} else {
+		reqUnit := common.MakeReqUnit(nil, common.EOS_REQUEST)
+		return reqUnit
+	}
 }
 
 func (fr *FileReader) FetchUnit() common.CmUnit {
@@ -90,11 +108,7 @@ func (fr *FileReader) DataAvailable() bool {
 	return fr.outCnt*TS_PKT_SIZE < fSize
 }
 
-func (fr *FileReader) SetFileHandle(fname string) {
-	fr._setup(fname)
-}
-
 // Wrapper to skip initialization line outside package
-func GetReader() FileReader {
-	return FileReader{}
+func GetReader(name string) FileReader {
+	return FileReader{name: name}
 }

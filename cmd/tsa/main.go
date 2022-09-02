@@ -1,46 +1,29 @@
 package main
 
 import (
-	"github.com/tony-507/analyzers/src/avContainer"
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/ioUtils"
+	"github.com/tony-507/analyzers/src/worker"
 )
 
-// Maybe use a wrapper to make them all implement same interface?
-
 func main() {
-	inputReader := ioUtils.GetReader()
-	inputReader.SetFileHandle("C:\\Users\\tchan\\Desktop\\proj\\Jira\\NG-67963\\ASI_out.ts")
-	demuxer := avContainer.GetTsDemuxer()
-	writer := ioUtils.GetFileWriter()
-	writer.SetFolder("D:\\workspace\\analyzers\\output\\NG-67963_ASI\\")
+	inputParam := ioUtils.IOReaderParam{Fname: "D:\\assets\\ASCENT.TS"}
+	outputParam := ioUtils.IOWriterParam{OutFolder: "D:\\workspace\\analyzers\\output\\ASCENT\\"}
 
-	dummy := common.IOUnit{}
+	p1 := worker.GetPluginByName("FileReader_1")
+	p2 := worker.GetPluginByName("TsDemuxer_1")
+	p3 := worker.GetPluginByName("FileWriter_1")
 
-	for {
-		if inputReader.DataAvailable() {
-			inputReader.DeliverUnit(dummy)
-		} else {
-			break
-		}
-	}
+	n1 := worker.CreateNode(&p1, inputParam)
+	n2 := worker.CreateNode(&p2, nil)
+	n3 := worker.CreateNode(&p3, outputParam)
 
-	for {
-		unit := inputReader.FetchUnit()
-		if unit.GetField("type") == 0 {
-			break
-		}
-		demuxer.DeliverUnit(unit)
-	}
+	g := worker.GetEmptyGraph()
+	g.AddRoot(&n1)
+	worker.AddPath(&n1, []*worker.GraphNode{&n2})
+	worker.AddPath(&n2, []*worker.GraphNode{&n3})
 
-	for {
-		unit := demuxer.FetchUnit()
-		if unit.GetField("type") == 0 {
-			break
-		}
-		writer.DeliverUnit(unit)
-	}
+	w := worker.GetWorker()
+	w.SetGraph(g)
 
-	demuxer.StopPlugin()
-	writer.StopPlugin()
+	w.RunGraph()
 }

@@ -14,6 +14,9 @@ const (
 // Function prototype for a step. This follows nodeJs architecture
 type runStep func(interface{}) (interface{}, error)
 
+// Function prototype for a testcase. We store a function so that resources are consumed when we need to run the test
+type testSetup func() Testcase
+
 // A step for the test
 // Basically we need an initialization step first, then perform what we want
 // A clean up step may also be needed if necessary
@@ -24,7 +27,7 @@ type TestStep struct {
 
 // A test suite contains multiple test cases
 type TestSuite struct {
-	tests     []Testcase
+	tests     []testSetup
 	suiteName string
 }
 
@@ -35,9 +38,9 @@ type Testcase struct {
 }
 
 // Helper struct for managing test cases
-type testCaseMgr struct {
-	testcases []Testcase
-	tags      [][]string // Carry tags for tests. First index is the tag, second is case index
+type TestCaseMgr struct {
+	setups []testSetup
+	tags   [][]string // Carry tags for tests. First index is the tag, second is test index
 }
 
 // The struct that actually runs tests
@@ -52,18 +55,30 @@ func (tc *Testcase) Describe(stepName string, stepFunc runStep) {
 }
 
 // Add a test case
-func (tmg *testCaseMgr) addTest(flow Testcase, tags []string) {
-	tmg.testcases = append(tmg.testcases, flow)
+func (tmg *TestCaseMgr) AddTest(flow testSetup, tags []string) {
+	tmg.setups = append(tmg.setups, flow)
 }
 
-func (t *Tester) AddSuite(suiteName string, tests []Testcase) {
-	ts := TestSuite{suiteName: suiteName, tests: tests}
+func (t *Tester) AddSuite(suiteName string, tmg TestCaseMgr) {
+	// If suite already exists, append tests to the suite
+	for idx, suite := range t.suites {
+		if suite.suiteName == suiteName {
+			t.suites[idx].tests = append(t.suites[idx].tests, tmg.setups...)
+			return
+		}
+	}
+	// If new suite, create it
+	ts := TestSuite{suiteName: suiteName, tests: tmg.setups}
 	t.suites = append(t.suites, ts)
 }
 
 func GetTestCase(name string) Testcase {
 	tc := Testcase{testName: name, TestSteps: make([]TestStep, 0)}
 	return tc
+}
+
+func GetTestCaseMgr() TestCaseMgr {
+	return TestCaseMgr{setups: make([]testSetup, 0), tags: make([][]string, 0)}
 }
 
 func GetTester() Tester {
@@ -74,11 +89,15 @@ func GetTester() Tester {
 // Function that runs all selected tests
 func (t *Tester) RunTests() {
 	for _, suite := range t.suites {
-		fmt.Println("\nSuite:", suite.suiteName)
-		for _, test := range suite.tests {
+		for _, setup := range suite.tests {
 			res := true
 			outMsg := ""
 			errMsg := "" // Prevent segfault
+			// Set up the test
+			test := setup()
+			pair := fmt.Sprintf("%s.%s", suite.suiteName, test.testName)
+			fmt.Printf("Running %s\n", pair)
+
 			curStep := ""
 			// Dummy input for initialization at first step
 			rv, err := test.TestSteps[0].stepFunc(nil)
@@ -99,9 +118,9 @@ func (t *Tester) RunTests() {
 			}
 
 			if !res {
-				outMsg = fmt.Sprintf("%s: %t, failure reason: %s at step \"%s\"", test.testName, res, errMsg, curStep)
+				outMsg = fmt.Sprintf("[FAILED] %s: %s at step \"%s\"\n", pair, errMsg, curStep)
 			} else {
-				outMsg = fmt.Sprintf("%s: %t", test.testName, res)
+				outMsg = fmt.Sprintf("[PASS] %s\n", pair)
 			}
 			fmt.Println(outMsg)
 		}

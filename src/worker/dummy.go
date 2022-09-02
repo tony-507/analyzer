@@ -8,8 +8,15 @@ import (
 
 // This file stores some dummy struct for testing
 type DummyPlugin struct {
-	cnt int
+	inCnt    int
+	fetchCnt int
+	callback *Worker
+	name     string
 }
+
+func (dp *DummyPlugin) SetParameter(m_parameter interface{}) {}
+
+func (dp *DummyPlugin) StopPlugin() {}
 
 func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {
 	buf, isInt := unit.GetBuf().(int)
@@ -17,15 +24,26 @@ func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {
 		err := errors.New("buf is not int")
 		return false, err
 	}
-	dp.cnt += buf
+	dp.inCnt += buf
+
+	if buf > 10 {
+		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+		dp.callback.PostRequest(dp.name, reqUnit)
+	}
+
 	return true, nil
 }
 
-func (dp *DummyPlugin) FetchUnit() (common.CmUnit, error) {
-	rv := common.IOUnit{Buf: dp.cnt, IoType: 0, Id: -1}
-	return rv, nil
+func (dp *DummyPlugin) FetchUnit() common.CmUnit {
+	rv := common.IOUnit{Buf: dp.inCnt*10 + dp.fetchCnt, IoType: 0, Id: -1}
+	dp.fetchCnt += 1
+	return rv
 }
 
-func GetDummyPlugin() DummyPlugin {
-	return DummyPlugin{cnt: 0}
+func (dp *DummyPlugin) SetCallback(callback *Worker) {
+	dp.callback = callback
+}
+
+func GetDummyPlugin(name string) DummyPlugin {
+	return DummyPlugin{inCnt: 0, fetchCnt: 0, name: name}
 }

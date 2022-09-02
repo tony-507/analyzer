@@ -125,3 +125,34 @@ func (unit StreamUnit) GetField(name string) interface{} {
 		panic("Unknown field in stream unit")
 	}
 }
+
+// ====================     worker     ====================
+type WORKER_REQUEST int
+
+const (
+	FETCH_REQUEST   WORKER_REQUEST = 1 // Ready for fetch
+	DELIVER_REQUEST WORKER_REQUEST = 2 // Request for input
+	EOS_REQUEST     WORKER_REQUEST = 3 // Root has nothing more to do, please stop
+)
+
+type ReqUnit struct {
+	buf     interface{}
+	reqType WORKER_REQUEST
+}
+
+func (unit ReqUnit) GetBuf() interface{} {
+	return unit.buf
+}
+
+func (unit ReqUnit) GetField(name string) interface{} {
+	switch name {
+	case "reqType":
+		return unit.reqType
+	default:
+		panic("Unknown field for request unit")
+	}
+}
+
+func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) ReqUnit {
+	return ReqUnit{buf: buf, reqType: reqType}
+}

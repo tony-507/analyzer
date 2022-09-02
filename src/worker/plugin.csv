@@ -1,4 +1,0 @@
-name,file
-InputReader,ioUtils/inputReader
-FileWriter,ioUtils/fileWriter
-TsDemuxer,avContainer/tsDemux
