@@ -4,7 +4,7 @@ An MPEG toy program written in Go.
 
 ## Overall architecture
 
-This architecture is adapted from Harmonic inc's RMP.
+This architecture is adapted from Harmonic inc's RMP. Initially there is also a controller layer, but I think it makes things too complicated here, so it is omitted for now.
 
 --------------------------------------------------
 |                                                |
@@ -13,14 +13,6 @@ This architecture is adapted from Harmonic inc's RMP.
 --------------------------------------------------
                         |
                         | (parameters passed)
-                        v
---------------------------------------------------
-|                                                |
-|                   Controller                   |
-|                                                |
---------------------------------------------------
-                        |
-                        | (parameters formatted)
                         v
 --------------------------------------------------
 |                                                |

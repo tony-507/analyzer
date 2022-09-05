@@ -73,7 +73,7 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int) {
 	// Psi buffer unit
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
-	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: pid}
+	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
 	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
 
 	if pusi {
@@ -159,6 +159,11 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 
 // Handle stream data
 func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int) {
+	// Psi buffer unit
+	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
+	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
+	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+
 	ur := common.GetBufferReader(buf)
 	clk := m_pMux.callback._updateSrcClk(progNum)
 
