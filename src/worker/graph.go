@@ -1,49 +1,32 @@
 package worker
 
-type GraphNode struct {
-	val         *Plugin
-	m_parameter interface{}
-	children    []*GraphNode
-	parent      []*GraphNode
-}
-
 type Graph struct {
-	roots []*GraphNode
+	roots []*Plugin
 }
 
-func CreateNode(val *Plugin, m_parameter interface{}) GraphNode {
-	node := GraphNode{val: val, children: make([]*GraphNode, 0), m_parameter: m_parameter}
-	node.parent = nil
-	return node
-}
-
-func (node *GraphNode) GetVal() *Plugin {
-	return node.val
-}
-
-func (node *GraphNode) Traverse(i int) *GraphNode {
+func (pg *Plugin) Traverse(i int) *Plugin {
 	// Traverse to i-th node
-	return node.children[i]
+	return pg.children[i]
 }
 
-func (node *GraphNode) Back(i int) *GraphNode {
+func (pg *Plugin) Back(i int) *Plugin {
 	// Traverse to i-th node
-	return node.parent[i]
+	return pg.parent[i]
 }
 
 func GetEmptyGraph() Graph {
 	return Graph{}
 }
 
-func (g *Graph) AddRoot(rootNode *GraphNode) {
+func (g *Graph) AddRoot(rootNode *Plugin) {
 	g.roots = append(g.roots, rootNode)
 }
 
-func (g *Graph) GetRoots() []*GraphNode {
+func (g *Graph) GetRoots() []*Plugin {
 	return g.roots
 }
 
-func (g *Graph) SetCallback(w *Worker, curNode *GraphNode) {
+func (g *Graph) SetCallback(w *Worker, curNode *Plugin) {
 	if curNode == nil {
 		for _, root := range g.roots {
 			g.SetCallback(w, root)
@@ -54,11 +37,11 @@ func (g *Graph) SetCallback(w *Worker, curNode *GraphNode) {
 				g.SetCallback(w, child)
 			}
 		}
-		curNode.GetVal().SetCallback(w)
+		curNode.SetCallback(w)
 	}
 }
 
-func AddPath(parent *GraphNode, children []*GraphNode) {
+func AddPath(parent *Plugin, children []*Plugin) {
 	parent.children = append(parent.children, children...)
 	for _, child := range children {
 		child.parent = append(child.parent, parent)

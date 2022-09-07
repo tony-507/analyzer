@@ -23,7 +23,7 @@ func (w *Worker) RunGraph() {
 		}
 		// Keep sending rubbish to root to kickstart the pipeline
 		for _, root := range roots {
-			root.val.DeliverUnit(dummyInput)
+			root.DeliverUnit(dummyInput)
 		}
 	}
 	w._shutDown()
@@ -33,9 +33,9 @@ func (w *Worker) RunGraph() {
 func (w *Worker) _setup() {
 	nodes := w.graph.roots
 	for len(nodes) != 0 {
-		tmpList := make([]*GraphNode, 0)
+		tmpList := make([]*Plugin, 0)
 		for _, node := range nodes {
-			node.val.SetParameter(node.m_parameter)
+			node.SetParameter(node.m_parameter)
 			tmpList = append(tmpList, node.children...)
 		}
 		nodes = append(nodes, tmpList...)
@@ -47,9 +47,9 @@ func (w *Worker) _setup() {
 func (w *Worker) _shutDown() {
 	nodes := w.graph.roots
 	for len(nodes) != 0 {
-		tmpList := make([]*GraphNode, 0)
+		tmpList := make([]*Plugin, 0)
 		for _, node := range nodes {
-			node.val.StopPlugin()
+			node.StopPlugin()
 			tmpList = append(tmpList, node.children...)
 		}
 		nodes = append(nodes, tmpList...)
@@ -58,8 +58,8 @@ func (w *Worker) _shutDown() {
 }
 
 // Depth-first search
-func (w *Worker) _searchNode(name string, curPos *GraphNode) *GraphNode {
-	var rv *GraphNode
+func (w *Worker) _searchNode(name string, curPos *Plugin) *Plugin {
+	var rv *Plugin
 
 	if curPos == nil {
 		// Start searching
@@ -72,7 +72,7 @@ func (w *Worker) _searchNode(name string, curPos *GraphNode) *GraphNode {
 		return nil
 	}
 
-	if name == curPos.val.Name {
+	if name == curPos.Name {
 		return curPos
 	}
 	if len(curPos.children) == 0 {
@@ -103,13 +103,13 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 
 	switch reqType {
 	case common.FETCH_REQUEST:
-		outputUnit := node.val.FetchUnit()
+		outputUnit := node.FetchUnit()
 		for _, child := range node.children {
-			child.val.DeliverUnit(outputUnit)
+			child.DeliverUnit(outputUnit)
 		}
 	case common.DELIVER_REQUEST:
-		outputUnit := node.parent[0].val.FetchUnit()
-		node.val.DeliverUnit(outputUnit)
+		outputUnit := node.parent[0].FetchUnit()
+		node.DeliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
 	}

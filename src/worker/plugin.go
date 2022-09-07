@@ -9,9 +9,17 @@ import (
 // A plugin provides unified interface to perform different functionalities
 
 type Plugin struct {
-	Work       interface{}            // The struct that performs the work
-	interfaces map[string]interface{} // Store interfaces needed
-	Name       string
+	Work        interface{}            // The struct that performs the work
+	interfaces  map[string]interface{} // Store interfaces needed
+	m_parameter interface{}            // Store plugin parameters
+	Name        string
+	children    []*Plugin
+	parent      []*Plugin
+	bIsRoot     bool
+}
+
+func initPlugin(work interface{}, name string, interfaces map[string]interface{}, bIsRoot bool) Plugin {
+	return Plugin{Work: work, Name: name, interfaces: interfaces, bIsRoot: bIsRoot, children: make([]*Plugin, 0), parent: make([]*Plugin, 0)}
 }
 
 func GetPluginByName(inputName string) Plugin {
@@ -28,7 +36,7 @@ func GetPluginByName(inputName string) Plugin {
 		interfaces["SetCallback"] = work.SetCallback
 		interfaces["StopPlugin"] = work.StopPlugin
 		interfaces["SetParameter"] = work.SetParameter
-		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
+		rv = initPlugin(work, inputName, interfaces, true)
 	case "FileWriter":
 		work := GetFileWriterPlugin(inputName)
 		interfaces["DeliverUnit"] = work.DeliverUnit
@@ -36,7 +44,7 @@ func GetPluginByName(inputName string) Plugin {
 		interfaces["SetCallback"] = work.SetCallback
 		interfaces["StopPlugin"] = work.StopPlugin
 		interfaces["SetParameter"] = work.SetParameter
-		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
+		rv = initPlugin(work, inputName, interfaces, false)
 	case "TsDemuxer":
 		work := GetTsDemuxPlugin(inputName)
 		interfaces["DeliverUnit"] = work.DeliverUnit
@@ -44,7 +52,7 @@ func GetPluginByName(inputName string) Plugin {
 		interfaces["SetCallback"] = work.SetCallback
 		interfaces["StopPlugin"] = work.StopPlugin
 		interfaces["SetParameter"] = work.SetParameter
-		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
+		rv = initPlugin(work, inputName, interfaces, false)
 	case "Dummy":
 		work := GetDummyPlugin(inputName)
 		// work.SetCallback(&rv)
@@ -53,11 +61,21 @@ func GetPluginByName(inputName string) Plugin {
 		interfaces["SetCallback"] = work.SetCallback
 		interfaces["StopPlugin"] = work.StopPlugin
 		interfaces["SetParameter"] = work.SetParameter
-		rv = Plugin{Work: work, Name: inputName, interfaces: interfaces}
+		rv = initPlugin(work, inputName, interfaces, false)
 	default:
 		panic("Unknown plugin name received")
 	}
 	return rv
+}
+
+// Plugin methods
+
+func (pn *Plugin) isRoot() bool {
+	return pn.bIsRoot
+}
+
+func (pn *Plugin) setParameterStr(m_parameter interface{}) {
+	pn.m_parameter = m_parameter
 }
 
 // Plugin unified interfaces

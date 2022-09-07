@@ -79,23 +79,15 @@ func workerRunGraphTest() testUtils.Testcase {
 	dummy5 := GetPluginByName("Dummy_5")
 	dummy6 := GetPluginByName("Dummy_6")
 
-	// Create nodes
-	node1 := CreateNode(&dummy1, nil)
-	node2 := CreateNode(&dummy2, nil)
-	node3 := CreateNode(&dummy3, nil)
-	node4 := CreateNode(&dummy4, nil)
-	node5 := CreateNode(&dummy5, nil)
-	node6 := CreateNode(&dummy6, nil)
-
 	// Construct graph now
 	graph := GetEmptyGraph()
-	graph.AddRoot(&node1)
+	graph.AddRoot(&dummy1)
 
-	AddPath(&node1, []*GraphNode{&node2, &node3, &node4})
-	AddPath(&node2, []*GraphNode{&node5})
-	AddPath(&node3, []*GraphNode{&node5})
-	AddPath(&node4, []*GraphNode{&node6})
-	AddPath(&node5, []*GraphNode{&node6})
+	AddPath(&dummy1, []*Plugin{&dummy2, &dummy3, &dummy4})
+	AddPath(&dummy2, []*Plugin{&dummy5})
+	AddPath(&dummy3, []*Plugin{&dummy5})
+	AddPath(&dummy4, []*Plugin{&dummy6})
+	AddPath(&dummy5, []*Plugin{&dummy6})
 
 	w := GetWorker()
 	w.SetGraph(graph)
@@ -104,7 +96,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		root := w.graph.GetRoots()[0]
 
 		unit := common.IOUnit{Buf: 20, IoType: 0, Id: 0}
-		_, err := root.GetVal().DeliverUnit(unit)
+		_, err := root.DeliverUnit(unit)
 		if err != nil {
 			return nil, err
 		}
@@ -112,8 +104,8 @@ func workerRunGraphTest() testUtils.Testcase {
 	})
 
 	tc.Describe("Check fetch count of root", func(input interface{}) (interface{}, error) {
-		root, _ := input.(*GraphNode)
-		unit := root.GetVal().FetchUnit()
+		root, _ := input.(*Plugin)
+		unit := root.FetchUnit()
 
 		cnt, _ := unit.GetBuf().(int)
 		cnt = cnt % 10
@@ -126,7 +118,7 @@ func workerRunGraphTest() testUtils.Testcase {
 	})
 
 	tc.Describe("Check fetch count of leaf", func(input interface{}) (interface{}, error) {
-		unit := node6.val.FetchUnit()
+		unit := dummy6.FetchUnit()
 		cnt, _ := unit.GetBuf().(int)
 		_, err := testUtils.Assert_equal(cnt, 620013)
 		if err != nil {
