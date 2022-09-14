@@ -1,13 +1,28 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/worker"
 )
 
 func main() {
-	inputParam := ioUtils.IOReaderParam{Fname: "D:\\assets\\ASCENT.TS"}
-	outputParam := ioUtils.IOWriterParam{OutFolder: "D:\\workspace\\analyzers\\output\\ASCENT\\"}
+	if len(os.Args) != 2 {
+		fmt.Println("Wrong number of arguments")
+		fmt.Println("Usage: tsa <file>")
+		os.Exit(1)
+	}
+
+	ex, _ := os.Executable()
+	curDir := filepath.Dir(ex)
+	fname := os.Args[0]
+
+	inputParam := ioUtils.IOReaderParam{Fname: fname}
+	outputParam := ioUtils.IOWriterParam{OutFolder: curDir + strings.TrimSuffix(fname, filepath.Ext(fname)) + "/"}
 
 	w := worker.GetWorker()
 
