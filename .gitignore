@@ -1,5 +1,4 @@
 # Analyzer output
 /output/
 # Output files
-/main.exe
-/main
+/build/
