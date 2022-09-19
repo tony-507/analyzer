@@ -22,8 +22,8 @@ func readPcrTest() testUtils.Testcase {
 			return nil, err
 		}
 		val := r.ReadBits(33)
-		res, err := testUtils.Assert_equal(val, 474857574)
-		if !res {
+		err := testUtils.Assert_equal(val, 474857574)
+		if err != nil {
 			return nil, err
 		}
 		return r, nil
@@ -36,8 +36,8 @@ func readPcrTest() testUtils.Testcase {
 			return nil, err
 		}
 		val := r.ReadBits(6)
-		res, err := testUtils.Assert_equal(val, 63)
-		if !res {
+		err := testUtils.Assert_equal(val, 63)
+		if err != nil {
 			return nil, err
 		}
 		return r, nil
@@ -50,8 +50,8 @@ func readPcrTest() testUtils.Testcase {
 			return nil, err
 		}
 		val := r.ReadBits(9)
-		res, err := testUtils.Assert_equal(val, 17)
-		if !res {
+		err := testUtils.Assert_equal(val, 17)
+		if err != nil {
 			return nil, err
 		}
 		return r, nil

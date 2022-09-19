@@ -46,6 +46,9 @@ type TestCaseMgr struct {
 // The struct that actually runs tests
 type Tester struct {
 	suites []TestSuite
+	// Used for debugging on test failure
+	curStep string
+	errMsg  string
 }
 
 // Add a test step
@@ -86,43 +89,72 @@ func GetTester() Tester {
 	return t
 }
 
-// Function that runs all selected tests
-func (t *Tester) RunTests() {
-	for _, suite := range t.suites {
-		for _, setup := range suite.tests {
-			res := true
-			outMsg := ""
-			errMsg := "" // Prevent segfault
-			// Set up the test
-			test := setup()
-			pair := fmt.Sprintf("%s.%s", suite.suiteName, test.testName)
-			fmt.Printf("Running %s\n", pair)
+// If a test panics, recover and go to the next one
+func (t *Tester) runNextIfPanic() {
+	if err, ok := recover().(error); ok {
+		t.errMsg = err.Error()
+	}
+}
 
-			curStep := ""
-			// Dummy input for initialization at first step
-			rv, err := test.TestSteps[0].stepFunc(nil)
+// Function that runs a test setup
+// It is implemented separately to allow recovery of testing after a test fails
+func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
+	defer t.runNextIfPanic()
+	res := true
+
+	fmt.Printf("Running %s\n", pair)
+
+	// Dummy input for initialization at first step
+	rv, err := test.TestSteps[0].stepFunc(nil)
+	if err != nil {
+		t.errMsg = err.Error()
+		res = false
+	} else {
+		// Continue only if first step is OK
+		for idx := 1; idx < len(test.TestSteps); idx++ {
+			t.curStep = test.TestSteps[idx].stepName
+			rv, err = test.TestSteps[idx].stepFunc(rv)
 			if err != nil {
-				errMsg = err.Error()
+				t.errMsg = err.Error()
 				res = false
-			} else {
-				// Continue only if first step is OK
-				for idx := 1; idx < len(test.TestSteps); idx++ {
-					curStep = test.TestSteps[idx].stepName
-					rv, err = test.TestSteps[idx].stepFunc(rv)
-					if err != nil {
-						errMsg = err.Error()
-						res = false
-						break
-					}
-				}
+				break
 			}
-
-			if !res {
-				outMsg = fmt.Sprintf("[FAILED] %s: %s at step \"%s\"\n", pair, errMsg, curStep)
-			} else {
-				outMsg = fmt.Sprintf("[PASS] %s\n", pair)
-			}
-			fmt.Println(outMsg)
 		}
 	}
+	return res
+}
+
+// Function that runs all selected tests
+func (t *Tester) RunTests() bool {
+	isPass := true
+
+	for _, suite := range t.suites {
+		// Test statistics
+		runTotal := 0
+		passTotal := 0
+		for _, setup := range suite.tests {
+			outMsg := ""
+			test := setup()
+			pair := fmt.Sprintf("%s.%s", suite.suiteName, test.testName)
+			res := t._runTestSetup(test, pair)
+
+			if !res {
+				outMsg = fmt.Sprintf("[FAILED] %s at step \"%s\"\n%s\n", pair, t.curStep, t.errMsg)
+				isPass = false
+			} else {
+				outMsg = fmt.Sprintf("[PASS] %s\n", pair)
+				passTotal += 1
+			}
+
+			runTotal += 1
+			fmt.Println(outMsg)
+
+			t.errMsg = ""
+			t.curStep = ""
+		}
+		statMsg := fmt.Sprintf("[Suite %s] Executed: %d, passed: %d\n", suite.suiteName, runTotal, passTotal)
+		fmt.Println(statMsg)
+	}
+
+	return isPass
 }

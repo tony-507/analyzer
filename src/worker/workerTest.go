@@ -23,7 +23,7 @@ func pluginUnitTest() testUtils.Testcase {
 			return nil, err
 		}
 		pg := GetPluginByName(cellName)
-		_, err = testUtils.Assert_type_equal(pg.Work, "worker.DummyPlugin")
+		err = testUtils.Assert_type_equal(pg.Work, "*worker.DummyPlugin")
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func workerRunGraphTest() testUtils.Testcase {
 
 		cnt, _ := unit.GetBuf().(int)
 		cnt = cnt % 10
-		_, err := testUtils.Assert_equal(cnt, 1)
+		err := testUtils.Assert_equal(cnt, 1)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +120,7 @@ func workerRunGraphTest() testUtils.Testcase {
 	tc.Describe("Check fetch count of leaf", func(input interface{}) (interface{}, error) {
 		unit := dummy6.FetchUnit()
 		cnt, _ := unit.GetBuf().(int)
-		_, err := testUtils.Assert_equal(cnt, 620013)
+		err := testUtils.Assert_equal(cnt, 620013)
 		if err != nil {
 			return nil, err
 		}
