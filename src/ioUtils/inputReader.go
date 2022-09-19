@@ -1,6 +1,7 @@
 package ioUtils
 
 import (
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -29,14 +30,16 @@ func check(err error) {
 }
 
 type FileReader struct {
-	fHandle     []byte
+	fHandle     *os.File
 	outputQueue []common.CmUnit
 	ext         INPUT_TYPE
 	outCnt      int
 	name        string
 }
 
-func (fr *FileReader) StopPlugin() {}
+func (fr *FileReader) StopPlugin() {
+	fr.fHandle.Close()
+}
 
 func (fr *FileReader) SetParameter(m_parameter interface{}) {
 	param, isInputParam := m_parameter.(IOReaderParam)
@@ -50,9 +53,9 @@ func (fr *FileReader) _setup(fname string) {
 	fr.outCnt = 0
 
 	// Open the file and start reading
-	inBuf, err := os.ReadFile(fname)
-	fr.fHandle = inBuf
+	fHandle, err := os.Open(fname)
 	check(err)
+	fr.fHandle = fHandle
 
 	ext := strings.ToLower(path.Ext(fname)[1:])
 	switch ext {
@@ -76,8 +79,6 @@ func (fr *FileReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
 	}
 
 	if fr.DataAvailable() {
-		processedUnit := common.IOUnit{IoType: 1, Buf: fr.fHandle[(fr.outCnt * TS_PKT_SIZE):((fr.outCnt + 1) * TS_PKT_SIZE)]}
-		fr.outputQueue = append(fr.outputQueue, processedUnit)
 		fr.outCnt += 1
 		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
 		return reqUnit
@@ -104,8 +105,19 @@ func (fr *FileReader) FetchUnit() common.CmUnit {
 
 func (fr *FileReader) DataAvailable() bool {
 	// Check if there is still data to read
-	fSize := len(fr.fHandle)
-	return fr.outCnt*TS_PKT_SIZE < fSize
+	buf := make([]byte, TS_PKT_SIZE)
+	n, err := fr.fHandle.Read(buf)
+	if err == io.EOF {
+		return false
+	} else {
+		check(err)
+	}
+	if n < TS_PKT_SIZE {
+		return false
+	}
+	processedUnit := common.IOUnit{IoType: 1, Buf: buf}
+	fr.outputQueue = append(fr.outputQueue, processedUnit)
+	return true
 }
 
 // Wrapper to skip initialization line outside package
