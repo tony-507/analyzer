@@ -60,6 +60,7 @@ type PesBuf struct {
 	dts     int
 	pcr     int
 	delay   int
+	buf     []byte
 }
 
 func (pb *PesBuf) ToString() string {
@@ -103,6 +104,6 @@ func (pb *PesBuf) SetPcr(pcr int) {
 	}
 }
 
-func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int) PesBuf {
-	return PesBuf{pktCnt: pktCnt, progNum: progNum, size: size, pts: pts, dts: dts}
+func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int, buf []byte) PesBuf {
+	return PesBuf{pktCnt: pktCnt, progNum: progNum, size: size, pts: pts, dts: dts, buf: buf}
 }

@@ -53,6 +53,14 @@ func GetPluginByName(inputName string) Plugin {
 		interfaces["StopPlugin"] = work.StopPlugin
 		interfaces["SetParameter"] = work.SetParameter
 		rv = initPlugin(work, inputName, interfaces, false)
+	case "DataHandler":
+		work := GetDataHandlerPlugin(inputName)
+		interfaces["DeliverUnit"] = work.DeliverUnit
+		interfaces["FetchUnit"] = work.FetchUnit
+		interfaces["SetCallback"] = work.SetCallback
+		interfaces["StopPlugin"] = work.StopPlugin
+		interfaces["SetParameter"] = work.SetParameter
+		rv = initPlugin(work, inputName, interfaces, false)
 	case "Dummy":
 		work := GetDummyPlugin(inputName)
 		// work.SetCallback(&rv)

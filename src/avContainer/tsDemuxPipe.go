@@ -71,7 +71,7 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 // Handle PSI data
 // Currently only support PAT and PMT
 func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int) {
-	// Psi buffer unit
+	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
 	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
@@ -159,7 +159,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 
 // Handle stream data
 func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int) {
-	// Psi buffer unit
+	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
 	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
@@ -181,11 +181,12 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			if err != nil {
 				m_pMux._postEvent(pid, m_pMux.demuxStartCnt[pid], err)
 			}
-			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 
-			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.sectionLen, pesHeader.optionalHeader.pts, pesHeader.optionalHeader.dts)
+			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.sectionLen, pesHeader.optionalHeader.pts, pesHeader.optionalHeader.dts, m_pMux.demuxedBuffers[pid])
 			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
 			m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+
+			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 		} else {
 			m_pMux.demuxedBuffers[pid] = buf
 			m_pMux.demuxStartCnt[pid] = pktCnt
