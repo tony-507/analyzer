@@ -58,7 +58,9 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 
 			// Contained in PMT, continue the parsing
 			if progIdx != -1 && streamIdx != -1 {
-				m_pMux._handleStreamData(buf, pid, m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc, pktCnt)
+				m_pMux._handleStreamData(buf, pid,
+					m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
+					pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
 			}
 
 			// Other special pids, e.g. scte-35
@@ -158,7 +160,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 }
 
 // Handle stream data
-func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int) {
+func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int, streamType int) {
 	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
@@ -182,7 +184,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 				m_pMux._postEvent(pid, m_pMux.demuxStartCnt[pid], err)
 			}
 
-			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.sectionLen, pesHeader.optionalHeader.pts, pesHeader.optionalHeader.dts, m_pMux.demuxedBuffers[pid])
+			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.sectionLen, pesHeader.optionalHeader.pts, pesHeader.optionalHeader.dts, m_pMux.demuxedBuffers[pid], streamType)
 			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
 			m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
 

@@ -53,14 +53,15 @@ func MakePsiBuf(pktCnt int, pid int) PsiBuf {
 // Buffer unit carrying PES packet data
 
 type PesBuf struct {
-	pktCnt  int
-	progNum int
-	size    int
-	pts     int
-	dts     int
-	pcr     int
-	delay   int
-	buf     []byte
+	pktCnt     int
+	progNum    int
+	size       int
+	pts        int
+	dts        int
+	pcr        int
+	delay      int
+	buf        []byte
+	streamType int
 }
 
 func (pb *PesBuf) ToString() string {
@@ -104,6 +105,6 @@ func (pb *PesBuf) SetPcr(pcr int) {
 	}
 }
 
-func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int, buf []byte) PesBuf {
-	return PesBuf{pktCnt: pktCnt, progNum: progNum, size: size, pts: pts, dts: dts, buf: buf}
+func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int, buf []byte, streamType int) PesBuf {
+	return PesBuf{pktCnt: pktCnt, progNum: progNum, size: size, pts: pts, dts: dts, buf: buf, streamType: streamType}
 }
