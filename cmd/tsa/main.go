@@ -22,7 +22,7 @@ func main() {
 	fname := os.Args[1]
 
 	inputParam := ioUtils.IOReaderParam{Fname: fname}
-	outputParam := ioUtils.IOWriterParam{OutFolder: curDir + strings.TrimSuffix(fname, filepath.Ext(fname)) + "/"}
+	outputParam := ioUtils.IOWriterParam{OutFolder: curDir + "/output/" + strings.TrimSuffix(filepath.Base(fname), filepath.Ext(fname)) + "/"}
 
 	w := worker.GetWorker()
 
