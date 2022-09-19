@@ -1,7 +1,16 @@
 # TS analyzer
 
-An MPEG toy program written in Go.
+An MPEG toy program written in Go. The program can be built with Go >= 1.13.
 
+## Quick start
+
+To execute a CI/CD build flow, run
+```$> sh build.sh```
+at project root. The build output can be found at `build/`.
+
+The analyzer can be used to demux TS:
+```tsa <input.ts>```
+The output can be found in the output directory. It consists of PSI information and packet timing information.
 ## Overall architecture
 
 This architecture is adapted from Harmonic inc's RMP. The implementation behind is as follows:
