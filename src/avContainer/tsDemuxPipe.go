@@ -129,22 +129,20 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 	// Parse a given buffer
 	pktType := m_pMux._getPktType(pid)
-	r := common.GetBufferReader(m_pMux.demuxedBuffers[pid])
-	ptr := &r
 
 	// Output unit related
 	var outBuf []byte
 
 	switch pktType {
 	case PKT_PAT:
-		content, err := ParsePAT(ptr, pktCnt)
+		content, err := ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
 		if err != nil {
 			m_pMux._postEvent(pid, pktCnt, err)
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
 	case PKT_PMT:
-		pmt := ParsePMT(ptr, pid, pktCnt)
+		pmt := ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 		pmt.Pretty()
 		m_pMux.programs = append(m_pMux.programs, pmt)
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")

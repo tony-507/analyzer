@@ -44,40 +44,42 @@ func PMTReadyForParse(r *common.BsReader) bool {
 	return pktLen <= (*r).GetSize()
 }
 
-func ParsePMT(r *common.BsReader, PmtPid int, cnt int) PMT {
-	pFieldLen := (*r).ReadBits(8)
-	(*r).ReadBits(pFieldLen * 8)
+func ParsePMT(buf []byte, PmtPid int, cnt int) PMT {
+	r := common.GetBufferReader(buf)
 
-	tableId := (*r).ReadBits(8)
-	if (*r).ReadBits(1) != 1 {
+	pFieldLen := r.ReadBits(8)
+	r.ReadBits(pFieldLen * 8)
+
+	tableId := r.ReadBits(8)
+	if r.ReadBits(1) != 1 {
 		panic("Section syntax indicator of PMT is not set to 1")
 	}
-	if (*r).ReadBits(1) != 0 {
+	if r.ReadBits(1) != 0 {
 		panic("Private bits of PMT is not set to 0")
 	}
-	if (*r).ReadBits(2) != 3 {
+	if r.ReadBits(2) != 3 {
 		panic("Reserved bits of PMT is not set to all 1s")
 	}
-	if (*r).ReadBits(2) != 0 {
+	if r.ReadBits(2) != 0 {
 		panic("Unused bits of PMT is not set to all 0s")
 	}
-	sectionLen := (*r).ReadBits(10)
+	sectionLen := r.ReadBits(10)
 
-	ProgNum := (*r).ReadBits(16)
-	if (*r).ReadBits(2) != 3 {
+	ProgNum := r.ReadBits(16)
+	if r.ReadBits(2) != 3 {
 		panic("Reserved bits of PMT is not set to all 1s")
 	}
-	Version := (*r).ReadBits(5)
-	curNextIdr := (*r).ReadBits(1)
-	(*r).ReadBits(16) // section number and last section number
+	Version := r.ReadBits(5)
+	curNextIdr := r.ReadBits(1)
+	r.ReadBits(16) // section number and last section number
 
 	sectionLen -= 9
-	if (*r).ReadBits(3) != 7 {
+	if r.ReadBits(3) != 7 {
 		panic("Reserved bits of PMT is not set to all 1s")
 	}
-	// pcr_pid := (*r).ReadBits(13)
-	(*r).ReadBits(13)
-	if (*r).ReadBits(4) != 15 {
+	// pcr_pid := r.ReadBits(13)
+	r.ReadBits(13)
+	if r.ReadBits(4) != 15 {
 		panic("Reserved bits of PMT is not set to all 1s")
 	}
 	r.ReadBits(2) // Program info unused bits
@@ -89,7 +91,7 @@ func ParsePMT(r *common.BsReader, PmtPid int, cnt int) PMT {
 		if progInfoLen <= 0 {
 			break
 		}
-		desc := _readDescriptor(r, &progInfoLen)
+		desc := _readDescriptor(&r, &progInfoLen)
 		ProgDesc = append(ProgDesc, desc)
 	}
 
@@ -98,18 +100,18 @@ func ParsePMT(r *common.BsReader, PmtPid int, cnt int) PMT {
 		if sectionLen == 0 {
 			break
 		}
-		StreamType := (*r).ReadBits(8)
-		if (*r).ReadBits(3) != 7 {
+		StreamType := r.ReadBits(8)
+		if r.ReadBits(3) != 7 {
 			panic("Reserved bits of PMT is not set to all 1s")
 		}
-		StreamPid := (*r).ReadBits(13)
-		if (*r).ReadBits(4) != 15 {
+		StreamPid := r.ReadBits(13)
+		if r.ReadBits(4) != 15 {
 			panic("Reserved bits of PMT is not set to all 1s")
 		}
-		if (*r).ReadBits(2) != 0 {
+		if r.ReadBits(2) != 0 {
 			panic("Unused bits of PMT is not set to all 0s")
 		}
-		esInfoLen := (*r).ReadBits(10)
+		esInfoLen := r.ReadBits(10)
 		sectionLen -= 5 + esInfoLen
 
 		StreamDesc := make([]Descriptor, 0)
@@ -117,7 +119,7 @@ func ParsePMT(r *common.BsReader, PmtPid int, cnt int) PMT {
 			if esInfoLen <= 0 {
 				break
 			}
-			desc := _readDescriptor(r, &esInfoLen)
+			desc := _readDescriptor(&r, &esInfoLen)
 			StreamDesc = append(StreamDesc, desc)
 		}
 		Streams = append(Streams, DataStream{StreamPid, _resolveStreamType(StreamType), StreamDesc})

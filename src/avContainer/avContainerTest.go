@@ -3,7 +3,6 @@ package avContainer
 import (
 	"errors"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/test/testUtils"
 )
 
@@ -22,8 +21,7 @@ func readPATTest() testUtils.Testcase {
 			err := errors.New("Input not passed to next step")
 			return nil, err
 		}
-		r := common.GetBufferReader(dummyPAT)
-		PAT, parsingErr := ParsePAT(&r, 0)
+		PAT, parsingErr := ParsePAT(dummyPAT, 0)
 		if parsingErr != nil {
 			return nil, parsingErr
 		}
