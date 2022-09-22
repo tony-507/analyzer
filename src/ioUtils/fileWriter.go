@@ -19,12 +19,14 @@ An object to write buffer into a file
 */
 
 type FileWriter struct {
-	writerMap []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
-	idMapping []int                // This maps id to channel index
-	outFolder string
-	isRunning bool
-	name      string
-	wg        sync.WaitGroup
+	writerMap    []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
+	idMapping    []int                // This maps id to channel index
+	outFolder    string
+	processedCnt int // How many units are processed
+	isRunning    bool
+	name         string
+	wg           sync.WaitGroup
+	monitorMtx   sync.Mutex // A mutex for locking monitoring variables
 }
 
 func (m_writer *FileWriter) SetParameter(m_parameter interface{}) {
@@ -42,6 +44,7 @@ func (m_writer *FileWriter) _setup() {
 		m_writer.writerMap[i] = make(chan common.CmUnit, 1)
 	}
 	m_writer.isRunning = true
+	m_writer.processedCnt = 0
 
 	err := os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary
 	if err != nil {
@@ -55,7 +58,7 @@ func (m_writer *FileWriter) _setup() {
 func (m_writer *FileWriter) _setupMonitor() {
 	defer m_writer.wg.Done()
 
-	// mtxLockedVal := 1
+	orginialCnt := 0 // Check if the writer is still processing units
 
 	for {
 		if !m_writer.isRunning {
@@ -63,10 +66,16 @@ func (m_writer *FileWriter) _setupMonitor() {
 		}
 
 		time.Sleep(10 * time.Second)
-		fmt.Println("\nFile writer status")
-		fmt.Println("isRunning:", m_writer.isRunning)
-		fmt.Println("File handles:", m_writer.idMapping)
 
+		m_writer.monitorMtx.Lock()
+		if m_writer.processedCnt == orginialCnt {
+			fmt.Println("\nFile writer status")
+			fmt.Println("isRunning:", m_writer.isRunning)
+			fmt.Println("File handles:", m_writer.idMapping)
+		} else {
+			orginialCnt = m_writer.processedCnt
+		}
+		m_writer.monitorMtx.Unlock()
 	}
 }
 
@@ -153,6 +162,10 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 
 		_, err := f.Write(buf)
 		check(err)
+
+		m_writer.monitorMtx.Lock()
+		m_writer.processedCnt += 1
+		m_writer.monitorMtx.Unlock()
 	}
 
 	f.Write([]byte("\n]}"))
@@ -207,6 +220,10 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 		check(err)
 
 		w.Flush()
+
+		m_writer.monitorMtx.Lock()
+		m_writer.processedCnt += 1
+		m_writer.monitorMtx.Unlock()
 	}
 }
 
