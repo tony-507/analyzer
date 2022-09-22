@@ -3,6 +3,7 @@ package avContainer
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -31,6 +32,11 @@ func (m_pMux *tsDemuxPipe) _setup() {
 
 // Handle incoming data from demuxer
 func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
+	// If scrambled, throw away
+	if head.tsc != 0 {
+		return
+	}
+
 	// Determine the type of the unit
 	pid := head.pid
 	if pid == 0 {
@@ -58,12 +64,25 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 
 			// Contained in PMT, continue the parsing
 			if progIdx != -1 && streamIdx != -1 {
-				m_pMux._handleStreamData(buf, pid,
-					m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
-					pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
+				pktType := m_pMux._getPktType(pid)
+				// Determine stream type from last word
+				actualTypeSlice := strings.Split(pktType, " ")
+				actualType := actualTypeSlice[len(actualTypeSlice)-1]
+				switch actualType {
+				case "video":
+					m_pMux._handleStreamData(buf, pid,
+						m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
+						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
+				case "audio":
+					m_pMux._handleStreamData(buf, pid,
+						m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
+						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
+				case "data":
+					m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt)
+				default:
+					// Not sure, passthrough first
+				}
 			}
-
-			// Other special pids, e.g. scte-35
 		}
 	}
 
@@ -117,6 +136,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					m_pMux.demuxStartCnt[pid] = pktCnt
 				}
 			default:
+				fmt.Println("Don't know how to handle", dType)
 				panic("What?!")
 			}
 		}
