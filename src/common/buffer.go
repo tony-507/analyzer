@@ -92,6 +92,8 @@ func (pb *PesBuf) GetField(name string) interface{} {
 		return pb.pktCnt
 	case "progNum":
 		return pb.progNum
+	case "type":
+		return pb.streamType
 	}
 	return -1
 }

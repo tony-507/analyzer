@@ -130,9 +130,10 @@ func (unit StreamUnit) GetField(name string) interface{} {
 type WORKER_REQUEST int
 
 const (
-	FETCH_REQUEST   WORKER_REQUEST = 1 // Ready for fetch
-	DELIVER_REQUEST WORKER_REQUEST = 2 // Request for input
-	EOS_REQUEST     WORKER_REQUEST = 3 // Root has nothing more to do, please stop
+	FETCH_REQUEST    WORKER_REQUEST = 1 // Ready for fetch
+	DELIVER_REQUEST  WORKER_REQUEST = 2 // Request for input
+	EOS_REQUEST      WORKER_REQUEST = 3 // Root has nothing more to do, please stop
+	RESOURCE_REQUEST WORKER_REQUEST = 4 // Request for querying resourceLoader. buf should be ["path", "key"]
 )
 
 type ReqUnit struct {

@@ -2,13 +2,15 @@ package worker
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 // A worker runs a graph to provide a service
 // Assumption: The graph does not contain any cyclic subgraph
 type Worker struct {
-	graph     Graph
-	isRunning int
+	graph          Graph
+	resourceLoader resources.ResourceLoader
+	isRunning      int
 }
 
 // Main function for running a graph
@@ -112,6 +114,12 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 		node.DeliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
+	case common.RESOURCE_REQUEST:
+		query, ok := unit.GetBuf().([]string)
+		if !ok || len(query) != 2 {
+			panic("Wrong resource query format. Should be array of strings")
+		}
+		w.resourceLoader.Query(query[0], query[1])
 	}
 
 }
@@ -124,6 +132,6 @@ func (w *Worker) SetGraph(graph Graph) {
 }
 
 func GetWorker() Worker {
-	w := Worker{isRunning: 0}
+	w := Worker{isRunning: 0, resourceLoader: resources.CreateResourceLoader()}
 	return w
 }

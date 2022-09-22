@@ -19,6 +19,8 @@ func (w *Worker) StartService(params []OverallParams) {
 	createdPlugin := make([]*Plugin, 0)
 	// Constrution of graph
 
+	fmt.Println("Start building graph")
+
 	/*
 		Note that, unlike in C, it's perfectly OK to return the address of a local variable;
 		the storage associated with the variable survives after the function returns.
@@ -65,7 +67,7 @@ func (w *Worker) StartService(params []OverallParams) {
 		}
 	}
 
-	fmt.Println("Finish building graph:", graph)
+	fmt.Println("Start running graph")
 
 	w.SetGraph(graph)
 	w.RunGraph()
