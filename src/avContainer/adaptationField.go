@@ -1,6 +1,8 @@
 package avContainer
 
 import (
+	"fmt"
+
 	"github.com/tony-507/analyzers/src/common"
 )
 
@@ -16,6 +18,9 @@ func ParseAdaptationField(r *common.BsReader) AdaptationField {
 	private_data := ""
 
 	afLen := (*r).ReadBits(8)
+	if afLen == 0 {
+		return AdaptationField{pcr: -1}
+	}
 	(*r).ReadBits(1) // Discontinuity counter
 	(*r).ReadBits(1) // Random access indicator
 	(*r).ReadBits(1) // ES indicator
@@ -42,9 +47,8 @@ func ParseAdaptationField(r *common.BsReader) AdaptationField {
 	}
 	if private_flag {
 		dataLen := (*r).ReadBits(8)
-		afLen -= dataLen + 1
 		for i := 0; i < dataLen; i++ {
-			private_data += string((*r).ReadBits(8))
+			private_data += fmt.Sprint((*r).ReadBits(8))
 		}
 	}
 

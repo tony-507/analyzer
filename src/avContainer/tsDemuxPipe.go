@@ -196,7 +196,9 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 
 	if afc > 1 {
 		af := ParseAdaptationField(&ur)
-		clk.updatePcrRecord(af.pcr, pktCnt)
+		if af.pcr >= 0 {
+			clk.updatePcrRecord(af.pcr, pktCnt)
+		}
 		buf = ur.GetRemainedBuffer()
 	}
 	ur = common.GetBufferReader(m_pMux.demuxedBuffers[pid])
