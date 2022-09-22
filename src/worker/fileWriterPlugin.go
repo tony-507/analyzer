@@ -3,6 +3,7 @@ package worker
 import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/ioUtils"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 type fileWriterPlugin struct {
@@ -13,6 +14,10 @@ type fileWriterPlugin struct {
 
 func (pg *fileWriterPlugin) SetParameter(m_parameter interface{}) {
 	pg.impl.SetParameter(m_parameter)
+}
+
+func (pg *fileWriterPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
+	// pg.impl.SetResource(resourceLoader)
 }
 
 func (pg *fileWriterPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {

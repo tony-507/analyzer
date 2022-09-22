@@ -86,7 +86,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 			dType := m_pMux._getPktType(pid)
 			newVersion := GetVersion(buf)
 			switch dType {
-			case PKT_PAT:
+			case "PAT":
 				if m_pMux.content.Version == -1 {
 					m_pMux.demuxedBuffers[0] = buf
 					if PATReadyForParse(buf) {
@@ -96,7 +96,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					outMsg := fmt.Sprintf("PAT version change %d -> %d", m_pMux.content.Version, newVersion)
 					fmt.Println(outMsg)
 				}
-			case PKT_PMT:
+			case "PMT":
 				if len(m_pMux.programs) != 0 {
 					progIdx := -1
 					for idx, program := range m_pMux.programs {
@@ -134,16 +134,23 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 	var outBuf []byte
 
 	switch pktType {
-	case PKT_PAT:
+	case "PAT":
 		content, err := ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
 		if err != nil {
 			m_pMux._postEvent(pid, pktCnt, err)
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
-	case PKT_PMT:
+	case "PMT":
 		pmt := ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
-		pmt.Pretty()
+
+		// Information about parsed PMT
+		fmt.Println("\nAt pkt#", pktCnt)
+		fmt.Println("Program", pmt.ProgNum)
+		for idx, stream := range pmt.Streams {
+			fmt.Println(" Stream", idx, ": type", m_pMux._queryStreamType(stream.StreamType), " with pid", stream.StreamPid)
+		}
+
 		m_pMux.programs = append(m_pMux.programs, pmt)
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")
 	default:
@@ -196,27 +203,31 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 	}
 }
 
-func (m_pMux *tsDemuxPipe) _getPktType(pid int) PKT_TYPE {
+func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	if pid == 0 {
-		return PKT_PAT
+		return "PAT"
 	}
 
 	// Check if PMT pid
 	_, hasKey := m_pMux.content.ProgramMap[pid]
 	if hasKey {
-		return PKT_PMT
+		return "PMT"
 	}
 
 	// Check stream type
 	for _, program := range m_pMux.programs {
 		for _, stream := range program.Streams {
 			if stream.StreamPid == pid {
-				return stream.StreamType
+				return m_pMux._queryStreamType(stream.StreamType)
 			}
 		}
 	}
 
-	return PKT_UNKNOWN
+	return ""
+}
+
+func (m_pMux *tsDemuxPipe) _queryStreamType(typeNum int) string {
+	return m_pMux.callback.resourceLoader.Query("streamType", typeNum)
 }
 
 // An internal API to post event to demuxer

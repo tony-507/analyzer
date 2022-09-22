@@ -4,11 +4,13 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 // A basePlugin provides unified interface to perform different functionalities
 type basePlugin interface {
 	SetParameter(interface{})
+	SetResource(*resources.ResourceLoader)
 	DeliverUnit(common.CmUnit) (bool, error)
 	FetchUnit() common.CmUnit
 	SetCallback(*Worker)

@@ -1,8 +1,6 @@
 package avContainer
 
 import (
-	"fmt"
-
 	"github.com/tony-507/analyzers/src/common"
 )
 
@@ -13,7 +11,7 @@ type Descriptor struct {
 
 type DataStream struct {
 	StreamPid  int
-	StreamType PKT_TYPE
+	StreamType int
 	StreamDesc []Descriptor
 }
 
@@ -122,18 +120,10 @@ func ParsePMT(buf []byte, PmtPid int, cnt int) PMT {
 			desc := _readDescriptor(&r, &esInfoLen)
 			StreamDesc = append(StreamDesc, desc)
 		}
-		Streams = append(Streams, DataStream{StreamPid, _resolveStreamType(StreamType), StreamDesc})
+		Streams = append(Streams, DataStream{StreamPid, StreamType, StreamDesc})
 	}
 
 	return PMT{PktCnt: cnt, PmtPid: PmtPid, tableId: tableId, ProgNum: ProgNum, Version: Version, curNextIdr: curNextIdr != 0, ProgDesc: ProgDesc, Streams: Streams, crc32: -1}
-}
-
-func (t *PMT) Pretty() {
-	fmt.Println("\nAt pkt#", t.PktCnt)
-	fmt.Println("Program", t.ProgNum)
-	for idx, stream := range t.Streams {
-		fmt.Println(" Stream", idx, ": type", _verboseType(stream.StreamType), " with pid", stream.StreamPid)
-	}
 }
 
 func _readDescriptor(r *common.BsReader, l *int) Descriptor {
@@ -142,26 +132,4 @@ func _readDescriptor(r *common.BsReader, l *int) Descriptor {
 	Content := (*r).ReadHex(descLen)
 	*l -= descLen + 2
 	return Descriptor{Tag, Content}
-}
-
-func _resolveStreamType(typeId int) PKT_TYPE {
-	switch typeId {
-	case 2:
-		return PKT_MPEG2
-	case 4:
-		return PKT_MPEG1
-	default:
-		return PKT_UNKNOWN
-	}
-}
-
-func _verboseType(pktType PKT_TYPE) string {
-	switch pktType {
-	case PKT_MPEG2:
-		return "MPEG 2 video"
-	case PKT_MPEG1:
-		return "MPEG 1 audio"
-	default:
-		return "Unknown"
-	}
 }

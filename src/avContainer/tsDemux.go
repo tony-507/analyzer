@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 type PKT_TYPE int
@@ -62,18 +63,23 @@ type controlParam struct {
 }
 
 type TsDemuxer struct {
-	demuxPipe   *tsDemuxPipe           // Actual demuxing operation
-	control     chan common.CmUnit     // Controller channel, separate from demuxMap to prevent race condition
-	progClkMap  map[int]*programSrcClk // progNum -> srcClk
-	outputQueue []common.IOUnit        // Outputs to other plugins
-	isRunning   int                    // Counting channels, similar to waitGroup
-	pktCnt      int                    // The index of currently fed packet
-	name        string
-	wg          sync.WaitGroup
+	demuxPipe      *tsDemuxPipe           // Actual demuxing operation
+	control        chan common.CmUnit     // Controller channel, separate from demuxMap to prevent race condition
+	progClkMap     map[int]*programSrcClk // progNum -> srcClk
+	outputQueue    []common.IOUnit        // Outputs to other plugins
+	isRunning      int                    // Counting channels, similar to waitGroup
+	pktCnt         int                    // The index of currently fed packet
+	resourceLoader *resources.ResourceLoader
+	name           string
+	wg             sync.WaitGroup
 }
 
 func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
 	m_pMux._setup()
+}
+
+func (m_pMux *TsDemuxer) SetResource(resourceLoader *resources.ResourceLoader) {
+	m_pMux.resourceLoader = resourceLoader
 }
 
 func (m_pMux *TsDemuxer) _setup() {

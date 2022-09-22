@@ -3,6 +3,7 @@ package worker
 import (
 	"github.com/tony-507/analyzers/src/common"
 	datahandler "github.com/tony-507/analyzers/src/dataHandler"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 type DataHandlerPlugin struct {
@@ -13,6 +14,10 @@ type DataHandlerPlugin struct {
 
 func (pg *DataHandlerPlugin) SetParameter(m_parameter interface{}) {
 	pg.impl.SetParameter(m_parameter)
+}
+
+func (pg *DataHandlerPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
+	// pg.impl.SetResource(resourceLoader)
 }
 
 func (pg *DataHandlerPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {

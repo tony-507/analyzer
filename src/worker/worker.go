@@ -37,6 +37,7 @@ func (w *Worker) _setup() {
 	for len(nodes) != 0 {
 		tmpList := make([]*Plugin, 0)
 		for _, node := range nodes {
+			node.Work.SetResource(&w.resourceLoader)
 			node.SetParameter(node.m_parameter)
 			tmpList = append(tmpList, node.children...)
 		}

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 // This file stores some dummy struct for testing
@@ -15,6 +16,10 @@ type DummyPlugin struct {
 }
 
 func (dp *DummyPlugin) SetParameter(m_parameter interface{}) {}
+
+func (pg *DummyPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
+	// pg.impl.SetResource(resourceLoader)
+}
 
 func (dp *DummyPlugin) StopPlugin() {}
 
