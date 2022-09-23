@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/ioUtils"
-	"github.com/tony-507/analyzers/src/worker"
+	"github.com/tony-507/analyzers/src/controller"
 )
 
 func main() {
@@ -21,16 +20,10 @@ func main() {
 	curDir := filepath.Dir(ex)
 	fname := os.Args[1]
 
-	inputParam := ioUtils.IOReaderParam{Fname: fname}
-	outputParam := ioUtils.IOWriterParam{OutFolder: curDir + "/output/" + strings.TrimSuffix(filepath.Base(fname), filepath.Ext(fname)) + "/"}
+	sourceSetting := controller.SourceSetting{FileInput: controller.FileInputSetting{Fname: fname}}
+	outputSetting := controller.OutputSetting{DataOutput: controller.DataOutputSetting{OutDir: curDir + "/output/" + strings.TrimSuffix(filepath.Base(fname), filepath.Ext(fname)) + "/"}}
+	ctrlInterface := controller.CtrlInterface{SourceSetting: sourceSetting, OutputSetting: outputSetting}
 
-	w := worker.GetWorker()
-
-	inputPluginParam := worker.ConstructOverallParam("FileReader_1", inputParam, []string{"TsDemuxer_1"})
-	demuxPluginParam := worker.ConstructOverallParam("TsDemuxer_1", nil, []string{"DataHandler_1"})
-	dataHandlerParam := worker.ConstructOverallParam("DataHandler_1", nil, []string{"FileWriter_1"})
-	outputPluginParam := worker.ConstructOverallParam("FileWriter_1", outputParam, []string{})
-	workerParams := []worker.OverallParams{inputPluginParam, demuxPluginParam, dataHandlerParam, outputPluginParam}
-
-	w.StartService(workerParams)
+	ctrl := controller.GetController(ctrlInterface)
+	ctrl.StartApp()
 }
