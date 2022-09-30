@@ -19,8 +19,6 @@ build_app() {
 	# Executable
 	go build $curDir/cmd/tsa/main.go
 	mv main tsa
-	# Resources for app
-	cp $curDir/src/resources/app.json $curDir/build/resources/.
 }
 
 build_test() {
