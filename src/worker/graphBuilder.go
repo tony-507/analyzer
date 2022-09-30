@@ -1,6 +1,8 @@
 package worker
 
-import "fmt"
+import (
+	"github.com/tony-507/analyzers/src/logs"
+)
 
 type OverallParams struct {
 	pluginName  string
@@ -19,7 +21,7 @@ func (w *Worker) StartService(params []OverallParams) {
 	createdPlugin := make([]*Plugin, 0)
 	// Constrution of graph
 
-	fmt.Println("Start building graph")
+	w.logger.Log(logs.INFO, "Start building graph")
 
 	/*
 		Note that, unlike in C, it's perfectly OK to return the address of a local variable;
@@ -67,7 +69,7 @@ func (w *Worker) StartService(params []OverallParams) {
 		}
 	}
 
-	fmt.Println("Start running graph")
+	w.logger.Log(logs.INFO, "Start running graph")
 
 	w.SetGraph(graph)
 	w.RunGraph()

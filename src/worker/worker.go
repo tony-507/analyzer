@@ -2,12 +2,14 @@ package worker
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
 )
 
 // A worker runs a graph to provide a service
 // Assumption: The graph does not contain any cyclic subgraph
 type Worker struct {
+	logger         logs.Log
 	graph          Graph
 	resourceLoader resources.ResourceLoader
 	isRunning      int
@@ -133,6 +135,6 @@ func (w *Worker) SetGraph(graph Graph) {
 }
 
 func GetWorker() Worker {
-	w := Worker{isRunning: 0, resourceLoader: resources.CreateResourceLoader()}
+	w := Worker{isRunning: 0, resourceLoader: resources.CreateResourceLoader(), logger: logs.CreateLogger("Worker")}
 	return w
 }

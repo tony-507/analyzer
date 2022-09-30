@@ -18,7 +18,6 @@ func (clk *programSrcClk) updatePcrRecord(pcr int, pktCnt int) {
 		// Does not carry a pcr
 		return
 	}
-	// fmt.Println("Source time updated:", pcr, pktCnt)
 
 	clk.pcr = append(clk.pcr, pcr)
 	clk.pcrLoc = append(clk.pcrLoc, pktCnt)
@@ -51,14 +50,12 @@ func (clk *programSrcClk) requestPcr(pid int, curCnt int) (int, int) {
 	}
 
 	if pid == -1 || (id0 == 0 && curCnt > clk.pcrLoc[0]) {
-		// Out of PCR bound, do extrapolation by assuming CBR and raise an alarm to indicate possibility of PCR error
+		// Out of PCR bound, do extrapolation by assuming CBR
 		last := len(clk.pcr) - 1
 		step188 := (clk.pcr[last] - clk.pcr[last-1]) / (clk.pcrLoc[last] - clk.pcrLoc[last-1])
 		curPcr := clk.pcr[last] + (curCnt-clk.pcrLoc[last])*step188
 		if pid != -1 {
 			if !clk.eptStart {
-				// infoMsg := fmt.Sprintf("ASSERT Extrapolation of PCR is done at pkt#%d. Max PCR location found is %d", curCnt, clk.pcrLoc[len(clk.pcrLoc)-1])
-				// clk.callback.sendStatus(ctrl_INFO, pid, ctrl_NUMERICAL_RISK, curCnt, infoMsg)
 				clk.eptStart = true
 			}
 		}

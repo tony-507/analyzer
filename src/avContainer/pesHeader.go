@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 type OptionalHeader struct {
@@ -106,6 +107,7 @@ func ParseOptionalHeader(r common.BsReader) (OptionalHeader, error) {
 }
 
 func ParsePESHeader(r common.BsReader) (PESHeader, error) {
+	logger := logs.CreateLogger("PesParser")
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
 		return PESHeader{}, err
@@ -116,7 +118,7 @@ func ParsePESHeader(r common.BsReader) (PESHeader, error) {
 	// TODO: May not have optional header
 	optionalHeader, err := ParseOptionalHeader(r)
 	if err != nil {
-		fmt.Println(r)
+		logger.Log(logs.ERROR, r)
 		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
 		err = errors.New(errMsg)
 		return PESHeader{}, err

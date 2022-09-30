@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 /*
@@ -19,6 +20,7 @@ An object to write buffer into a file
 */
 
 type FileWriter struct {
+	logger       logs.Log
 	writerMap    []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
 	idMapping    []int                // This maps id to channel index
 	outFolder    string
@@ -39,6 +41,7 @@ func (m_writer *FileWriter) SetParameter(m_parameter interface{}) {
 }
 
 func (m_writer *FileWriter) _setup() {
+	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	for i := range m_writer.writerMap {
 		m_writer.writerMap[i] = make(chan common.CmUnit, 1)
@@ -69,9 +72,10 @@ func (m_writer *FileWriter) _setupMonitor() {
 
 		m_writer.monitorMtx.Lock()
 		if m_writer.processedCnt == orginialCnt {
-			fmt.Println("\nFile writer status")
-			fmt.Println("isRunning:", m_writer.isRunning)
-			fmt.Println("File handles:", m_writer.idMapping)
+			statMsg := "\nFile writer status"
+			statMsg += fmt.Sprintf("isRunning: %v", m_writer.isRunning)
+			statMsg += fmt.Sprintf("File handles: %v", m_writer.idMapping)
+			m_writer.logger.Log(logs.INFO, statMsg)
 		} else {
 			orginialCnt = m_writer.processedCnt
 		}
@@ -119,7 +123,7 @@ func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) common.CmUnit {
 			m_writer.wg.Add(1)
 			go m_writer._processJsonOutput(outId, idIdx)
 		default:
-			fmt.Println(outId, outType, m_writer.idMapping)
+			m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
 			panic("Unknown output type")
 		}
 	}

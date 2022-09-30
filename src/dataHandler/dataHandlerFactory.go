@@ -1,9 +1,8 @@
 package datahandler
 
 import (
-	"fmt"
-
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 type DataHandler interface {
@@ -11,6 +10,7 @@ type DataHandler interface {
 }
 
 type DataHandlerFactory struct {
+	logger     logs.Log
 	handlers   map[int]int
 	outputUnit []common.CmUnit
 	isRunning  bool
@@ -22,13 +22,14 @@ func (df *DataHandlerFactory) SetParameter(m_parameter interface{}) {
 }
 
 func (df *DataHandlerFactory) _setup() {
+	df.logger = logs.CreateLogger("DataHandlerFactory")
 	df.handlers = make(map[int]int, 0)
 	df.outputUnit = make([]common.CmUnit, 0)
 	df.isRunning = true
 }
 
 func (df *DataHandlerFactory) StopPlugin() {
-	fmt.Println("Data handler factory is stopped")
+	df.logger.Log(logs.INFO, "Data handler factory is stopped")
 }
 
 // Handle only PesBuf
@@ -47,7 +48,7 @@ func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) common.CmUnit {
 
 		_, hasPid := df.handlers[pid]
 		if !hasPid {
-			fmt.Println("Receive pid", pid, "at dataHandlerFactory")
+			df.logger.Log(logs.INFO, "Receive pid %d at dataHandlerFactory", pid)
 			df.handlers[pid] = 1
 		}
 	}

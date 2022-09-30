@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
 )
 
@@ -63,6 +64,7 @@ type controlParam struct {
 }
 
 type TsDemuxer struct {
+	logger         logs.Log
 	demuxPipe      *tsDemuxPipe           // Actual demuxing operation
 	control        chan common.CmUnit     // Controller channel, separate from demuxMap to prevent race condition
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
@@ -83,6 +85,7 @@ func (m_pMux *TsDemuxer) SetResource(resourceLoader *resources.ResourceLoader) {
 }
 
 func (m_pMux *TsDemuxer) _setup() {
+	m_pMux.logger = logs.CreateLogger("TsDemuxer")
 	m_pMux.control = make(chan common.CmUnit)
 	m_pMux.progClkMap = make(map[int]*programSrcClk, 0)
 	m_pMux.outputQueue = make([]common.IOUnit, 0)
@@ -121,10 +124,12 @@ func (m_pMux *TsDemuxer) _setupMonitor() {
 			if m_pMux.isRunning == 0 {
 				break
 			}
-			fmt.Println("\ntsDemuxer status")
-			fmt.Println("\tCurrent count:", curCnt)
-			fmt.Println("\tisRunning:", m_pMux.isRunning == 1)
-			fmt.Println("\tOutput queue size:", len(m_pMux.outputQueue))
+			statMsg := "tsDemuxer status\n"
+			statMsg += fmt.Sprintf("\tCurrent count: %d\n", curCnt)
+			statMsg += fmt.Sprintf("\tisRunning: %v\n", m_pMux.isRunning == 1)
+			statMsg += fmt.Sprintf("\tOutput queue size: %d\n", len(m_pMux.outputQueue))
+
+			m_pMux.logger.Log(logs.INFO, statMsg)
 
 			assertTimeout -= 1
 		}
@@ -158,7 +163,7 @@ func (m_pMux *TsDemuxer) _setupDemuxControl() {
 					pktCnt[pid] += 1
 				case ctrl_NUMERICAL_RISK:
 					infoMsg, _ := param.data.(string)
-					fmt.Println(infoMsg)
+					m_pMux.logger.Log(logs.WARN, infoMsg)
 				default:
 					panic("Unknown control id received at monitor")
 				}
@@ -174,20 +179,25 @@ func (m_pMux *TsDemuxer) _setupDemuxControl() {
 	m_pMux.isRunning -= 1
 	sum := 0
 	rateSum := 0.0
-	fmt.Println("\nTS statistics:")
-	fmt.Printf("TS duration: %fs\n", float64(duration)/27000000)
-	fmt.Println("-------------------------------------------------")
-	fmt.Printf("|    pid    |   count   |  bitrate  | frequency |\n")
-	fmt.Printf("|-----------|-----------|-----------|-----------|\n")
+
+	// TS statistics
+
+	statMsg := "TS statistics:\n"
+	statMsg += fmt.Sprintf("TS duration: %fs\n", float64(duration)/27000000)
+	statMsg += "-------------------------------------------------\n"
+	statMsg += "|    pid    |   count   |  bitrate  | frequency |\n"
+	statMsg += "|-----------|-----------|-----------|-----------|\n"
 	for pid, cnt := range pktCnt {
 		rate := float64(cnt) * 1504 * 27000000 / float64(duration)
 		rateSum += rate
-		fmt.Printf("|%11d|%11d|%11.2f|%11.2f|\n", pid, cnt, rate, rate/1504)
+		statMsg += fmt.Sprintf("|%11d|%11d|%11.2f|%11.2f|\n", pid, cnt, rate, rate/1504)
 		sum += cnt
 	}
-	fmt.Println("-------------------------------------------------")
-	fmt.Printf("|%11s|%11d|%11.2f|%11s|\n", "", sum, rateSum, "")
-	fmt.Println("-------------------------------------------------")
+	statMsg += "-------------------------------------------------\n"
+	statMsg += fmt.Sprintf("|%11s|%11d|%11.2f|%11s|\n", "", sum, rateSum, "")
+	statMsg += "-------------------------------------------------\n"
+
+	m_pMux.logger.Log(logs.INFO, statMsg)
 }
 
 func (m_pMux *TsDemuxer) sendStatus(level ctrl_LEVEL, pid int, id ctrl_ID, curCnt int, data interface{}) {
@@ -206,12 +216,10 @@ func (m_pMux *TsDemuxer) _updateSrcClk(progNum int) *programSrcClk {
 }
 
 func (m_pMux *TsDemuxer) StopPlugin() {
-	// time.Sleep(3 * time.Second)
-	fmt.Println("Shutting down handlers")
+	m_pMux.logger.Log(logs.INFO, "Shutting down handlers")
 	unit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, common.STATUS_END_ROUTINE, "")
 	m_pMux.control <- unit
 	m_pMux.wg.Wait()
-	fmt.Println("Demuxer done")
 }
 
 func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
@@ -223,12 +231,6 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 		pesBuf, isPes := rv.Buf.(common.PesBuf)
 		if isPes {
 			progNum, _ := pesBuf.GetField("progNum").(int)
-
-			// sanity check
-			if progNum == -1 {
-				fmt.Println(rv)
-				panic("Error at fetchunit")
-			}
 
 			// Stamp PCR here
 			clk := m_pMux._updateSrcClk(progNum)

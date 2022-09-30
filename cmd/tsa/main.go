@@ -1,18 +1,25 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/controller"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
+func setupLogging() {
+	logs.SetProperty("level", "info")
+	logs.SetProperty("format", "%t [%n] [%l] %s")
+}
+
 func main() {
+	setupLogging()
+	logger := logs.CreateLogger("main")
 	if len(os.Args) != 2 {
-		fmt.Println("Wrong number of arguments")
-		fmt.Println("Usage: tsa <file>")
+		logger.Log(logs.ERROR, "Wrong number of arguments")
+		logger.Log(logs.INFO, "Usage: tsa <file>")
 		os.Exit(1)
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 type demuxEvent struct {
@@ -14,6 +15,7 @@ type demuxEvent struct {
 }
 
 type tsDemuxPipe struct {
+	logger         logs.Log
 	demuxedBuffers map[int][]byte // A map mapping pid to bitstreams
 	demuxStartCnt  map[int]int    // A map mapping pid to start packet index of demuxedBuffers[pid]
 	callback       *TsDemuxer
@@ -23,6 +25,7 @@ type tsDemuxPipe struct {
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
+	m_pMux.logger = logs.CreateLogger("tsDemuxPipe")
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
 	m_pMux.content = PAT{Version: -1}
@@ -112,8 +115,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid])
 					}
 				} else if m_pMux.content.Version != newVersion {
-					outMsg := fmt.Sprintf("PAT version change %d -> %d", m_pMux.content.Version, newVersion)
-					fmt.Println(outMsg)
+					m_pMux.logger.Log(logs.INFO, "PAT version change %d -> %d", m_pMux.content.Version, newVersion)
 				}
 			case "PMT":
 				if len(m_pMux.programs) != 0 {
@@ -128,20 +130,18 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					if progIdx == -1 {
 						m_pMux.demuxedBuffers[pid] = buf
 					} else if m_pMux.programs[progIdx].Version != newVersion {
-						outMsg := fmt.Sprintf("PMT at pid %d version change %d -> %d", pid, m_pMux.programs[progIdx].Version, newVersion)
-						fmt.Println(outMsg)
+						m_pMux.logger.Log(logs.INFO, "PMT at pid %d version change %d -> %d", pid, m_pMux.programs[progIdx].Version, newVersion)
 					}
 				} else {
 					m_pMux.demuxedBuffers[pid] = buf
 					m_pMux.demuxStartCnt[pid] = pktCnt
 				}
 			default:
-				fmt.Println("Don't know how to handle", dType)
+				m_pMux.logger.Log(logs.ERROR, "Don't know how to handle %s", dType)
 				panic("What?!")
 			}
 		}
 	} else if len(m_pMux.demuxedBuffers[pid]) != 0 {
-		fmt.Println("Appending...")
 		m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
 	}
 }
@@ -165,11 +165,12 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 		pmt := ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 
 		// Information about parsed PMT
-		fmt.Println("\nAt pkt#", pktCnt)
-		fmt.Println("Program", pmt.ProgNum)
+		statMsg := fmt.Sprintf("At pkt#%d\n", pktCnt)
+		statMsg += fmt.Sprintf("Program %d\n", pmt.ProgNum)
 		for idx, stream := range pmt.Streams {
-			fmt.Println(" Stream", idx, ": type", m_pMux._queryStreamType(stream.StreamType), " with pid", stream.StreamPid)
+			statMsg += fmt.Sprintf(" Stream %d: type %s with pid %d\n", idx, m_pMux._queryStreamType(stream.StreamType), stream.StreamPid)
 		}
+		m_pMux.logger.Log(logs.INFO, statMsg)
 
 		m_pMux.programs = append(m_pMux.programs, pmt)
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")

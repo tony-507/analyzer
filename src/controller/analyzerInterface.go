@@ -1,21 +1,22 @@
 package controller
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/tony-507/analyzers/src/ioUtils"
+	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/worker"
 )
 
 type AnalyzerController struct {
+	logger   logs.Log
 	itf      CtrlInterface
 	id       string
 	provider worker.Worker
 }
 
 func (ctrl *AnalyzerController) buildParamException(name string) {
-	fmt.Println("Error in building overallParams, unknown field:", name)
+	ctrl.logger.Log(logs.FATAL, "Error in building overallParams, unknown field:", name)
 	os.Exit(1)
 }
 
@@ -37,7 +38,7 @@ func (ctrl *AnalyzerController) StartApp() {
 }
 
 func GetController(itf CtrlInterface) AnalyzerController {
-	ctrl := AnalyzerController{}
+	ctrl := AnalyzerController{logger: logs.CreateLogger("Controller")}
 	ctrl.itf = itf
 	ctrl.id = "Default"
 
