@@ -63,7 +63,7 @@ func (br *BsReader) ReadHex(n int) string {
 	for i := 0; i < n; i++ {
 		rv += " " + string(strconv.FormatInt(int64(br.ReadBits(8)), 16))
 	}
-	return rv
+	return rv[1:] // Remove leading space
 }
 
 func (br *BsReader) ReadBits(n int) int {
