@@ -118,6 +118,32 @@ func readAdaptationFieldTest() testUtils.Testcase {
 	return tc
 }
 
+func readPesHeaderTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("readPesHeaderTest")
+
+	tc.Describe("Parse Pes header", func(input interface{}) (interface{}, error) {
+		dummyPesHeader := []byte{0x00, 0x00, 0x01, 0xea, 0x7d, 0xb2,
+			0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb,
+			0x11, 0x00, 0x2b, 0x31, 0x9b}
+
+		parsed, err := ParsePESHeader(dummyPesHeader)
+		if err != nil {
+			return nil, err
+		}
+		expected := PESHeader{streamId: 234, sectionLen: 32165, optionalHeader: OptionalHeader{scrambled: false,
+			dataAligned: true, length: 13, pts: 705277, dts: 694477}}
+
+		assertErr := testUtils.Assert_obj_equal(expected, parsed)
+		if assertErr != nil {
+			return nil, assertErr
+		} else {
+			return nil, nil
+		}
+	})
+
+	return tc
+}
+
 func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
@@ -127,6 +153,7 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg.AddTest(readPATTest, []string{"avContainer"})
 	tmg.AddTest(readPMTTest, []string{"avContainer"})
 	tmg.AddTest(readAdaptationFieldTest, []string{"avContainer"})
+	tmg.AddTest(readPesHeaderTest, []string{"avContainer"})
 
 	t.AddSuite("unitTest", tmg)
 }

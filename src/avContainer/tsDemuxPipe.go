@@ -201,12 +201,11 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 		}
 		buf = buf[af.afLen:]
 	}
-	ur := common.GetBufferReader(buf)
 
 	// Payload
 	if pusi {
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
-			pesHeader, err := ParsePESHeader(ur)
+			pesHeader, err := ParsePESHeader(buf)
 			if err != nil {
 				m_pMux._postEvent(pid, m_pMux.demuxStartCnt[pid], err)
 			}

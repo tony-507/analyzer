@@ -23,17 +23,18 @@ type PESHeader struct {
 }
 
 // Parse optional header and return its length
-func ParseOptionalHeader(r common.BsReader) (OptionalHeader, error) {
+func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 	// Initialize optional values here
 	pts := -1
 	dts := -1
+	r := common.GetBufferReader(buf)
 
 	// Begin reading
 	if r.ReadBits(2) != 2 {
 		err := errors.New("optional PES header marker bits not match")
 		return OptionalHeader{}, err
 	}
-	scrambled := r.ReadBits(2) == 0
+	scrambled := r.ReadBits(2) != 0
 	r.ReadBits(1) // Priority
 	dataAligned := r.ReadBits(1) != 0
 	r.ReadBits(1) // Copyright
@@ -106,8 +107,11 @@ func ParseOptionalHeader(r common.BsReader) (OptionalHeader, error) {
 	return OptionalHeader{scrambled, dataAligned, headerLen + 3, pts, dts}, nil
 }
 
-func ParsePESHeader(r common.BsReader) (PESHeader, error) {
+func ParsePESHeader(buf []byte) (PESHeader, error) {
 	logger := logs.CreateLogger("PesParser")
+
+	r := common.GetBufferReader(buf)
+
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
 		logger.Log(logs.ERROR, r)
@@ -117,7 +121,7 @@ func ParsePESHeader(r common.BsReader) (PESHeader, error) {
 	pesLen := r.ReadBits(16)
 
 	// TODO: May not have optional header
-	optionalHeader, err := ParseOptionalHeader(r)
+	optionalHeader, err := ParseOptionalHeader(r.GetRemainedBuffer())
 	if err != nil {
 		logger.Log(logs.ERROR, r)
 		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
