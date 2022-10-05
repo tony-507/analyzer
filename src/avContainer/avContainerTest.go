@@ -89,6 +89,35 @@ func readPMTTest() testUtils.Testcase {
 	return tc
 }
 
+func readAdaptationFieldTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("readAdaptationFieldTest")
+
+	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
+		dummyAdaptationField := []byte{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3}
+		return dummyAdaptationField, nil
+	})
+
+	tc.Describe("Parse adaptation field", func(input interface{}) (interface{}, error) {
+		dummyAdaptationField, isBts := input.([]byte)
+		if !isBts {
+			err := errors.New("Input not passed to next step")
+			return nil, err
+		}
+
+		expected := AdaptationField{afLen: 8, pcr: 189051243, splice_point: -1, private_data: ""}
+		parsed := ParseAdaptationField(dummyAdaptationField)
+
+		err := testUtils.Assert_obj_equal(expected, parsed)
+		if err != nil {
+			return nil, err
+		} else {
+			return nil, nil
+		}
+	})
+
+	return tc
+}
+
 func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
@@ -97,6 +126,7 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 	// common
 	tmg.AddTest(readPATTest, []string{"avContainer"})
 	tmg.AddTest(readPMTTest, []string{"avContainer"})
+	tmg.AddTest(readAdaptationFieldTest, []string{"avContainer"})
 
 	t.AddSuite("unitTest", tmg)
 }

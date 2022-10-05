@@ -192,17 +192,16 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
 	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
 
-	ur := common.GetBufferReader(buf)
 	clk := m_pMux.callback._updateSrcClk(progNum)
 
 	if afc > 1 {
-		af := ParseAdaptationField(&ur)
+		af := ParseAdaptationField(buf)
 		if af.pcr >= 0 {
 			clk.updatePcrRecord(af.pcr, pktCnt)
 		}
-		buf = ur.GetRemainedBuffer()
+		buf = buf[af.afLen:]
 	}
-	ur = common.GetBufferReader(m_pMux.demuxedBuffers[pid])
+	ur := common.GetBufferReader(buf)
 
 	// Payload
 	if pusi {

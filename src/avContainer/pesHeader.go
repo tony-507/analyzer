@@ -110,6 +110,7 @@ func ParsePESHeader(r common.BsReader) (PESHeader, error) {
 	logger := logs.CreateLogger("PesParser")
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
+		logger.Log(logs.ERROR, r)
 		return PESHeader{}, err
 	}
 	streamId := r.ReadBits(8)
