@@ -44,14 +44,14 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 	pid := head.pid
 	if pid == 0 {
 		// PAT
-		m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt)
+		m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
 	} else if pid < 32 {
 		// Special pids
 	} else {
 		_, hasKey := m_pMux.content.ProgramMap[pid]
 		if hasKey {
 			// PMT
-			m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt)
+			m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
 		} else {
 			// Others
 			progIdx := -1
@@ -81,7 +81,7 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 						m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
 						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
 				case "data":
-					m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt)
+					m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
 				default:
 					// Not sure, passthrough first
 				}
@@ -93,8 +93,8 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 }
 
 // Handle PSI data
-// Currently only support PAT and PMT
-func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int) {
+// Currently only support PAT, PMT and SCTE-35
+func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) {
 	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
@@ -102,7 +102,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 
 	if pusi {
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
-			m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid])
+			m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 		} else {
 			// Check if we need to update PSI by checking version
 			dType := m_pMux._getPktType(pid)
@@ -112,10 +112,10 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 				if m_pMux.content.Version == -1 {
 					m_pMux.demuxedBuffers[0] = buf
 					if PATReadyForParse(buf) {
-						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid])
+						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 					}
 				} else if m_pMux.content.Version != newVersion {
-					m_pMux.logger.Log(logs.INFO, "PAT version change %d -> %d", m_pMux.content.Version, newVersion)
+					m_pMux.logger.Log(logs.INFO, "PAT version change ", m_pMux.content.Version, " -> ", newVersion)
 				}
 			case "PMT":
 				if len(m_pMux.programs) != 0 {
@@ -130,14 +130,21 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					if progIdx == -1 {
 						m_pMux.demuxedBuffers[pid] = buf
 					} else if m_pMux.programs[progIdx].Version != newVersion {
-						m_pMux.logger.Log(logs.INFO, "PMT at pid %d version change %d -> %d", pid, m_pMux.programs[progIdx].Version, newVersion)
+						m_pMux.logger.Log(logs.INFO, "PMT at pid ", pid, " version change ", m_pMux.programs[progIdx].Version, " -> ", newVersion)
 					}
 				} else {
 					m_pMux.demuxedBuffers[pid] = buf
 					m_pMux.demuxStartCnt[pid] = pktCnt
 				}
+			case "SCTE-35 DPI data":
+				m_pMux.demuxedBuffers[pid] = buf
+				m_pMux.demuxStartCnt[pid] = pktCnt
+
+				if SCTE35ReadyForParse(buf, afc) {
+					m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
+				}
 			default:
-				m_pMux.logger.Log(logs.ERROR, "Don't know how to handle %s", dType)
+				m_pMux.logger.Log(logs.ERROR, "Don't know how to handle ", dType)
 				panic("What?!")
 			}
 		}
@@ -146,7 +153,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 	}
 }
 
-func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
+func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	// Parse a given buffer
 	pktType := m_pMux._getPktType(pid)
 
@@ -174,6 +181,9 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int) {
 
 		m_pMux.programs = append(m_pMux.programs, pmt)
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")
+	case "SCTE-35 DPI data":
+		section := readSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
+		outBuf, _ = json.MarshalIndent(section, "\t", "\t")
 	default:
 		panic("Unknown pid")
 	}

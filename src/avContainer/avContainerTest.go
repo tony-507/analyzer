@@ -144,6 +144,38 @@ func readPesHeaderTest() testUtils.Testcase {
 	return tc
 }
 
+func readSCTE35SectionTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase(("readSCTE35SectionTest"))
+
+	tc.Describe("Read Splice insert", func(input interface{}) (interface{}, error) {
+		dummySection := []byte{0x00, 0xfc, 0x30, 0x25, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0xff, 0xf0, 0x14, 0x05, 0x00, 0x00,
+			0x00, 0x02, 0x7f, 0xef, 0xfe, 0x00, 0x2e, 0xb0, 0x30, 0xfe,
+			0x00, 0x14, 0x99, 0x70, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+			0xbb, 0x9e, 0x64, 0x39}
+
+		parsed := readSCTE35Section(dummySection, 1)
+
+		spliceInsert := splice_event{EventId: 2, EventCancelIdr: false, OutOfNetworkIdr: true, ProgramSpliceFlag: true,
+			DurationFlag: true, SpliceImmediateFlag: false, SpliceTime: 3059760, Components: []splice_component{}, BreakDuration: break_duration{AutoReturn: true, Duration: 1350000},
+			UniqueProgramId: 1, AvailNum: 0, AvailsExpected: 1}
+
+		expected := splice_info_section{TableId: 252, SectionSyntaxIdr: false, privateIdr: false,
+			SectionLen: 37, ProtocolVersion: 0, EncryptedPkt: false, EncryptAlgo: 0,
+			PtsAdjustment: 0, CwIdx: 0, Tier: 4095, SpliceCmdLen: 20, SpliceCmdType: 5, SpliceSchedule: splice_schedule{},
+			SpliceInsert: spliceInsert, TimeSignal: time_signal{}, PrivateCommand: private_command{}}
+
+		assertErr := testUtils.Assert_obj_equal(expected, parsed)
+		if assertErr != nil {
+			return nil, assertErr
+		} else {
+			return nil, nil
+		}
+	})
+
+	return tc
+}
+
 func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
@@ -154,6 +186,7 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg.AddTest(readPMTTest, []string{"avContainer"})
 	tmg.AddTest(readAdaptationFieldTest, []string{"avContainer"})
 	tmg.AddTest(readPesHeaderTest, []string{"avContainer"})
+	tmg.AddTest(readSCTE35SectionTest, []string{"avContainer"})
 
 	t.AddSuite("unitTest", tmg)
 }

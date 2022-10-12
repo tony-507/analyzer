@@ -48,7 +48,7 @@ func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) common.CmUnit {
 
 		_, hasPid := df.handlers[pid]
 		if !hasPid {
-			df.logger.Log(logs.INFO, "Receive pid %d at dataHandlerFactory", pid)
+			df.logger.Log(logs.INFO, "Receive pid ", pid, " at dataHandlerFactory")
 			df.handlers[pid] = 1
 		}
 	}

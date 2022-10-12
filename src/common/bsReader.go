@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/hex"
 	"strconv"
 )
 
@@ -64,6 +65,18 @@ func (br *BsReader) ReadHex(n int) string {
 		rv += " " + string(strconv.FormatInt(int64(br.ReadBits(8)), 16))
 	}
 	return rv[1:] // Remove leading space
+}
+
+func (br *BsReader) ReadChar(n int) string {
+	rv := ""
+	for i := 0; i < n; i++ {
+		rv += string(strconv.FormatInt(int64(br.ReadBits(8)), 16))
+	}
+	bs, err := hex.DecodeString(rv)
+	if err != nil {
+		panic(err)
+	}
+	return string(bs)
 }
 
 func (br *BsReader) ReadBits(n int) int {
