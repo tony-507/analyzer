@@ -9,12 +9,13 @@ import (
 
 // A basePlugin provides unified interface to perform different functionalities
 type basePlugin interface {
-	SetParameter(interface{})
-	SetResource(*resources.ResourceLoader)
-	DeliverUnit(common.CmUnit) (bool, error)
-	FetchUnit() common.CmUnit
-	SetCallback(*Worker)
-	StopPlugin()
+	SetParameter(interface{}) // Set up parameters of the plugin
+	SetResource(*resources.ResourceLoader) // Set resources of the plugin, which is loaded from the one of worker
+	DeliverUnit(common.CmUnit) (bool, error) // Worker sends a unit to the plugin
+	FetchUnit() common.CmUnit // Worker gets a unit from the plugin, and sends it to next plugin(s)
+	SetCallback(*Worker) // Set worker callback to allow worker to allocate work
+	StartSequence() // Start a plugin. This is called in main thread, so do not suspend in this function
+	EndSequence() // Stop a plugin
 }
 
 // A plugin serves as a graph node of operation graph
@@ -69,8 +70,12 @@ func (pn *Plugin) setParameterStr(m_parameter interface{}) {
 }
 
 // Plugin unified interfaces
-func (pn *Plugin) StopPlugin() {
-	pn.Work.StopPlugin()
+func (pn *Plugin) StartSequence() {
+	pn.Work.StartSequence()
+}
+
+func (pn *Plugin) EndSequence() {
+	pn.Work.EndSequence()
 }
 
 func (pn *Plugin) SetParameter(m_parameter interface{}) {

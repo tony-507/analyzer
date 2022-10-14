@@ -28,7 +28,11 @@ func (df *DataHandlerFactory) _setup() {
 	df.isRunning = true
 }
 
-func (df *DataHandlerFactory) StopPlugin() {
+func (df *DataHandlerFactory) StartSequence() {
+	df.logger.Log(logs.INFO, "Data handler factory is started")
+}
+
+func (df *DataHandlerFactory) EndSequence() {
 	df.logger.Log(logs.INFO, "Data handler factory is stopped")
 }
 

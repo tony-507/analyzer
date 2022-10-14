@@ -30,8 +30,14 @@ func (pg *DataHandlerPlugin) FetchUnit() common.CmUnit {
 	return pg.impl.FetchUnit()
 }
 
-func (pg *DataHandlerPlugin) StopPlugin() {
-	pg.impl.StopPlugin()
+func (pg *DataHandlerPlugin) StartSequence() {
+	pg.impl.StartSequence()
+}
+
+func (pg *DataHandlerPlugin) EndSequence() {
+	pg.impl.EndSequence()
+	eosUnit := common.MakeReqUnit(pg.name, common.EOS_REQUEST)
+	pg.callback.PostRequest(pg.name, eosUnit)
 }
 
 func (pg *DataHandlerPlugin) SetCallback(callback *Worker) {

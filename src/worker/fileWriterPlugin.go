@@ -30,8 +30,14 @@ func (pg *fileWriterPlugin) FetchUnit() common.CmUnit {
 	return pg.impl.FetchUnit()
 }
 
-func (pg *fileWriterPlugin) StopPlugin() {
-	pg.impl.StopPlugin()
+func (pg *fileWriterPlugin) StartSequence() {
+	pg.impl.StartSequence()
+}
+
+func (pg *fileWriterPlugin) EndSequence() {
+	pg.impl.EndSequence()
+	eosUnit := common.MakeReqUnit(pg.name, common.EOS_REQUEST)
+	pg.callback.PostRequest(pg.name, eosUnit)
 }
 
 func (pg *fileWriterPlugin) SetCallback(callback *Worker) {

@@ -5,7 +5,8 @@ showHelp() {
 }
 
 init() {
-	curDir=`dirname -- "$(readlink -f -- $0)"`
+# curDir=`dirname -- "$(readlink -f -- $0)"`
+	curDir=$(pwd)
 	echo "Current directory: $curDir"
 
 	echo "Begin CI/CD workflow"

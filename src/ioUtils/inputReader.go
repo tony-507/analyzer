@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 const (
@@ -31,13 +32,18 @@ func check(err error) {
 
 type FileReader struct {
 	fHandle     *os.File
+	logger	logs.Log
 	outputQueue []common.CmUnit
 	ext         INPUT_TYPE
 	outCnt      int
 	name        string
 }
 
-func (fr *FileReader) StopPlugin() {
+func (fr *FileReader) StartSequence() {
+	fr.logger.Log(logs.INFO, "File reader is started")
+}
+
+func (fr *FileReader) EndSequence() {
 	fr.fHandle.Close()
 }
 
@@ -80,10 +86,10 @@ func (fr *FileReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
 
 	if fr.DataAvailable() {
 		fr.outCnt += 1
-		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+		reqUnit := common.MakeReqUnit(fr.name, common.FETCH_REQUEST)
 		return reqUnit
 	} else {
-		reqUnit := common.MakeReqUnit(nil, common.EOS_REQUEST)
+		reqUnit := common.MakeReqUnit(fr.name, common.EOS_REQUEST)
 		return reqUnit
 	}
 }
@@ -122,5 +128,5 @@ func (fr *FileReader) DataAvailable() bool {
 
 // Wrapper to skip initialization line outside package
 func GetReader(name string) FileReader {
-	return FileReader{name: name}
+	return FileReader{name: name, logger: logs.CreateLogger("inputReader")}
 }

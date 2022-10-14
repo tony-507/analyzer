@@ -17,48 +17,19 @@ type Worker struct {
 
 // Main function for running a graph
 func (w *Worker) RunGraph() {
-	w._setup()
-	roots := w.graph.GetRoots()
-	dummyInput := common.IOUnit{Buf: 1, IoType: 0, Id: 0}
+	// Start all plugins with a for loop
+	for _, pg := range w.graph.nodes {
+		pg.Work.SetResource(&w.resourceLoader)
+		pg.SetParameter(pg.m_parameter)
+		pg.StartSequence()
+	}
+	// Suspend the main thread here to keep the pipeline working
+	// Break the loop once all plugins have stopped
 	for {
 		// Break the service loop if stop signal is set
 		if w.isRunning == 0 {
 			break
 		}
-		// Keep sending rubbish to root to kickstart the pipeline
-		for _, root := range roots {
-			root.DeliverUnit(dummyInput)
-		}
-	}
-	w._shutDown()
-}
-
-// Set up plugins in graph by breadth-first search
-func (w *Worker) _setup() {
-	nodes := w.graph.roots
-	for len(nodes) != 0 {
-		tmpList := make([]*Plugin, 0)
-		for _, node := range nodes {
-			node.Work.SetResource(&w.resourceLoader)
-			node.SetParameter(node.m_parameter)
-			tmpList = append(tmpList, node.children...)
-		}
-		nodes = append(nodes, tmpList...)
-		nodes = nodes[1:]
-	}
-}
-
-// Shut down plugins in graph by breadth-first search
-func (w *Worker) _shutDown() {
-	nodes := w.graph.roots
-	for len(nodes) != 0 {
-		tmpList := make([]*Plugin, 0)
-		for _, node := range nodes {
-			node.StopPlugin()
-			tmpList = append(tmpList, node.children...)
-		}
-		nodes = append(nodes, tmpList...)
-		nodes = nodes[1:]
 	}
 }
 
@@ -68,7 +39,7 @@ func (w *Worker) _searchNode(name string, curPos *Plugin) *Plugin {
 
 	if curPos == nil {
 		// Start searching
-		for _, root := range w.graph.roots {
+		for _, root := range w.graph.nodes {
 			rv = w._searchNode(name, root)
 			if rv != nil {
 				return rv
@@ -103,6 +74,7 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 	if !isReq {
 		panic("Error in worker request handling")
 	}
+
 	// Check which node this plugin corresponds to
 	node := w._searchNode(name, nil)
 
@@ -117,6 +89,10 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 		node.DeliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
+		// Trigger EndSequence of children nodes
+		for _, child := range node.children {
+			child.EndSequence()
+		}
 	case common.RESOURCE_REQUEST:
 		query, ok := unit.GetBuf().([]string)
 		if !ok || len(query) != 2 {
@@ -131,7 +107,7 @@ func (w *Worker) SetGraph(graph Graph) {
 	w.graph = graph
 	// Recursively set callback for nodes
 	graph.SetCallback(w, nil)
-	w.isRunning = len(w.graph.roots)
+	w.isRunning = len(w.graph.nodes)
 }
 
 func GetWorker() Worker {

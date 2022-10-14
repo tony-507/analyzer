@@ -1,7 +1,7 @@
 package worker
 
 type Graph struct {
-	roots []*Plugin
+	nodes []*Plugin
 }
 
 func (pg *Plugin) Traverse(i int) *Plugin {
@@ -18,17 +18,17 @@ func GetEmptyGraph() Graph {
 	return Graph{}
 }
 
-func (g *Graph) AddRoot(rootNode *Plugin) {
-	g.roots = append(g.roots, rootNode)
+func (g *Graph) AddNode(node *Plugin) {
+	g.nodes = append(g.nodes, node)
 }
 
 func (g *Graph) GetRoots() []*Plugin {
-	return g.roots
+	return g.nodes
 }
 
 func (g *Graph) SetCallback(w *Worker, curNode *Plugin) {
 	if curNode == nil {
-		for _, root := range g.roots {
+		for _, root := range g.nodes {
 			g.SetCallback(w, root)
 		}
 	} else {

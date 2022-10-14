@@ -83,7 +83,11 @@ func (m_writer *FileWriter) _setupMonitor() {
 	}
 }
 
-func (m_writer *FileWriter) StopPlugin() {
+func (m_writer *FileWriter) StartSequence() {
+	m_writer.logger.Log(logs.INFO, "File writer is started")
+}
+
+func (m_writer *FileWriter) EndSequence() {
 	for _, writer := range m_writer.writerMap {
 		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, 1, "")
 		writer <- stopUnit
@@ -236,6 +240,6 @@ func (m_writer *FileWriter) FetchUnit() common.CmUnit {
 }
 
 func GetFileWriter(name string) FileWriter {
-	rv := FileWriter{name: name}
+	rv := FileWriter{name: name, logger: logs.CreateLogger("fileWriter")}
 	return rv
 }

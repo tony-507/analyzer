@@ -216,7 +216,11 @@ func (m_pMux *TsDemuxer) _updateSrcClk(progNum int) *programSrcClk {
 	return m_pMux.progClkMap[progNum]
 }
 
-func (m_pMux *TsDemuxer) StopPlugin() {
+func (m_pMux *TsDemuxer) StartSequence() {
+	m_pMux.logger.Log(logs.INFO, "TSDemuxer has started")
+}
+
+func (m_pMux *TsDemuxer) EndSequence() {
 	m_pMux.logger.Log(logs.INFO, "Shutting down handlers")
 	unit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, common.STATUS_END_ROUTINE, "")
 	m_pMux.control <- unit
@@ -278,9 +282,10 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
 
 	// Start fetching after clock is ready
 	if len(m_pMux.demuxPipe.programs) != 0 {
-		reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 		return reqUnit
 	} else {
+		m_pMux.logger.Log(logs.INFO, "Demuxer returns null unit")
 		return nil
 	}
 }

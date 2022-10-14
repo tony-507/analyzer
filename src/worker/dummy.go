@@ -21,7 +21,9 @@ func (pg *DummyPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
 	// pg.impl.SetResource(resourceLoader)
 }
 
-func (dp *DummyPlugin) StopPlugin() {}
+func (dp *DummyPlugin) StartSequence() {}
+
+func (dp *DummyPlugin) EndSequence() {}
 
 func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {
 	buf, isInt := unit.GetBuf().(int)

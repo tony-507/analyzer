@@ -81,7 +81,7 @@ func workerRunGraphTest() testUtils.Testcase {
 
 	// Construct graph now
 	graph := GetEmptyGraph()
-	graph.AddRoot(&dummy1)
+	graph.AddNode(&dummy1)
 
 	AddPath(&dummy1, []*Plugin{&dummy2, &dummy3, &dummy4})
 	AddPath(&dummy2, []*Plugin{&dummy5})

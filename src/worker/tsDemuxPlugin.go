@@ -30,8 +30,14 @@ func (pg *tsDemuxPlugin) FetchUnit() common.CmUnit {
 	return pg.impl.FetchUnit()
 }
 
-func (pg *tsDemuxPlugin) StopPlugin() {
-	pg.impl.StopPlugin()
+func (pg *tsDemuxPlugin) StartSequence() {
+	pg.impl.StartSequence()
+}
+
+func (pg *tsDemuxPlugin) EndSequence() {
+	pg.impl.EndSequence()
+	eosUnit := common.MakeReqUnit(pg.name, common.EOS_REQUEST)
+	pg.callback.PostRequest(pg.name, eosUnit)
 }
 
 func (pg *tsDemuxPlugin) SetCallback(callback *Worker) {
