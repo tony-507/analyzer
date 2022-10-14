@@ -42,23 +42,6 @@ func (br *BsReader) AddData(r BsReader) {
 	br.rawBs = append(br.rawBs, r.GetRemainedBuffer()...)
 }
 
-func (br *BsReader) SetMarker() {
-	// Set up a marker at a bit position that can be returned later
-	br.markerPos = br.pos
-	br.markerOffset = br.offset
-}
-
-func (br *BsReader) GoToMarker() {
-	// Sanity check: If no marker set, panic
-	if br.markerPos == -1 {
-		panic("Marker is not set")
-	}
-	br.pos = br.markerPos
-	br.offset = br.markerOffset
-	br.markerPos = -1
-	br.markerOffset = -1
-}
-
 func (br *BsReader) ReadHex(n int) string {
 	rv := ""
 	for i := 0; i < n; i++ {
