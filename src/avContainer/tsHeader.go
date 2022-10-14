@@ -6,13 +6,13 @@ import (
 
 // Keep header data I want
 type TsHeader struct {
-	tei      bool // Transport error indicator
-	pusi     bool // For message support
-	priority bool // Transport priority
-	pid      int
-	tsc      int // Scrambling control
-	afc      int // Adaptation field control
-	cc       int // Continuity counter
+	Tei      bool // Transport error indicator
+	Pusi     bool // For message support
+	Priority bool // Transport priority
+	Pid      int
+	Tsc      int // Scrambling control
+	Afc      int // Adaptation field control
+	Cc       int // Continuity counter
 }
 
 func ReadTsHeader(r *common.BsReader) TsHeader {
@@ -26,5 +26,21 @@ func ReadTsHeader(r *common.BsReader) TsHeader {
 	tsc := (*r).ReadBits(2)
 	afc := (*r).ReadBits(2)
 	cc := (*r).ReadBits(4)
-	return TsHeader{tei, pusi, priority, pid, tsc, afc, cc}
+	return TsHeader{Tei: tei, Pusi: pusi, Priority: priority, Pid: pid, Tsc: tsc, Afc: afc, Cc: cc}
+}
+
+// TsHeader construction
+func ConstructTsHeader(pusi int, pid int, afc int, cc int) []byte {
+	w := common.GetBufferWriter(4)
+
+	w.WriteByte(0x47)
+	w.Write(0, 1)
+	w.Write(pusi, 1)
+	w.Write(0, 1)
+	w.Write(pid, 13)
+	w.Write(0, 2)
+	w.Write(afc, 2)
+	w.Write(cc, 4)
+
+	return w.GetBuf()
 }

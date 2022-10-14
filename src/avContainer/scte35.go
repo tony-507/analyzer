@@ -79,7 +79,7 @@ type break_duration struct {
 func SCTE35ReadyForParse(buf []byte, afc int) bool {
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
-		buf = buf[af.afLen:]
+		buf = buf[af.AfLen:]
 	}
 
 	r := common.GetBufferReader(buf)
@@ -99,7 +99,7 @@ func readSCTE35Section(buf []byte, afc int) splice_info_section {
 
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
-		buf = buf[af.afLen:]
+		buf = buf[af.AfLen:]
 	}
 
 	r := common.GetBufferReader(buf)

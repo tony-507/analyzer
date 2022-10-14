@@ -104,7 +104,7 @@ func readAdaptationFieldTest() testUtils.Testcase {
 			return nil, err
 		}
 
-		expected := AdaptationField{afLen: 8, pcr: 189051243, splice_point: -1, private_data: ""}
+		expected := AdaptationField{AfLen: 8, Pcr: 189051243, Splice_point: -1, Private_data: ""}
 		parsed := ParseAdaptationField(dummyAdaptationField)
 
 		err := testUtils.Assert_obj_equal(expected, parsed)

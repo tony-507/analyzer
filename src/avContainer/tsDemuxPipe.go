@@ -36,22 +36,22 @@ func (m_pMux *tsDemuxPipe) _setup() {
 // Handle incoming data from demuxer
 func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 	// If scrambled, throw away
-	if head.tsc != 0 {
+	if head.Tsc != 0 {
 		return
 	}
 
 	// Determine the type of the unit
-	pid := head.pid
+	pid := head.Pid
 	if pid == 0 {
 		// PAT
-		m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
+		m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 	} else if pid < 32 {
 		// Special pids
 	} else {
 		_, hasKey := m_pMux.content.ProgramMap[pid]
 		if hasKey {
 			// PMT
-			m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
+			m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 		} else {
 			// Others
 			progIdx := -1
@@ -74,14 +74,14 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
 				switch actualType {
 				case "video":
 					m_pMux._handleStreamData(buf, pid,
-						m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
+						m_pMux.programs[progIdx].ProgNum, head.Pusi, head.Afc,
 						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
 				case "audio":
 					m_pMux._handleStreamData(buf, pid,
-						m_pMux.programs[progIdx].ProgNum, head.pusi, head.afc,
+						m_pMux.programs[progIdx].ProgNum, head.Pusi, head.Afc,
 						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
 				case "data":
-					m_pMux._handlePsiData(buf, pid, head.pusi, pktCnt, head.afc)
+					m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 				default:
 					// Not sure, passthrough first
 				}
@@ -210,10 +210,10 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
-		if af.pcr >= 0 {
-			clk.updatePcrRecord(af.pcr, pktCnt)
+		if af.Pcr >= 0 {
+			clk.updatePcrRecord(af.Pcr, pktCnt)
 		}
-		buf = buf[af.afLen:]
+		buf = buf[af.AfLen:]
 	}
 
 	// Payload

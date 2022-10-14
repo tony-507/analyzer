@@ -59,6 +59,27 @@ func readPcrTest() testUtils.Testcase {
 	return tc
 }
 
+func bsWriterTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("bsWriterTest")
+
+	tc.Describe("Basic bit writing", func(input interface{}) (interface{}, error) {
+		writer := GetBufferWriter(3)
+
+		writer.writeBits(0x47, 8)
+		writer.writeBits(0, 1)
+		writer.writeBits(0, 1)
+		writer.writeBits(0, 1)
+		writer.writeBits(33, 13)
+
+		expected := []byte{0x47, 0x00, 0x21}
+		err := testUtils.Assert_obj_equal(expected, writer.GetBuf())
+
+		return nil, err
+	})
+
+	return tc
+}
+
 func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
@@ -66,6 +87,7 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 
 	// common
 	tmg.AddTest(readPcrTest, []string{"common"})
+	tmg.AddTest(bsWriterTest, []string{"common"})
 
 	t.AddSuite("unitTest", tmg)
 }
