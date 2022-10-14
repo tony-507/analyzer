@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 import (
 	"github.com/tony-507/analyzers/src/common"

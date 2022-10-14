@@ -1,14 +1,14 @@
 package worker
 
 import (
-	"github.com/tony-507/analyzers/src/avContainer"
+	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/resources"
 )
 
 type tsDemuxPlugin struct {
 	name     string
-	impl     avContainer.TsDemuxer
+	impl     tsdemux.TsDemuxer
 	callback *Worker
 }
 
@@ -40,6 +40,6 @@ func (pg *tsDemuxPlugin) SetCallback(callback *Worker) {
 
 func GetTsDemuxPlugin(name string) tsDemuxPlugin {
 	pg := tsDemuxPlugin{name: name}
-	pg.impl = avContainer.GetTsDemuxer(name)
+	pg.impl = tsdemux.GetTsDemuxer(name)
 	return pg
 }

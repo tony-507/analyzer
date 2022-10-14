@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 import (
 	"fmt"

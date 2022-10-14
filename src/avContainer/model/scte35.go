@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 var logger logs.Log
 
 // SCTE-35 2019a section 9.9
-type splice_info_section struct {
+type Splice_info_section struct {
 	TableId          int
 	SectionSyntaxIdr bool
-	privateIdr       bool
+	PrivateIdr       bool
 	SectionLen       int
 	ProtocolVersion  int
 	EncryptedPkt     bool
@@ -23,23 +23,23 @@ type splice_info_section struct {
 	Tier             int
 	SpliceCmdLen     int
 	SpliceCmdType    int
-	SpliceSchedule   splice_schedule
-	SpliceInsert     splice_event
-	TimeSignal       time_signal
-	PrivateCommand   private_command
+	SpliceSchedule   Splice_schedule
+	SpliceInsert     Splice_event
+	TimeSignal       Time_signal
+	PrivateCommand   Private_command
 	Crc32            int
 }
 
 // SCTE-35 2019a section 9.7.1
-type splice_null struct{}
+type Splice_null struct{}
 
 // SCTE-35 2019a section 9.7.2
-type splice_schedule struct {
+type Splice_schedule struct {
 	SpliceCnt    int
-	SpliceEvents []splice_event
+	SpliceEvents []Splice_event
 }
 
-type splice_event struct {
+type Splice_event struct {
 	EventId             int
 	EventCancelIdr      bool
 	OutOfNetworkIdr     bool
@@ -47,30 +47,30 @@ type splice_event struct {
 	DurationFlag        bool
 	SpliceImmediateFlag bool
 	SpliceTime          int
-	Components          []splice_component
-	BreakDuration       break_duration
+	Components          []Splice_component
+	BreakDuration       Break_duration
 	UniqueProgramId     int
 	AvailNum            int
 	AvailsExpected      int
 }
 
-type splice_component struct {
+type Splice_component struct {
 	ComponentTag int
 	SpliceTime   int
 }
 
 // SCTE-35 2019a section 9.7.4
-type time_signal struct {
+type Time_signal struct {
 	SpliceTime int
 }
 
 // SCTE-35 2019a section 9.7.6
-type private_command struct {
+type Private_command struct {
 	Identifier   string
 	PrivateBytes string
 }
 
-type break_duration struct {
+type Break_duration struct {
 	AutoReturn bool
 	Duration   int
 }
@@ -94,7 +94,7 @@ func SCTE35ReadyForParse(buf []byte, afc int) bool {
 	return r.GetSize() <= (sectionLen + 4 + pFieldLen)
 }
 
-func readSCTE35Section(buf []byte, afc int) splice_info_section {
+func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 	logger = logs.CreateLogger("SCTE35Parser")
 
 	if afc > 1 {
@@ -124,10 +124,10 @@ func readSCTE35Section(buf []byte, afc int) splice_info_section {
 	spliceCmdLen := r.ReadBits(12)
 	spliceCmdType := r.ReadBits(8)
 
-	spliceSchedule := splice_schedule{}
-	spliceInsert := splice_event{}
-	timeSignal := time_signal{}
-	privateCmd := private_command{}
+	spliceSchedule := Splice_schedule{}
+	spliceInsert := Splice_event{}
+	timeSignal := Time_signal{}
+	privateCmd := Private_command{}
 
 	switch spliceCmdType {
 	case 0x00:
@@ -158,25 +158,25 @@ func readSCTE35Section(buf []byte, afc int) splice_info_section {
 		panic(msg)
 	}
 
-	return splice_info_section{TableId: tableId, SectionSyntaxIdr: sectionSyntaxIdr, privateIdr: privateIdr,
+	return Splice_info_section{TableId: tableId, SectionSyntaxIdr: sectionSyntaxIdr, PrivateIdr: privateIdr,
 		SectionLen: sectionLen, ProtocolVersion: protocolVersion, EncryptedPkt: encryptedPkt, EncryptAlgo: encryptedAlgo,
 		PtsAdjustment: ptsAdjustment, CwIdx: cwIdx, Tier: tier, SpliceCmdLen: spliceCmdLen, SpliceCmdType: spliceCmdType, SpliceSchedule: spliceSchedule,
 		SpliceInsert: spliceInsert, TimeSignal: timeSignal, PrivateCommand: privateCmd}
 }
 
-func readSpliceSchedule(r *common.BsReader) splice_schedule {
+func readSpliceSchedule(r *common.BsReader) Splice_schedule {
 	spliceCnt := (*r).ReadBits(8)
-	spliceEvents := []splice_event{}
+	spliceEvents := []Splice_event{}
 
 	for i := 0; i < spliceCnt; i++ {
 		event := readSpliceEvent(r, false)
 		spliceEvents = append(spliceEvents, event)
 	}
 
-	return splice_schedule{SpliceCnt: spliceCnt, SpliceEvents: spliceEvents}
+	return Splice_schedule{SpliceCnt: spliceCnt, SpliceEvents: spliceEvents}
 }
 
-func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) splice_event {
+func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) Splice_event {
 	spliceEventId := (*r).ReadBits(32)
 	spliceEventCancelIdr := (*r).ReadBits(1) != 0
 
@@ -191,7 +191,7 @@ func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) splice_event {
 		(*r).ReadBits(4)
 
 		spliceTime := -1
-		components := []splice_component{}
+		components := []Splice_component{}
 
 		bOnlyTime := false
 		if isSpliceInsert {
@@ -210,11 +210,11 @@ func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) splice_event {
 				if !isSpliceInsert || (isSpliceInsert && !spliceImmediateFlag) {
 					sTime = readSpliceTime(r, isSpliceInsert)
 				}
-				components = append(components, splice_component{ComponentTag: tag, SpliceTime: sTime})
+				components = append(components, Splice_component{ComponentTag: tag, SpliceTime: sTime})
 			}
 		}
 
-		breakDuration := break_duration{}
+		breakDuration := Break_duration{}
 		if durationFlag {
 			breakDuration = readBreakDuration(r)
 		}
@@ -223,24 +223,24 @@ func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) splice_event {
 		availNum := (*r).ReadBits(8)
 		availsExpected := (*r).ReadBits(8)
 
-		return splice_event{EventId: spliceEventId, EventCancelIdr: spliceEventCancelIdr, OutOfNetworkIdr: outOfNetworkIdr,
+		return Splice_event{EventId: spliceEventId, EventCancelIdr: spliceEventCancelIdr, OutOfNetworkIdr: outOfNetworkIdr,
 			ProgramSpliceFlag: programSpliceFlag, DurationFlag: durationFlag, SpliceImmediateFlag: spliceImmediateFlag,
 			SpliceTime: spliceTime, Components: components, BreakDuration: breakDuration, UniqueProgramId: uniqueProgramId,
 			AvailNum: availNum, AvailsExpected: availsExpected}
 	} else {
-		return splice_event{EventId: spliceEventId, EventCancelIdr: spliceEventCancelIdr}
+		return Splice_event{EventId: spliceEventId, EventCancelIdr: spliceEventCancelIdr}
 	}
 }
 
-func readTimeSignal(r *common.BsReader) time_signal {
+func readTimeSignal(r *common.BsReader) Time_signal {
 	spliceTime := readSpliceTime(r, true)
-	return time_signal{SpliceTime: spliceTime}
+	return Time_signal{SpliceTime: spliceTime}
 }
 
-func readPrivateCommand(r *common.BsReader) private_command {
+func readPrivateCommand(r *common.BsReader) Private_command {
 	identifier := (*r).ReadChar(32)
 
-	return private_command{Identifier: identifier, PrivateBytes: (*r).ReadHex(len((*r).GetRemainedBuffer()))}
+	return Private_command{Identifier: identifier, PrivateBytes: (*r).ReadHex(len((*r).GetRemainedBuffer()))}
 }
 
 func readSpliceTime(r *common.BsReader, isSpliceTime bool) int {
@@ -258,9 +258,9 @@ func readSpliceTime(r *common.BsReader, isSpliceTime bool) int {
 	return -1
 }
 
-func readBreakDuration(r *common.BsReader) break_duration {
+func readBreakDuration(r *common.BsReader) Break_duration {
 	autoReturn := (*r).ReadBits(1) != 0
 	(*r).ReadBits(6)
 	duration := (*r).ReadBits(33)
-	return break_duration{AutoReturn: autoReturn, Duration: duration}
+	return Break_duration{AutoReturn: autoReturn, Duration: duration}
 }

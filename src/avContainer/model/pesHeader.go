@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 import (
 	"errors"
@@ -20,6 +20,18 @@ type PESHeader struct {
 	streamId       int
 	sectionLen     int
 	optionalHeader OptionalHeader
+}
+
+func (h *PESHeader) GetSectionLength() int {
+	return h.sectionLen
+}
+
+func (h *PESHeader) GetPts() int {
+	return h.optionalHeader.pts
+}
+
+func (h *PESHeader) GetDts() int {
+	return h.optionalHeader.dts
 }
 
 // Parse optional header and return its length
@@ -104,7 +116,7 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 	r.ReadBits(remained * 8)
 	remained = 0
 
-	return OptionalHeader{scrambled, dataAligned, headerLen + 3, pts, dts}, nil
+	return OptionalHeader{scrambled: scrambled, dataAligned: dataAligned, length: headerLen + 3, pts: pts, dts: dts}, nil
 }
 
 func ParsePESHeader(buf []byte) (PESHeader, error) {
@@ -136,4 +148,12 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 	}
 
 	return PESHeader{streamId, pesLen, optionalHeader}, nil
+}
+
+func CreatePESHeader(streamId int, pesLen int, optionalHeader OptionalHeader) PESHeader {
+	return PESHeader{streamId: streamId, sectionLen: pesLen, optionalHeader: optionalHeader}
+}
+
+func CreateOptionalPESHeader(length int, pts int, dts int) OptionalHeader {
+	return OptionalHeader{scrambled: false, dataAligned: true, length: length, pts: pts, dts: dts}
 }

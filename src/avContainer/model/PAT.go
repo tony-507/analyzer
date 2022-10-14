@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 // Parsing and writing of PAT
 // Known issue:
@@ -17,7 +17,7 @@ type PAT struct {
 	Version    int
 	curNextIdr bool
 	ProgramMap map[int]int
-	crc32      int
+	Crc32      int
 }
 
 func PATReadyForParse(buf []byte) bool {
@@ -89,5 +89,9 @@ func ParsePAT(buf []byte, cnt int) (PAT, error) {
 		panic("Something wrong with section length")
 	}
 	crc32 := r.ReadBits(4)
-	return PAT{PktCnt: cnt, tableId: tableId, tableIdExt: tableIdExt, Version: Version, curNextIdr: curNextIdr != 0, ProgramMap: ProgramMap, crc32: crc32}, nil
+	return PAT{PktCnt: cnt, tableId: tableId, tableIdExt: tableIdExt, Version: Version, curNextIdr: curNextIdr != 0, ProgramMap: ProgramMap, Crc32: crc32}, nil
+}
+
+func CreatePAT(tableId int, tableIdExt int, version int, curNextIdr bool, programMap map[int]int, crc32 int) PAT {
+	return PAT{PktCnt: 0, tableId: tableId, tableIdExt: tableIdExt, Version: version, curNextIdr: curNextIdr, ProgramMap: programMap, Crc32: crc32}
 }

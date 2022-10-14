@@ -1,4 +1,4 @@
-package avContainer
+package tsdemux
 
 type programSrcClk struct {
 	pcr       []int       // PCR value from input stream

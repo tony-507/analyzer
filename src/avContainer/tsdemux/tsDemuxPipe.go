@@ -1,10 +1,11 @@
-package avContainer
+package tsdemux
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 )
@@ -19,8 +20,8 @@ type tsDemuxPipe struct {
 	demuxedBuffers map[int][]byte // A map mapping pid to bitstreams
 	demuxStartCnt  map[int]int    // A map mapping pid to start packet index of demuxedBuffers[pid]
 	callback       *TsDemuxer
-	content        PAT
-	programs       []PMT
+	content        model.PAT
+	programs       []model.PMT
 	isRunning      bool
 }
 
@@ -28,13 +29,13 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.logger = logs.CreateLogger("tsDemuxPipe")
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
-	m_pMux.content = PAT{Version: -1}
-	m_pMux.programs = make([]PMT, 0)
+	m_pMux.content = model.PAT{Version: -1}
+	m_pMux.programs = make([]model.PMT, 0)
 	m_pMux.isRunning = false
 }
 
 // Handle incoming data from demuxer
-func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head TsHeader, pktCnt int) {
+func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head model.TsHeader, pktCnt int) {
 	// If scrambled, throw away
 	if head.Tsc != 0 {
 		return
@@ -111,7 +112,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 			case "PAT":
 				if m_pMux.content.Version == -1 {
 					m_pMux.demuxedBuffers[0] = buf
-					if PATReadyForParse(buf) {
+					if model.PATReadyForParse(buf) {
 						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 					}
 				} else if m_pMux.content.Version != newVersion {
@@ -136,7 +137,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					m_pMux.demuxedBuffers[pid] = buf
 					m_pMux.demuxStartCnt[pid] = pktCnt
 
-					if PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
+					if model.PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
 						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 					}
 				}
@@ -144,7 +145,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 				m_pMux.demuxedBuffers[pid] = buf
 				m_pMux.demuxStartCnt[pid] = pktCnt
 
-				if SCTE35ReadyForParse(buf, afc) {
+				if model.SCTE35ReadyForParse(buf, afc) {
 					m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 				}
 			default:
@@ -166,14 +167,14 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 
 	switch pktType {
 	case "PAT":
-		content, err := ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
+		content, err := model.ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
 		if err != nil {
 			m_pMux._postEvent(pid, pktCnt, err)
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
 	case "PMT":
-		pmt := ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
+		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 
 		// Information about parsed PMT
 		statMsg := fmt.Sprintf("At pkt#%d\n", pktCnt)
@@ -186,7 +187,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		m_pMux.programs = append(m_pMux.programs, pmt)
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")
 	case "SCTE-35 DPI data":
-		section := readSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
+		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
 		outBuf, _ = json.MarshalIndent(section, "\t", "\t")
 	default:
 		panic("Unknown pid")
@@ -209,7 +210,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 	clk := m_pMux.callback._updateSrcClk(progNum)
 
 	if afc > 1 {
-		af := ParseAdaptationField(buf)
+		af := model.ParseAdaptationField(buf)
 		if af.Pcr >= 0 {
 			clk.updatePcrRecord(af.Pcr, pktCnt)
 		}
@@ -219,12 +220,12 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 	// Payload
 	if pusi {
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
-			pesHeader, err := ParsePESHeader(buf)
+			pesHeader, err := model.ParsePESHeader(buf)
 			if err != nil {
 				m_pMux._postEvent(pid, m_pMux.demuxStartCnt[pid], err)
 			}
 
-			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.sectionLen, pesHeader.optionalHeader.pts, pesHeader.optionalHeader.dts, m_pMux.demuxedBuffers[pid], streamType)
+			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.GetSectionLength(), pesHeader.GetPts(), pesHeader.GetDts(), m_pMux.demuxedBuffers[pid], streamType)
 			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
 			m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
 

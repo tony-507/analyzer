@@ -1,48 +1,29 @@
 package avContainer
 
 import (
-	"errors"
-
+	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/test/testUtils"
 )
 
 func readPATTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("readPatTest")
 
-	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
+	tc.Describe("Basic PAT parsing", func(input interface{}) (interface{}, error) {
 		dummyPAT := []byte{0x00, 0x00, 0xB0, 0x0D, 0x11, 0x11, 0xC1,
 			0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
-		return dummyPAT, nil
-	})
 
-	tc.Describe("Parse PAT", func(input interface{}) (interface{}, error) {
-		dummyPAT, isBts := input.([]byte)
-		if !isBts {
-			err := errors.New("Input not passed to next step")
-			return nil, err
-		}
-		PAT, parsingErr := ParsePAT(dummyPAT, 0)
+		PAT, parsingErr := model.ParsePAT(dummyPAT, 0)
 		if parsingErr != nil {
 			return nil, parsingErr
 		}
 
-		var err error
-		err = testUtils.Assert_equal(PAT.tableId, 0)
-		if err != nil {
-			return nil, err
-		}
+		programMap := make(map[int]int, 0)
+		programMap[258] = 10
+		expected := model.CreatePAT(0, 4369, 0, true, programMap, 10)
 
-		err = testUtils.Assert_equal(PAT.tableIdExt, 4369)
-		if err != nil {
-			return nil, err
-		}
+		err := testUtils.Assert_obj_equal(expected, PAT)
 
-		err = testUtils.Assert_equal(PAT.Version, 0)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, nil
+		return nil, err
 	})
 
 	return tc
@@ -51,32 +32,23 @@ func readPATTest() testUtils.Testcase {
 func readPMTTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("readPmtTest")
 
-	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
+	tc.Describe("Basic PMT parsing", func(input interface{}) (interface{}, error) {
 		dummyPMT := []byte{0x00, 0x02, 0xb0, 0x1d, 0x00, 0x0a, 0xc1,
 			0x00, 0x00, 0xe0, 0x20, 0xf0, 0x00, 0x02, 0xe0, 0x20,
 			0xf0, 0x00, 0x04, 0xe0, 0x21, 0xf0, 0x06, 0x0a, 0x04,
 			0x65, 0x6e, 0x67, 0x00, 0x75, 0xff, 0x59, 0x3a}
-		return dummyPMT, nil
-	})
-
-	tc.Describe("Parse PMT", func(input interface{}) (interface{}, error) {
-		dummyPMT, isBts := input.([]byte)
-		if !isBts {
-			err := errors.New("Input not passed to next step")
-			return nil, err
-		}
 
 		// Create expected PMT struct
-		expectedProgDesc := make([]Descriptor, 0)
+		expectedProgDesc := make([]model.Descriptor, 0)
 
-		videoStream := DataStream{StreamPid: 32, StreamType: 2, StreamDesc: make([]Descriptor, 0)}
-		audioStream := DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []Descriptor{{Tag: 10, Content: "65 6e 67 0"}}}
-		streams := []DataStream{videoStream, audioStream}
+		videoStream := model.DataStream{StreamPid: 32, StreamType: 2, StreamDesc: make([]model.Descriptor, 0)}
+		audioStream := model.DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []model.Descriptor{{Tag: 10, Content: "65 6e 67 0"}}}
+		streams := []model.DataStream{videoStream, audioStream}
 
-		expectedPmt := PMT{PktCnt: 1, PmtPid: 258, tableId: 2, ProgNum: 10, Version: 0, curNextIdr: true, ProgDesc: expectedProgDesc, Streams: streams, crc32: -1}
+		expectedPmt := model.CreatePMT(258, 2, 10, 0, true, expectedProgDesc, streams, -1)
 
 		// Parse
-		parsed := ParsePMT(dummyPMT, 258, 1)
+		parsed := model.ParsePMT(dummyPMT, 258, 0)
 
 		err := testUtils.Assert_obj_equal(expectedPmt, parsed)
 		if err != nil {
@@ -94,18 +66,9 @@ func readAdaptationFieldTest() testUtils.Testcase {
 
 	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
 		dummyAdaptationField := []byte{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3}
-		return dummyAdaptationField, nil
-	})
 
-	tc.Describe("Parse adaptation field", func(input interface{}) (interface{}, error) {
-		dummyAdaptationField, isBts := input.([]byte)
-		if !isBts {
-			err := errors.New("Input not passed to next step")
-			return nil, err
-		}
-
-		expected := AdaptationField{AfLen: 8, Pcr: 189051243, Splice_point: -1, Private_data: ""}
-		parsed := ParseAdaptationField(dummyAdaptationField)
+		expected := model.AdaptationField{AfLen: 8, Pcr: 189051243, Splice_point: -1, Private_data: ""}
+		parsed := model.ParseAdaptationField(dummyAdaptationField)
 
 		err := testUtils.Assert_obj_equal(expected, parsed)
 		if err != nil {
@@ -126,12 +89,11 @@ func readPesHeaderTest() testUtils.Testcase {
 			0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb,
 			0x11, 0x00, 0x2b, 0x31, 0x9b}
 
-		parsed, err := ParsePESHeader(dummyPesHeader)
+		parsed, err := model.ParsePESHeader(dummyPesHeader)
 		if err != nil {
 			return nil, err
 		}
-		expected := PESHeader{streamId: 234, sectionLen: 32165, optionalHeader: OptionalHeader{scrambled: false,
-			dataAligned: true, length: 13, pts: 705277, dts: 694477}}
+		expected := model.CreatePESHeader(234, 32165, model.CreateOptionalPESHeader(13, 705277, 694477))
 
 		assertErr := testUtils.Assert_obj_equal(expected, parsed)
 		if assertErr != nil {
@@ -154,16 +116,16 @@ func readSCTE35SectionTest() testUtils.Testcase {
 			0x00, 0x14, 0x99, 0x70, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
 			0xbb, 0x9e, 0x64, 0x39}
 
-		parsed := readSCTE35Section(dummySection, 1)
+		parsed := model.ReadSCTE35Section(dummySection, 1)
 
-		spliceInsert := splice_event{EventId: 2, EventCancelIdr: false, OutOfNetworkIdr: true, ProgramSpliceFlag: true,
-			DurationFlag: true, SpliceImmediateFlag: false, SpliceTime: 3059760, Components: []splice_component{}, BreakDuration: break_duration{AutoReturn: true, Duration: 1350000},
+		spliceInsert := model.Splice_event{EventId: 2, EventCancelIdr: false, OutOfNetworkIdr: true, ProgramSpliceFlag: true,
+			DurationFlag: true, SpliceImmediateFlag: false, SpliceTime: 3059760, Components: []model.Splice_component{}, BreakDuration: model.Break_duration{AutoReturn: true, Duration: 1350000},
 			UniqueProgramId: 1, AvailNum: 0, AvailsExpected: 1}
 
-		expected := splice_info_section{TableId: 252, SectionSyntaxIdr: false, privateIdr: false,
+		expected := model.Splice_info_section{TableId: 252, SectionSyntaxIdr: false, PrivateIdr: false,
 			SectionLen: 37, ProtocolVersion: 0, EncryptedPkt: false, EncryptAlgo: 0,
-			PtsAdjustment: 0, CwIdx: 0, Tier: 4095, SpliceCmdLen: 20, SpliceCmdType: 5, SpliceSchedule: splice_schedule{},
-			SpliceInsert: spliceInsert, TimeSignal: time_signal{}, PrivateCommand: private_command{}}
+			PtsAdjustment: 0, CwIdx: 0, Tier: 4095, SpliceCmdLen: 20, SpliceCmdType: 5, SpliceSchedule: model.Splice_schedule{},
+			SpliceInsert: spliceInsert, TimeSignal: model.Time_signal{}, PrivateCommand: model.Private_command{}}
 
 		assertErr := testUtils.Assert_obj_equal(expected, parsed)
 		if assertErr != nil {

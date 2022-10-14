@@ -4,18 +4,20 @@ This module helps demuxing a transport stream. It accepts TS packet one by one a
 
 ## Features
 
-This module aims to support the following features.
+This module performs:
 
-* Parsing of TS header and adaptation field
-* Parsing of different PSIs and PES header
-* [WIP] Calculation of PCR on stream PES
-* [WIP] Upon the arrival of updated PSI information, the parsing references to the new information if we are parsing packets later than that PSI
+* Demultiplexing of TS to get the data type of each elementary stream
+* PCR interpolation on TS packets
 
 ## Technical Detail
 
-This module employs the following desgin.
+This module consists of three parts: tsdemux, tsmux and model.
 
-### Architectural Design
+### model
+
+This directory contains I/O utilities to convert between bitstreams and readable data.
+
+### tsdemux
 
 The demuxer is composed of several components: tsDemuxPipe, demuxMonitor, demuxController. They can communicate with each other internally. This implementation allows separation of concerns and makes debugging and development easier.
 

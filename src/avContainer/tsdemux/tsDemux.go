@@ -1,10 +1,11 @@
-package avContainer
+package tsdemux
 
 import (
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
@@ -269,7 +270,7 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
 	// Perform demuxing on the received TS packet
 	inBuf, _ := inUnit.GetBuf().([]byte)
 	r := common.GetBufferReader(inBuf)
-	tsHeader := ReadTsHeader(&r)
+	tsHeader := model.ReadTsHeader(&r)
 
 	m_pMux.demuxPipe.handleUnit(r.GetRemainedBuffer(), tsHeader, m_pMux.pktCnt)
 

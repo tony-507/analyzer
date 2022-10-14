@@ -1,4 +1,4 @@
-package avContainer
+package model
 
 import (
 	"github.com/tony-507/analyzers/src/common"
@@ -134,4 +134,8 @@ func _readDescriptor(r *common.BsReader, l *int) Descriptor {
 	Content := (*r).ReadHex(descLen)
 	*l -= descLen + 2
 	return Descriptor{Tag, Content}
+}
+
+func CreatePMT(PmtPid int, tableId int, progNum int, version int, curNextIdr bool, progDesc []Descriptor, streams []DataStream, crc32 int) PMT {
+	return PMT{PktCnt: 0, PmtPid: PmtPid, tableId: tableId, ProgNum: progNum, Version: version, curNextIdr: curNextIdr, ProgDesc: progDesc, Streams: streams, crc32: -1}
 }
