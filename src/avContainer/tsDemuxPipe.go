@@ -135,6 +135,10 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 				} else {
 					m_pMux.demuxedBuffers[pid] = buf
 					m_pMux.demuxStartCnt[pid] = pktCnt
+
+					if PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
+						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
+					}
 				}
 			case "SCTE-35 DPI data":
 				m_pMux.demuxedBuffers[pid] = buf

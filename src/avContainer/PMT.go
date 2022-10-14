@@ -27,19 +27,21 @@ type PMT struct {
 	crc32      int
 }
 
-func PMTReadyForParse(r *common.BsReader) bool {
+func PMTReadyForParse(buf []byte) bool {
 	// Peek the length of the table and compare with current buffer size
-	(*r).SetMarker()
-	pFieldLen := (*r).ReadBits(8)
-	pktLen := pFieldLen + 1
+	r := common.GetBufferReader(buf)
+	pFieldLen := r.ReadBits(8)
 	// First check here to see if we can safely get the section length
-	if pktLen > 180 {
+	if len(r.GetRemainedBuffer()) < 2 {
 		return false
 	}
-	(*r).ReadBits(pFieldLen*8 + 8)
-	pktLen += (*r).ReadBits(10)
-	(*r).GoToMarker()
-	return pktLen <= (*r).GetSize()
+	r.ReadBits(pFieldLen * 8)
+	r.ReadBits(6)
+
+	pmtLen := pFieldLen + 3
+	pmtLen += r.ReadBits(10)
+
+	return pmtLen <= r.GetSize()
 }
 
 func ParsePMT(buf []byte, PmtPid int, cnt int) PMT {
