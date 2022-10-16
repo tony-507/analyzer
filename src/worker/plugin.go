@@ -2,6 +2,7 @@ package worker
 
 import (
 	"strings"
+	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/resources"
@@ -51,10 +52,15 @@ func GetPluginByName(inputName string) Plugin {
 		work := GetDataHandlerPlugin(inputName)
 		rv = initPlugin(&work, inputName, false)
 	case "Dummy":
-		work := GetDummyPlugin(inputName)
+		isRoot := 1
+		if splitName[1] == "root" {
+			isRoot = 0
+		}
+		work := GetDummyPlugin(inputName, isRoot)
 		rv = initPlugin(&work, inputName, false)
 	default:
-		panic("Unknown plugin name received")
+		msg := fmt.Sprintf("Unknown plugin name: %s", inputName)
+		panic(msg)
 	}
 	return rv
 }

@@ -105,6 +105,7 @@ func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
 	fmt.Printf("Running %s\n", pair)
 
 	// Dummy input for initialization at first step
+	t.curStep = test.TestSteps[0].stepName
 	rv, err := test.TestSteps[0].stepFunc(nil)
 	if err != nil {
 		t.errMsg = err.Error()

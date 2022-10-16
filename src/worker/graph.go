@@ -4,26 +4,12 @@ type Graph struct {
 	nodes []*Plugin
 }
 
-func (pg *Plugin) Traverse(i int) *Plugin {
-	// Traverse to i-th node
-	return pg.children[i]
-}
-
-func (pg *Plugin) Back(i int) *Plugin {
-	// Traverse to i-th node
-	return pg.parent[i]
-}
-
 func GetEmptyGraph() Graph {
 	return Graph{}
 }
 
 func (g *Graph) AddNode(node *Plugin) {
 	g.nodes = append(g.nodes, node)
-}
-
-func (g *Graph) GetRoots() []*Plugin {
-	return g.nodes
 }
 
 func (g *Graph) SetCallback(w *Worker, curNode *Plugin) {
