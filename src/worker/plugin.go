@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/resources"
@@ -10,13 +10,13 @@ import (
 
 // A basePlugin provides unified interface to perform different functionalities
 type basePlugin interface {
-	SetParameter(interface{}) // Set up parameters of the plugin
-	SetResource(*resources.ResourceLoader) // Set resources of the plugin, which is loaded from the one of worker
+	SetParameter(interface{})                // Set up parameters of the plugin
+	SetResource(*resources.ResourceLoader)   // Set resources of the plugin, which is loaded from the one of worker
 	DeliverUnit(common.CmUnit) (bool, error) // Worker sends a unit to the plugin
-	FetchUnit() common.CmUnit // Worker gets a unit from the plugin, and sends it to next plugin(s)
-	SetCallback(*Worker) // Set worker callback to allow worker to allocate work
-	StartSequence() // Start a plugin. This is called in main thread, so do not suspend in this function
-	EndSequence() // Stop a plugin
+	FetchUnit() common.CmUnit                // Worker gets a unit from the plugin, and sends it to next plugin(s)
+	SetCallback(*Worker)                     // Set worker callback to allow worker to allocate work
+	StartSequence()                          // Start a plugin. This is called in main thread, so do not suspend in this function
+	EndSequence()                            // Stop a plugin
 }
 
 // A plugin serves as a graph node of operation graph

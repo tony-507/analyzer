@@ -11,6 +11,8 @@ init() {
 
 	echo "Begin CI/CD workflow"
 	rm -rf build
+
+	mkdir -p build
 	cd build
 }
 

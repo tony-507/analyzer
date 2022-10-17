@@ -5,43 +5,36 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/resources"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 // This file stores some dummy struct for testing
 type DummyPlugin struct {
 	logger   logs.Log
 	inCnt    int
-	inEdge   int // Number of input edges
 	fetchCnt int
 	callback *Worker
 	name     string
 	role     int // 0 represents a root, 1 represents non-root
 }
 
-func (dp *DummyPlugin) SetParameter(m_parameter interface{}) {
-	inEdgeCnt, _ := m_parameter.(int)
-	dp.inEdge = inEdgeCnt
-}
+func (dp *DummyPlugin) SetParameter(m_parameter interface{}) {}
 
 func (pg *DummyPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
 	// pg.impl.SetResource(resourceLoader)
 }
 
-func (dp *DummyPlugin) StartSequence() {	
-	if dp.role == 0 {	
+func (dp *DummyPlugin) StartSequence() {
+	if dp.role == 0 {
 		unit := common.IOUnit{Buf: 20, IoType: 0, Id: 0}
 		go dp.DeliverUnit(unit)
 	}
 }
 
 func (dp *DummyPlugin) EndSequence() {
-	dp.inEdge -= 1
-	if dp.inEdge == 0 {
-		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-		dp.callback.PostRequest(dp.name, eosUnit)
-	}
+	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
+	dp.callback.PostRequest(dp.name, eosUnit)
 }
 
 func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {

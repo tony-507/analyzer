@@ -107,7 +107,12 @@ func (w *Worker) SetGraph(graph Graph) {
 	w.graph = graph
 	// Recursively set callback for nodes
 	graph.SetCallback(w, nil)
-	w.isRunning = len(w.graph.nodes)
+
+	isRunning := 0
+	for _, node := range w.graph.nodes {
+		isRunning += len(node.children)
+	}
+	w.isRunning = isRunning
 }
 
 func GetWorker() Worker {
