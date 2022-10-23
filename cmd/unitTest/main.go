@@ -12,7 +12,6 @@ func main() {
 	logs.SetProperty("level", "info")
 	logs.SetProperty("format", "%t [%n] [%l] %s")
 
-	fmt.Println("==========          Unit Test For analyzers          ==========")
 	t := test.ConstructTestFlow()
 	res := t.RunTests()
 	if !res {

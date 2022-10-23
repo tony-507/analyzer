@@ -106,7 +106,7 @@ func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
 	defer t.runNextIfPanic()
 	res := true
 
-	fmt.Printf("Running %s\n", pair)
+	fmt.Printf("\tRunning %s\n", pair)
 
 	// Dummy input for initialization at first step
 	t.curStep = test.TestSteps[0].stepName
@@ -168,13 +168,13 @@ func (t *Tester) RunTests() bool {
 			}
 
 			runTotal += 1
-			fmt.Println(outMsg)
+			fmt.Printf("\t%s\n", outMsg)
 
 			t.errMsg = ""
 			t.curStep = ""
 		}
 		statMsg := fmt.Sprintf("[Suite %s] Executed: %d, passed: %d\n", suite.suiteName, runTotal, passTotal)
-		fmt.Println(statMsg)
+		fmt.Printf("\t%s\n", statMsg)
 	}
 
 	return isPass

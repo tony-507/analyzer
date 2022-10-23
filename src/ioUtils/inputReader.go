@@ -34,6 +34,7 @@ type FileReader struct {
 	fHandle     *os.File
 	logger	logs.Log
 	outputQueue []common.CmUnit
+	fname       string
 	ext         INPUT_TYPE
 	outCnt      int
 	name        string
@@ -43,6 +44,11 @@ type FileReader struct {
 
 func (fr *FileReader) StartSequence() {
 	fr.logger.Log(logs.INFO, "File reader is started")
+
+	// Open the file and start reading
+	fHandle, err := os.Open(fr.fname)
+	check(err)
+	fr.fHandle = fHandle
 }
 
 func (fr *FileReader) EndSequence() {
@@ -65,18 +71,14 @@ func (fr *FileReader) SetParameter(m_parameter interface{}) {
 	} else {
 		fr.maxInCnt = -1
 	}
-	fr._setup(param.Fname)
+	fr.fname = param.Fname
+	fr._setup()
 }
 
-func (fr *FileReader) _setup(fname string) {
+func (fr *FileReader) _setup() {
 	fr.outCnt = 0
 
-	// Open the file and start reading
-	fHandle, err := os.Open(fname)
-	check(err)
-	fr.fHandle = fHandle
-
-	ext := strings.ToLower(path.Ext(fname)[1:])
+	ext := strings.ToLower(path.Ext(fr.fname)[1:])
 	switch ext {
 	case "ts":
 		fr.ext = INPUT_TS
