@@ -10,7 +10,7 @@ import (
 
 type inputReaderPlugin struct {
 	name     string
-	impl     ioUtils.FileReader
+	impl     ioUtils.InputReader
 	callback *Worker
 }
 

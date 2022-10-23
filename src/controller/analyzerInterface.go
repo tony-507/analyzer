@@ -24,7 +24,8 @@ func (ctrl *AnalyzerController) buildParamException(name string) {
 func (ctrl *AnalyzerController) buildParams() []worker.OverallParams {
 	rv := []worker.OverallParams{}
 
-	inputParam := ioUtils.IOReaderParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname, SkipCnt: ctrl.itf.SourceSetting.SkipCnt,
+	inputParam := ioUtils.IOReaderParam{Source: ioUtils.SOURCE_FILE,
+				FileInput: ioUtils.FileInputParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname}, SkipCnt: ctrl.itf.SourceSetting.SkipCnt,
 				MaxInCnt: ctrl.itf.SourceSetting.MaxInCnt}
 	outputParam := ioUtils.IOWriterParam{OutFolder: ctrl.itf.OutputSetting.DataOutput.OutDir}
 

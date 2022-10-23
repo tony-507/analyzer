@@ -9,13 +9,19 @@ import (
 func initFileReaderTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("initFileReaderTest", 0)
 
-	tc.Describe("Set all parameters to be in use", func (input interface{}) (interface{}, error) {
+	tc.Describe("Create file reader", func (input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
-		m_parameter := IOReaderParam{Fname: "dummy.ts", SkipCnt: 10, MaxInCnt: 10}
+		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "dummy.ts"}}
 
 		fr.SetParameter(m_parameter)
 
-		err := testUtils.Assert_equal(fr.ext, INPUT_TS)
+		impl, isFileReader := fr.impl.(*fileReader)
+		if !isFileReader {
+			err := errors.New("File reader not created")
+			return nil, err
+		}
+
+		err := testUtils.Assert_equal(impl.ext, INPUT_TS)
 		return nil, err
 	})
 
@@ -27,7 +33,7 @@ func initFileReaderTest() testUtils.Testcase {
 			}
 		} ()
 		fr := GetReader("dummy")
-		m_parameter := IOReaderParam{Fname: "hello.abc"}
+		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc"}}
 
 		fr.SetParameter(m_parameter)
 
@@ -36,17 +42,23 @@ func initFileReaderTest() testUtils.Testcase {
 
 	tc.Describe("Input file name with dot", func (input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
-		m_parameter := IOReaderParam{Fname: "hello.abc.ts"}
+		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc.ts"}}
 
 		fr.SetParameter(m_parameter)
 
-		err := testUtils.Assert_equal(fr.ext, INPUT_TS)
+		impl, isFileReader := fr.impl.(*fileReader)
+		if !isFileReader {
+			err := errors.New("Receiver is not created correctly")
+			return nil, err
+		}
+
+		err := testUtils.Assert_equal(impl.ext, INPUT_TS)
 		return nil, err
 	})
 
 	tc.Describe("Uninitialized maxInCnt", func (input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
-		m_parameter := IOReaderParam{Fname: "dummy.ts"}
+		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "dummy.ts"}}
 		fr.SetParameter(m_parameter)
 
 		err := testUtils.Assert_equal(fr.maxInCnt, -1)
