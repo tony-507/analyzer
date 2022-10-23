@@ -10,7 +10,7 @@ import (
 )
 
 func pluginUnitTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("pluginTest")
+	tc := testUtils.GetTestCase("pluginTest", 0)
 
 	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
 		return "Dummy_1", nil
@@ -70,7 +70,7 @@ func pluginUnitTest() testUtils.Testcase {
 }
 
 func pluginInterfaceTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("pluginInterfaceTest")
+	tc := testUtils.GetTestCase("pluginInterfaceTest", 0)
 
 	// Declare here to prevent dangling pointer
 	dummy1 := GetPluginByName("Dummy_1")
@@ -135,7 +135,7 @@ func pluginInterfaceTest() testUtils.Testcase {
 }
 
 func workerRunGraphTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("workerRunGraphTest")
+	tc := testUtils.GetTestCase("workerRunGraphTest", 5)
 
 	// Declare here to prevent dangling pointer
 	dummy1 := GetPluginByName("Dummy_root")
@@ -252,7 +252,7 @@ func workerRunGraphTest() testUtils.Testcase {
 func graphBuildingTest() testUtils.Testcase  {
 	// Since graph uses pointers to store plugins, we cannot compare the constructed graph with one built manually
 	// As an alternative, we use representative fields to compare the graph
-	tc := testUtils.GetTestCase("GraphBuildingTest")
+	tc := testUtils.GetTestCase("GraphBuildingTest", 0)
 
 	tc.Describe("Build graph in which each node has one input edge and one output edge", func (input interface{}) (interface{}, error) {
 		dummyParam1 := ConstructOverallParam("Dummy_1", 1, []string{"Dummy_2"})

@@ -7,7 +7,7 @@ import (
 )
 
 func readPcrTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("readerTest")
+	tc := testUtils.GetTestCase("readerTest", 0)
 
 	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
 		buf := []byte{0x0e, 0x26, 0xe0, 0x33, 0x7e, 0x11}
@@ -60,7 +60,7 @@ func readPcrTest() testUtils.Testcase {
 }
 
 func bsWriterTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("bsWriterTest")
+	tc := testUtils.GetTestCase("bsWriterTest", 0)
 
 	tc.Describe("Basic bit writing", func(input interface{}) (interface{}, error) {
 		writer := GetBufferWriter(3)

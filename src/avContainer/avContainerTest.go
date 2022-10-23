@@ -6,7 +6,7 @@ import (
 )
 
 func readPATTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("readPatTest")
+	tc := testUtils.GetTestCase("readPatTest", 0)
 
 	tc.Describe("Basic PAT parsing", func(input interface{}) (interface{}, error) {
 		dummyPAT := []byte{0x00, 0x00, 0xB0, 0x0D, 0x11, 0x11, 0xC1,
@@ -30,7 +30,7 @@ func readPATTest() testUtils.Testcase {
 }
 
 func readPMTTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("readPmtTest")
+	tc := testUtils.GetTestCase("readPmtTest", 0)
 
 	tc.Describe("Basic PMT parsing", func(input interface{}) (interface{}, error) {
 		dummyPMT := []byte{0x00, 0x02, 0xb0, 0x1d, 0x00, 0x0a, 0xc1,
@@ -62,7 +62,7 @@ func readPMTTest() testUtils.Testcase {
 }
 
 func readAdaptationFieldTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("readAdaptationFieldTest")
+	tc := testUtils.GetTestCase("readAdaptationFieldTest", 0)
 
 	tc.Describe("Initialization", func(input interface{}) (interface{}, error) {
 		dummyAdaptationField := []byte{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3}
@@ -82,7 +82,7 @@ func readAdaptationFieldTest() testUtils.Testcase {
 }
 
 func readPesHeaderTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("readPesHeaderTest")
+	tc := testUtils.GetTestCase("readPesHeaderTest", 0)
 
 	tc.Describe("Parse Pes header", func(input interface{}) (interface{}, error) {
 		dummyPesHeader := []byte{0x00, 0x00, 0x01, 0xea, 0x7d, 0xb2,
@@ -107,7 +107,7 @@ func readPesHeaderTest() testUtils.Testcase {
 }
 
 func readSCTE35SectionTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase(("readSCTE35SectionTest"))
+	tc := testUtils.GetTestCase(("readSCTE35SectionTest"), 0)
 
 	tc.Describe("Read Splice insert", func(input interface{}) (interface{}, error) {
 		dummySection := []byte{0x00, 0xfc, 0x30, 0x25, 0x00, 0x00, 0x00,

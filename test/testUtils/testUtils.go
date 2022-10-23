@@ -1,6 +1,9 @@
 package testUtils
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // This file declares several utils for testing
 
@@ -35,6 +38,7 @@ type TestSuite struct {
 type Testcase struct {
 	TestSteps []TestStep
 	testName  string
+	timeout   time.Duration
 }
 
 // Helper struct for managing test cases
@@ -75,8 +79,8 @@ func (t *Tester) AddSuite(suiteName string, tmg TestCaseMgr) {
 	t.suites = append(t.suites, ts)
 }
 
-func GetTestCase(name string) Testcase {
-	tc := Testcase{testName: name, TestSteps: make([]TestStep, 0)}
+func GetTestCase(name string, timeout int) Testcase {
+	tc := Testcase{testName: name, timeout: time.Duration(timeout) * time.Second, TestSteps: make([]TestStep, 0)}
 	return tc
 }
 
@@ -127,6 +131,7 @@ func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
 
 // Function that runs all selected tests
 func (t *Tester) RunTests() bool {
+	testCh := make(chan bool, 1)
 	isPass := true
 
 	for _, suite := range t.suites {
@@ -137,7 +142,22 @@ func (t *Tester) RunTests() bool {
 			outMsg := ""
 			test := setup()
 			pair := fmt.Sprintf("%s.%s", suite.suiteName, test.testName)
-			res := t._runTestSetup(test, pair)
+			// Set default timeout
+			if test.timeout == 0 {
+				test.timeout = 2 * time.Second
+			}
+			go func() {
+				res := t._runTestSetup(test, pair)
+				testCh <- res
+			}()
+
+			res := false
+			select {
+			case rv := <-testCh:
+				res = rv
+			case <-time.After(test.timeout):
+				t.errMsg = "Test timeout"
+			}
 
 			if !res {
 				outMsg = fmt.Sprintf("%s\n[FAILED] %s at step \"%s\"\n", t.errMsg, pair, t.curStep)
