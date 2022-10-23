@@ -44,7 +44,7 @@ func (m_writer *FileWriter) _setup() {
 	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	for i := range m_writer.writerMap {
-		m_writer.writerMap[i] = make(chan common.CmUnit, 1)
+		m_writer.writerMap[i] = make(chan common.CmUnit)
 	}
 	m_writer.isRunning = true
 	m_writer.processedCnt = 0
@@ -94,6 +94,7 @@ func (m_writer *FileWriter) EndSequence() {
 	}
 	m_writer.isRunning = false
 
+	m_writer.logger.Log(logs.INFO, "File writer is stopped, process count = ", m_writer.processedCnt)
 	m_writer.wg.Wait()
 }
 
@@ -120,12 +121,17 @@ func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) common.CmUnit {
 		m_writer.idMapping = append(m_writer.idMapping, outId)
 
 		switch outType {
+		case 0:
+			// Undefined, skip
 		case 1:
 			m_writer.wg.Add(1)
 			go m_writer._processCsvOutput(outId, idIdx)
 		case 2:
 			m_writer.wg.Add(1)
 			go m_writer._processJsonOutput(outId, idIdx)
+		case 3:
+			m_writer.wg.Add(1)
+			go m_writer._processTsOutput(outId, idIdx)
 		default:
 			m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
 			panic("Unknown output type")
@@ -228,6 +234,32 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 		check(err)
 
 		w.Flush()
+
+		m_writer.monitorMtx.Lock()
+		m_writer.processedCnt += 1
+		m_writer.monitorMtx.Unlock()
+	}
+}
+
+func (m_writer *FileWriter) _processTsOutput(pid int, chIdx int) {
+	defer m_writer.wg.Done()
+
+	fname := fmt.Sprintf("%sout.ts", m_writer.outFolder)
+	f, err := os.Create(fname)
+	check(err)
+
+	for {
+		unit := <-m_writer.writerMap[chIdx]
+		_, isStatus := unit.(common.CmStatusUnit)
+
+		if isStatus {
+			break
+		}
+
+		buf, _ := unit.GetBuf().([]byte)
+
+		_, err := f.Write(buf)
+		check(err)
 
 		m_writer.monitorMtx.Lock()
 		m_writer.processedCnt += 1

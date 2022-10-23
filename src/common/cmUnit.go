@@ -45,7 +45,7 @@ func (unit CmStatusUnit) GetField(name string) interface{} {
 // ====================     I/O     ====================
 type IOUnit struct {
 	Buf    interface{}
-	IoType int // input: [UNKNOWN, FILE], output: [UNKNOWN, JSON, CSV]
+	IoType int // input: [UNKNOWN, FILE], output: [UNKNOWN, JSON, CSV, RAW]
 	Id     int // Specify a receiver. If not -1, this is the name of receiver, else hardcoded for now
 }
 

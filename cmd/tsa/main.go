@@ -28,8 +28,9 @@ func main() {
 	fname := os.Args[1]
 
 	sourceSetting := controller.SourceSetting{FileInput: controller.FileInputSetting{Fname: fname}}
+	demuxSetting := controller.DemuxSetting{Mode: 2}
 	outputSetting := controller.OutputSetting{DataOutput: controller.DataOutputSetting{OutDir: curDir + "/output/" + strings.TrimSuffix(filepath.Base(fname), filepath.Ext(fname)) + "/"}}
-	ctrlInterface := controller.CtrlInterface{SourceSetting: sourceSetting, OutputSetting: outputSetting}
+	ctrlInterface := controller.CtrlInterface{SourceSetting: sourceSetting, DemuxSetting: demuxSetting, OutputSetting: outputSetting}
 
 	ctrl := controller.GetController(ctrlInterface)
 	ctrl.StartApp()

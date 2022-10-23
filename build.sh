@@ -17,22 +17,27 @@ init() {
 }
 
 build_app() {
-	echo "Building tsa\n"
-	# Executable
+	echo "build_tsa:\n"
 	go build $curDir/cmd/tsa/main.go
 	mv main tsa
+
+	echo "build_editCap:\n"
+	go build $curDir/cmd/editCap/main.go
+	mv main editCap
 }
 
 build_test() {
-	echo "Building unitTest\n"
+	echo "build_unitTest:\n"
 	go build $curDir/cmd/unitTest/main.go
 	mv main unitTest
 }
 
 run_test() {
-	echo "Start running tests\n"
 	./unitTest
 }
+
+# Fail on any error
+set -e
 
 runTest=true
 
@@ -58,9 +63,9 @@ if [ "$#" -gt 0 ];then
 
 			init
 			build_app
-			build_test
 
 			if $runTest;then
+				build_test
 				run_test
 			fi
 			;;

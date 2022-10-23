@@ -10,6 +10,8 @@ type CtrlInterface struct {
 // Source model
 type SourceSetting struct {
 	FileInput FileInputSetting
+	SkipCnt   int
+	MaxInCnt  int
 }
 
 type FileInputSetting struct {
@@ -18,6 +20,7 @@ type FileInputSetting struct {
 
 // Demuxer model
 type DemuxSetting struct {
+	Mode int // 1: psi, 2: full
 }
 
 // Output model

@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"time"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/resources"
@@ -21,6 +23,9 @@ func (pg *inputReaderPlugin) SetResource(resourceLoader *resources.ResourceLoade
 }
 
 func (pg *inputReaderPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {
+	// Wait for few seconds for parameters to be set for all plugins
+	time.Sleep(5 * time.Second)
+
 	// Here, we will keep delivering until EOS is signaled by impl
 	for {
 		outUnit := pg.impl.DeliverUnit(unit)
@@ -40,7 +45,7 @@ func (pg *inputReaderPlugin) FetchUnit() common.CmUnit {
 
 func (pg *inputReaderPlugin) StartSequence() {
 	pg.impl.StartSequence()
-	// As the first plugin, we need to start receive input after initialization
+	// As the first plugin, we need to start receive input after initialization	
 	go pg.DeliverUnit(nil)
 }
 

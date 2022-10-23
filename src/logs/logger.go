@@ -17,7 +17,7 @@ func CreateLogger(id string) Log {
 func (l *Log) Log(level int, msg ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
-		globalConfig.logLevel = WARN
+		globalConfig.logLevel = INFO
 	}
 	if globalConfig.msgFormat == "" {
 		globalConfig.msgFormat = "%t [%n] [%l] %s"

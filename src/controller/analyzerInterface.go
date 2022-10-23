@@ -22,14 +22,22 @@ func (ctrl *AnalyzerController) buildParamException(name string) {
 
 // Main function for building up the worker parameters
 func (ctrl *AnalyzerController) buildParams() []worker.OverallParams {
-	inputParam := ioUtils.IOReaderParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname}
+	rv := []worker.OverallParams{}
+
+	inputParam := ioUtils.IOReaderParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname, SkipCnt: ctrl.itf.SourceSetting.SkipCnt,
+				MaxInCnt: ctrl.itf.SourceSetting.MaxInCnt}
 	outputParam := ioUtils.IOWriterParam{OutFolder: ctrl.itf.OutputSetting.DataOutput.OutDir}
 
-	inputPluginParam := worker.ConstructOverallParam("FileReader_1", inputParam, []string{"TsDemuxer_1"})
-	demuxPluginParam := worker.ConstructOverallParam("TsDemuxer_1", nil, []string{"DataHandler_1"})
-	dataHandlerParam := worker.ConstructOverallParam("DataHandler_1", nil, []string{"FileWriter_1"})
-	outputPluginParam := worker.ConstructOverallParam("FileWriter_1", outputParam, []string{})
-	return []worker.OverallParams{inputPluginParam, demuxPluginParam, dataHandlerParam, outputPluginParam}
+	// If demuxer is not needed, go to writer directly
+	if ctrl.itf.DemuxSetting.Mode != 0 {
+		rv = append(rv, worker.ConstructOverallParam("FileReader_1", inputParam, []string{"TsDemuxer_1"}))
+		rv = append(rv, worker.ConstructOverallParam("TsDemuxer_1", nil, []string{"DataHandler_1"}))
+		rv = append(rv, worker.ConstructOverallParam("DataHandler_1", nil, []string{"FileWriter_1"}))
+	} else {
+		rv = append(rv, worker.ConstructOverallParam("FileReader_1", inputParam, []string{"FileWriter_1"}))
+	}
+	rv = append(rv, worker.ConstructOverallParam("FileWriter_1", outputParam, []string{}))
+	return rv
 }
 
 func (ctrl *AnalyzerController) StartApp() {
@@ -43,6 +51,7 @@ func GetController(itf CtrlInterface) AnalyzerController {
 	ctrl.id = "Default"
 
 	ctrl.provider = worker.GetWorker()
+	ctrl.logger.Log(logs.INFO, "Controller input: ", itf)
 
 	return ctrl
 }
