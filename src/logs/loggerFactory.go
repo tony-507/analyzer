@@ -1,6 +1,7 @@
 package logs
 
 const (
+	DISABLED int = 0
 	TRACE    int = 1
 	INFO     int = 2
 	WARN     int = 3
@@ -22,6 +23,8 @@ func SetProperty(key string, val string) {
 	switch key {
 	case "level":
 		switch val {
+		case "disabled":
+			globalConfig.logLevel = DISABLED
 		case "trace":
 			globalConfig.logLevel = TRACE
 		case "info":

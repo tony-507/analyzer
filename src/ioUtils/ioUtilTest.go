@@ -3,6 +3,7 @@ package ioUtils
 import (
 	"errors"
 
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/test/testUtils"
 )
 
@@ -68,10 +69,48 @@ func initFileReaderTest() testUtils.Testcase {
 	return tc
 }
 
+func readerDeliverUnitTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("readerDeliverUnitTest", 0)
+
+	tc.Describe("Deliver without additional settings", func (input interface{}) (interface{}, error) {
+		ir := GetReader("dummy")
+		m_parameter := IOReaderParam{Source: SOURCE_DUMMY}
+		ir.SetParameter(m_parameter)
+
+		for i := 0; i < 10; i++ {
+			unit := ir.DeliverUnit(nil)
+			reqUnit, _ := unit.(common.ReqUnit)
+			name, isStr := reqUnit.GetBuf().(string)
+			if !isStr {
+				return nil, errors.New("Buffer is not a string")
+			}
+			reqType := reqUnit.GetField("reqType")
+
+			bufErr := testUtils.Assert_equal(name, "dummy")
+			if bufErr != nil {
+				return nil, bufErr
+			}
+
+			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
+			if typeErr != nil {
+				return nil, typeErr
+			}
+		}
+		unit := ir.DeliverUnit(nil)
+		reqUnit, _ := unit.(common.ReqUnit)
+		reqType := reqUnit.GetField("reqType")
+		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
+		return nil, err
+	})
+
+	return tc
+}
+
 func AddIoUtilsTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
 	tmg.AddTest(initFileReaderTest, []string{"ioUtils"})
+	tmg.AddTest(readerDeliverUnitTest, []string{"ioUtils"})
 
 	t.AddSuite("unitTest", tmg)
 }

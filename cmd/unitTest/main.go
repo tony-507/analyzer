@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	logs.SetProperty("level", "info")
+	logs.SetProperty("level", "disabled")
 	logs.SetProperty("format", "%t [%n] [%l] %s")
 
 	t := test.ConstructTestFlow()

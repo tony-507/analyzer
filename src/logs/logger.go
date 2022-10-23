@@ -17,10 +17,14 @@ func CreateLogger(id string) Log {
 func (l *Log) Log(level int, msg ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
-		globalConfig.logLevel = INFO
+		globalConfig.logLevel = DISABLED
 	}
 	if globalConfig.msgFormat == "" {
 		globalConfig.msgFormat = "%t [%n] [%l] %s"
+	}
+
+	if globalConfig.logLevel == DISABLED {
+		return
 	}
 
 	if level >= globalConfig.logLevel {

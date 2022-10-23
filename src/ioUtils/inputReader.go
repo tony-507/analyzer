@@ -62,6 +62,7 @@ func (ir *InputReader) SetParameter(m_parameter interface{}) {
 
 	switch param.Source {
 	case SOURCE_DUMMY:
+		ir.impl = &dummyReader{}
 	case SOURCE_FILE:
 		ir.impl = &fileReader{fname: param.FileInput.Fname}
 	}
@@ -72,7 +73,7 @@ func (ir *InputReader) SetParameter(m_parameter interface{}) {
 
 func (ir *InputReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
 	newUnit := common.IOUnit{}
-	if ir.maxInCnt > 0 && ir.impl.dataAvailable(&newUnit) {
+	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
 		ir.outCnt += 1
 		ir.maxInCnt -= 1
 		ir.outputQueue = append(ir.outputQueue, unit)
