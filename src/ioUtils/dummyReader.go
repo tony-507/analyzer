@@ -18,7 +18,7 @@ func (dr *dummyReader) stopRecv() {}
 
 func (dr *dummyReader) dataAvailable(unit *common.IOUnit) bool {
 	dr.readCnt += 1
-	if dr.readCnt > 10 {
+	if dr.readCnt > 5 {
 		return false
 	}
 	unit.IoType = 3

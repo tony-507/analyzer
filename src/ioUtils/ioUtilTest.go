@@ -10,7 +10,7 @@ import (
 func initFileReaderTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("initFileReaderTest", 0)
 
-	tc.Describe("Create file reader", func (input interface{}) (interface{}, error) {
+	tc.Describe("Create file reader", func(input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
 		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "dummy.ts"}}
 
@@ -26,13 +26,13 @@ func initFileReaderTest() testUtils.Testcase {
 		return nil, err
 	})
 
-	tc.Describe("Invalid input file format", func (input interface{}) (interface{}, error) {
+	tc.Describe("Invalid input file format", func(input interface{}) (interface{}, error) {
 		var err error
-		defer func () {
+		defer func() {
 			if _, ok := recover().(error); !ok {
 				err = errors.New("FileReader.SetParameter does not panic on invalid input")
 			}
-		} ()
+		}()
 		fr := GetReader("dummy")
 		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc"}}
 
@@ -41,7 +41,7 @@ func initFileReaderTest() testUtils.Testcase {
 		return nil, err
 	})
 
-	tc.Describe("Input file name with dot", func (input interface{}) (interface{}, error) {
+	tc.Describe("Input file name with dot", func(input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
 		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc.ts"}}
 
@@ -57,7 +57,7 @@ func initFileReaderTest() testUtils.Testcase {
 		return nil, err
 	})
 
-	tc.Describe("Uninitialized maxInCnt", func (input interface{}) (interface{}, error) {
+	tc.Describe("Uninitialized maxInCnt", func(input interface{}) (interface{}, error) {
 		fr := GetReader("dummy")
 		m_parameter := IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "dummy.ts"}}
 		fr.SetParameter(m_parameter)
@@ -72,12 +72,74 @@ func initFileReaderTest() testUtils.Testcase {
 func readerDeliverUnitTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("readerDeliverUnitTest", 0)
 
-	tc.Describe("Deliver without additional settings", func (input interface{}) (interface{}, error) {
+	tc.Describe("Deliver without additional settings", func(input interface{}) (interface{}, error) {
 		ir := GetReader("dummy")
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY}
 		ir.SetParameter(m_parameter)
 
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 5; i++ {
+			unit := ir.DeliverUnit(nil)
+			reqUnit, _ := unit.(common.ReqUnit)
+			name, isStr := reqUnit.GetBuf().(string)
+			if !isStr {
+				return nil, errors.New("Buffer is not a string")
+			}
+			reqType := reqUnit.GetField("reqType")
+
+			bufErr := testUtils.Assert_equal(name, "dummy")
+			if bufErr != nil {
+				return nil, bufErr
+			}
+
+			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
+			if typeErr != nil {
+				return nil, typeErr
+			}
+		}
+		unit := ir.DeliverUnit(nil)
+		reqUnit, _ := unit.(common.ReqUnit)
+		reqType := reqUnit.GetField("reqType")
+		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
+		return nil, err
+	})
+
+	tc.Describe("Deliver with skipping does not change behaviour", func(input interface{}) (interface{}, error) {
+		ir := GetReader("dummy")
+		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, SkipCnt: 2}
+		ir.SetParameter(m_parameter)
+
+		for i := 0; i < 5; i++ {
+			unit := ir.DeliverUnit(nil)
+			reqUnit, _ := unit.(common.ReqUnit)
+			name, isStr := reqUnit.GetBuf().(string)
+			if !isStr {
+				return nil, errors.New("Buffer is not a string")
+			}
+			reqType := reqUnit.GetField("reqType")
+
+			bufErr := testUtils.Assert_equal(name, "dummy")
+			if bufErr != nil {
+				return nil, bufErr
+			}
+
+			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
+			if typeErr != nil {
+				return nil, typeErr
+			}
+		}
+		unit := ir.DeliverUnit(nil)
+		reqUnit, _ := unit.(common.ReqUnit)
+		reqType := reqUnit.GetField("reqType")
+		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
+		return nil, err
+	})
+
+	tc.Describe("Deliver with max input count", func(input interface{}) (interface{}, error) {
+		ir := GetReader("dummy")
+		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, MaxInCnt: 2}
+		ir.SetParameter(m_parameter)
+
+		for i := 0; i < 2; i++ {
 			unit := ir.DeliverUnit(nil)
 			reqUnit, _ := unit.(common.ReqUnit)
 			name, isStr := reqUnit.GetBuf().(string)
@@ -106,11 +168,34 @@ func readerDeliverUnitTest() testUtils.Testcase {
 	return tc
 }
 
+func writerDeliverUnitTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("writerDeliverUnitTest", 0)
+
+	tc.Describe("Deliver without additional setting", func(input interface{}) (interface{}, error) {
+		ow := GetOutputWriter("dummy")
+		x := 0
+		m_parameter := IOWriterParam{OutputType: OUTPUT_DUMMY, dummyOut: &x}
+		ow.SetParameter(m_parameter)
+
+		// Deliver some dummy units
+		for i := 1; i < 5; i++ {
+			unit := common.IOUnit{Buf: i}
+			ow.DeliverUnit(unit)
+		}
+
+		err := testUtils.Assert_equal(x, 1234)
+		return nil, err
+	})
+
+	return tc
+}
+
 func AddIoUtilsTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
 	tmg.AddTest(initFileReaderTest, []string{"ioUtils"})
 	tmg.AddTest(readerDeliverUnitTest, []string{"ioUtils"})
+	tmg.AddTest(writerDeliverUnitTest, []string{"ioUtils"})
 
 	t.AddSuite("unitTest", tmg)
 }

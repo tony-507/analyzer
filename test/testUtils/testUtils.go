@@ -160,7 +160,7 @@ func (t *Tester) RunTests() bool {
 			}
 
 			if !res {
-				outMsg = fmt.Sprintf("%s\n[FAILED] %s at step \"%s\"\n", t.errMsg, pair, t.curStep)
+				outMsg = fmt.Sprintf("%s\n\t[FAILED] %s at step \"%s\"\n", t.errMsg, pair, t.curStep)
 				isPass = false
 			} else {
 				outMsg = fmt.Sprintf("[PASS] %s\n", pair)

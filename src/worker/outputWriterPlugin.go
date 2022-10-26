@@ -8,7 +8,7 @@ import (
 
 type fileWriterPlugin struct {
 	name     string
-	impl     ioUtils.FileWriter
+	impl     ioUtils.OutputWriter
 	callback *Worker
 }
 
@@ -46,6 +46,6 @@ func (pg *fileWriterPlugin) SetCallback(callback *Worker) {
 
 func GetFileWriterPlugin(name string) fileWriterPlugin {
 	pg := fileWriterPlugin{name: name}
-	pg.impl = ioUtils.GetFileWriter(name)
+	pg.impl = ioUtils.GetOutputWriter(name)
 	return pg
 }

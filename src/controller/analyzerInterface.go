@@ -25,9 +25,9 @@ func (ctrl *AnalyzerController) buildParams() []worker.OverallParams {
 	rv := []worker.OverallParams{}
 
 	inputParam := ioUtils.IOReaderParam{Source: ioUtils.SOURCE_FILE,
-				FileInput: ioUtils.FileInputParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname}, SkipCnt: ctrl.itf.SourceSetting.SkipCnt,
-				MaxInCnt: ctrl.itf.SourceSetting.MaxInCnt}
-	outputParam := ioUtils.IOWriterParam{OutFolder: ctrl.itf.OutputSetting.DataOutput.OutDir}
+		FileInput: ioUtils.FileInputParam{Fname: ctrl.itf.SourceSetting.FileInput.Fname}, SkipCnt: ctrl.itf.SourceSetting.SkipCnt,
+		MaxInCnt: ctrl.itf.SourceSetting.MaxInCnt}
+	outputParam := ioUtils.IOWriterParam{OutputType: ioUtils.OUTPUT_FILE, FileOutput: ioUtils.FileOutputParam{OutFolder: ctrl.itf.OutputSetting.DataOutput.OutDir}}
 
 	// If demuxer is not needed, go to writer directly
 	if ctrl.itf.DemuxSetting.Mode != 0 {

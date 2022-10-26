@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
@@ -20,92 +19,44 @@ An object to write buffer into a file
 */
 
 type FileWriter struct {
-	logger       logs.Log
-	writerMap    []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
-	idMapping    []int                // This maps id to channel index
-	outFolder    string
-	processedCnt int // How many units are processed
-	isRunning    bool
-	name         string
-	wg           sync.WaitGroup
-	monitorMtx   sync.Mutex // A mutex for locking monitoring variables
+	logger    logs.Log
+	writerMap []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
+	idMapping []int                // This maps id to channel index
+	outFolder string
+	wg        sync.WaitGroup
 }
 
-func (m_writer *FileWriter) SetParameter(m_parameter interface{}) {
-	writerParam, isWriterParam := m_parameter.(IOWriterParam)
-	if !isWriterParam {
-		panic("Writer param has unknown format")
-	}
-	m_writer.outFolder = writerParam.OutFolder
-	m_writer._setup()
-}
-
-func (m_writer *FileWriter) _setup() {
+func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
 	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
+	m_writer.outFolder = writerParam.FileOutput.OutFolder
 	for i := range m_writer.writerMap {
 		m_writer.writerMap[i] = make(chan common.CmUnit)
 	}
-	m_writer.isRunning = true
-	m_writer.processedCnt = 0
 
 	err := os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary
 	if err != nil {
 		panic(err)
 	}
-
-	m_writer.wg.Add(1)
-	go m_writer._setupMonitor()
 }
 
-func (m_writer *FileWriter) _setupMonitor() {
-	defer m_writer.wg.Done()
-
-	orginialCnt := 0 // Check if the writer is still processing units
-
-	for {
-		if !m_writer.isRunning {
-			break
-		}
-
-		time.Sleep(10 * time.Second)
-
-		m_writer.monitorMtx.Lock()
-		if m_writer.processedCnt == orginialCnt {
-			statMsg := "\nFile writer status"
-			statMsg += fmt.Sprintf("isRunning: %v", m_writer.isRunning)
-			statMsg += fmt.Sprintf("File handles: %v", m_writer.idMapping)
-			m_writer.logger.Log(logs.INFO, statMsg)
-		} else {
-			orginialCnt = m_writer.processedCnt
-		}
-		m_writer.monitorMtx.Unlock()
-	}
-}
-
-func (m_writer *FileWriter) StartSequence() {
-	m_writer.logger.Log(logs.INFO, "File writer is started")
-}
-
-func (m_writer *FileWriter) EndSequence() {
+func (m_writer *FileWriter) stop() {
 	for _, writer := range m_writer.writerMap {
 		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, 1, "")
 		writer <- stopUnit
 	}
-	m_writer.isRunning = false
 
-	m_writer.logger.Log(logs.INFO, "File writer is stopped, process count = ", m_writer.processedCnt)
 	m_writer.wg.Wait()
 }
 
-func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) common.CmUnit {
+func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	if unit == nil {
-		return nil
+		return
 	}
 
 	outId, _ := unit.GetField("id").(int)
 	if outId == 1 {
-		return nil
+		return
 	}
 	idIdx := -1
 	for idx, id := range m_writer.idMapping {
@@ -131,15 +82,13 @@ func (m_writer *FileWriter) DeliverUnit(unit common.CmUnit) common.CmUnit {
 			go m_writer._processJsonOutput(outId, idIdx)
 		case 3:
 			m_writer.wg.Add(1)
-			go m_writer._processTsOutput(outId, idIdx)
+			go m_writer._processRawOutput(outId, idIdx)
 		default:
 			m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
 			panic("Unknown output type")
 		}
 	}
 	m_writer.writerMap[idIdx] <- unit
-
-	return nil
 }
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
@@ -176,10 +125,6 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 
 		_, err := f.Write(buf)
 		check(err)
-
-		m_writer.monitorMtx.Lock()
-		m_writer.processedCnt += 1
-		m_writer.monitorMtx.Unlock()
 	}
 
 	f.Write([]byte("\n]}"))
@@ -234,14 +179,10 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 		check(err)
 
 		w.Flush()
-
-		m_writer.monitorMtx.Lock()
-		m_writer.processedCnt += 1
-		m_writer.monitorMtx.Unlock()
 	}
 }
 
-func (m_writer *FileWriter) _processTsOutput(pid int, chIdx int) {
+func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
 
 	fname := fmt.Sprintf("%sout.ts", m_writer.outFolder)
@@ -260,18 +201,10 @@ func (m_writer *FileWriter) _processTsOutput(pid int, chIdx int) {
 
 		_, err := f.Write(buf)
 		check(err)
-
-		m_writer.monitorMtx.Lock()
-		m_writer.processedCnt += 1
-		m_writer.monitorMtx.Unlock()
 	}
 }
 
-func (m_writer *FileWriter) FetchUnit() common.CmUnit {
-	return nil
-}
-
-func GetFileWriter(name string) FileWriter {
-	rv := FileWriter{name: name, logger: logs.CreateLogger("fileWriter")}
-	return rv
+func GetFileWriter() *FileWriter {
+	rv := FileWriter{logger: logs.CreateLogger("fileWriter")}
+	return &rv
 }
