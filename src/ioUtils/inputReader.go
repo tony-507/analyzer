@@ -10,9 +10,9 @@ const (
 )
 
 type IReader interface {
-	setup() // Set up reader
-	startRecv() // Start receiver
-	stopRecv() // Stop receiver
+	setup()                            // Set up reader
+	startRecv()                        // Start receiver
+	stopRecv()                         // Stop receiver
 	dataAvailable(*common.IOUnit) bool // Get next unit of data
 }
 
@@ -23,7 +23,7 @@ func check(err error) {
 }
 
 type InputReader struct {
-	logger	    logs.Log
+	logger      logs.Log
 	impl        IReader
 	outputQueue []common.CmUnit
 	outCnt      int
@@ -70,13 +70,12 @@ func (ir *InputReader) SetParameter(m_parameter interface{}) {
 	ir.impl.setup()
 }
 
-
 func (ir *InputReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
 	newUnit := common.IOUnit{}
 	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
 		ir.outCnt += 1
 		ir.maxInCnt -= 1
-		ir.outputQueue = append(ir.outputQueue, unit)
+		ir.outputQueue = append(ir.outputQueue, newUnit)
 		reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 		return reqUnit
 	} else {
