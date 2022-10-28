@@ -2,6 +2,7 @@ package avContainer
 
 import (
 	"github.com/tony-507/analyzers/src/avContainer/model"
+	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
 	"github.com/tony-507/analyzers/test/testUtils"
 )
 
@@ -143,12 +144,15 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 
 	// We may add custom test filter here later
 
-	// common
+	// model
 	tmg.AddTest(readPATTest, []string{"avContainer"})
 	tmg.AddTest(readPMTTest, []string{"avContainer"})
 	tmg.AddTest(readAdaptationFieldTest, []string{"avContainer"})
 	tmg.AddTest(readPesHeaderTest, []string{"avContainer"})
 	tmg.AddTest(readSCTE35SectionTest, []string{"avContainer"})
+
+	// demux
+	tsdemux.AddUnitTestSuite(t)
 
 	t.AddSuite("unitTest", tmg)
 }

@@ -10,15 +10,11 @@ import (
 	"github.com/tony-507/analyzers/src/logs"
 )
 
-type demuxEvent struct {
-	eventId ctrl_ID
-	event   interface{}
-}
-
 type tsDemuxPipe struct {
 	logger         logs.Log
-	demuxedBuffers map[int][]byte // A map mapping pid to bitstreams
-	demuxStartCnt  map[int]int    // A map mapping pid to start packet index of demuxedBuffers[pid]
+	control        *demuxController // Controller from demuxer
+	demuxedBuffers map[int][]byte   // A map mapping pid to bitstreams
+	demuxStartCnt  map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
 	callback       *TsDemuxer
 	content        model.PAT
 	programs       []model.PMT
@@ -35,7 +31,9 @@ func (m_pMux *tsDemuxPipe) _setup() {
 }
 
 // Handle incoming data from demuxer
-func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head model.TsHeader, pktCnt int) {
+func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
+	head := model.ReadTsHeader(buf)
+
 	// If scrambled, throw away
 	if head.Tsc != 0 {
 		return
@@ -89,8 +87,7 @@ func (m_pMux *tsDemuxPipe) handleUnit(buf []byte, head model.TsHeader, pktCnt in
 			}
 		}
 	}
-
-	m_pMux._postEvent(pid, pktCnt, demuxEvent{eventId: ctrl_PARSEOK, event: pid})
+	m_pMux.control.dataParsed(pid)
 }
 
 // Handle PSI data
@@ -169,7 +166,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	case "PAT":
 		content, err := model.ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
 		if err != nil {
-			m_pMux._postEvent(pid, pktCnt, err)
+			m_pMux.control.throwError(pid, pktCnt, err.Error())
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
@@ -222,7 +219,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
 			pesHeader, err := model.ParsePESHeader(buf)
 			if err != nil {
-				m_pMux._postEvent(pid, m_pMux.demuxStartCnt[pid], err)
+				m_pMux.control.throwError(pid, pktCnt, err.Error())
 			}
 
 			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.GetSectionLength(), pesHeader.GetPts(), pesHeader.GetDts(), m_pMux.demuxedBuffers[pid], streamType)
@@ -266,21 +263,6 @@ func (m_pMux *tsDemuxPipe) _queryStreamType(typeNum int) string {
 	return m_pMux.callback.resourceLoader.Query("streamType", typeNum)
 }
 
-// An internal API to post event to demuxer
-func (m_pMux *tsDemuxPipe) _postEvent(pid int, pktCnt int, event interface{}) {
-	err, isErr := event.(error)
-	if isErr {
-		eventLevel := ctrl_ERROR
-		eventId := ctrl_PARSINGERR
-		m_pMux.callback.sendStatus(eventLevel, pid, eventId, pktCnt, err)
-	}
-
-	// If not error, it's info
-	dEvent, _ := event.(demuxEvent)
-	eventLevel := ctrl_INFO
-	m_pMux.callback.sendStatus(eventLevel, pid, dEvent.eventId, pktCnt, dEvent.event)
-}
-
 // Duration is independent of program, so just choose the first one
 func (m_pMux *tsDemuxPipe) getDuration() int {
 	clk := m_pMux.callback._updateSrcClk(m_pMux.programs[0].ProgNum)
@@ -289,8 +271,16 @@ func (m_pMux *tsDemuxPipe) getDuration() int {
 	return end - start
 }
 
+func (m_pMux *tsDemuxPipe) getProgramNumber(idx int) int {
+	return m_pMux.programs[idx].ProgNum
+}
+
+func (m_pMux *tsDemuxPipe) clockReady() bool {
+	return len(m_pMux.programs) > 0
+}
+
 func getDemuxPipe(callback *TsDemuxer) tsDemuxPipe {
-	rv := tsDemuxPipe{callback: callback}
+	rv := tsDemuxPipe{callback: callback, control: callback.control}
 	rv._setup()
 	return rv
 }

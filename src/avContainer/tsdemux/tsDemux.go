@@ -1,15 +1,19 @@
 package tsdemux
 
 import (
-	"fmt"
 	"sync"
-	"time"
 
-	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
 )
+
+type IDemuxPipe interface {
+	processUnit([]byte, int)
+	getDuration() int
+	getProgramNumber(int) int
+	clockReady() bool
+}
 
 type PKT_TYPE int
 
@@ -41,33 +45,10 @@ const (
 	PKT_NULL    PKT_TYPE = 8191
 )
 
-type ctrl_LEVEL int
-
-const (
-	ctrl_INFO  ctrl_LEVEL = 1
-	ctrl_ERROR ctrl_LEVEL = 2
-)
-
-type ctrl_ID int
-
-const (
-	ctrl_PARSINGERR     ctrl_ID = 1 // Error
-	ctrl_PARSEOK        ctrl_ID = 2 // OK
-	ctrl_NUMERICAL_RISK ctrl_ID = 3 // Potential computational issue, print message to state that
-)
-
-type controlParam struct {
-	id     ctrl_ID     // 1: successful packet count, 2: parsing error
-	pid    int         // pid of the packet
-	curCnt int         // the packet number at which the param is set
-	data   interface{} // Depends on id
-	level  ctrl_LEVEL
-}
-
 type TsDemuxer struct {
 	logger         logs.Log
-	demuxPipe      *tsDemuxPipe           // Actual demuxing operation
-	control        chan common.CmUnit     // Controller channel, separate from demuxMap to prevent race condition
+	impl           IDemuxPipe             // Actual demuxing operation
+	control        *demuxController       // Controller to handle demuxer internal state
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	outputQueue    []common.IOUnit        // Outputs to other plugins
 	isRunning      int                    // Counting channels, similar to waitGroup
@@ -78,6 +59,20 @@ type TsDemuxer struct {
 }
 
 func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
+	demuxParam, isParam := m_parameter.(DemuxParams)
+	if !isParam {
+		panic("Unknown type received at TsDemuxer::SetParameter")
+	}
+	// Do this here to prevent seg fault
+	m_pMux.control = getControl()
+	switch demuxParam.Mode {
+	case DEMUX_DUMMY:
+		impl := getDummyPipe(m_pMux)
+		m_pMux.impl = &impl
+	case DEMUX_FULL:
+		impl := getDemuxPipe(m_pMux)
+		m_pMux.impl = &impl
+	}
 	m_pMux._setup()
 }
 
@@ -87,17 +82,12 @@ func (m_pMux *TsDemuxer) SetResource(resourceLoader *resources.ResourceLoader) {
 
 func (m_pMux *TsDemuxer) _setup() {
 	m_pMux.logger = logs.CreateLogger("TsDemuxer")
-	m_pMux.control = make(chan common.CmUnit)
 	m_pMux.progClkMap = make(map[int]*programSrcClk, 0)
 	m_pMux.outputQueue = make([]common.IOUnit, 0)
 	m_pMux.pktCnt = 1
 	m_pMux.isRunning = 0
 
-	pipe := getDemuxPipe(m_pMux)
-	m_pMux.demuxPipe = &pipe
-
-	m_pMux.wg.Add(2)
-	go m_pMux._setupDemuxControl()
+	m_pMux.wg.Add(1)
 	go m_pMux._setupMonitor()
 }
 
@@ -105,106 +95,7 @@ func (m_pMux *TsDemuxer) _setup() {
 // Currently only check if demuxer gets stuck
 func (m_pMux *TsDemuxer) _setupMonitor() {
 	defer m_pMux.wg.Done()
-
-	assertTimeout := 5
-
-	// Wait for a handler to be created first, so it won't exit on initialization
-	for m_pMux.isRunning == 0 {
-		continue
-	}
-
-	for {
-		if m_pMux.isRunning == 0 {
-			break
-		}
-
-		// Check stuck
-		curCnt := m_pMux.pktCnt
-		time.Sleep(5 * time.Second)
-		if m_pMux.pktCnt == curCnt {
-			if m_pMux.isRunning == 0 {
-				break
-			}
-			statMsg := "tsDemuxer status\n"
-			statMsg += fmt.Sprintf("\tCurrent count: %d\n", curCnt)
-			statMsg += fmt.Sprintf("\tisRunning: %v\n", m_pMux.isRunning == 1)
-			statMsg += fmt.Sprintf("\tOutput queue size: %d\n", len(m_pMux.outputQueue))
-
-			m_pMux.logger.Log(logs.INFO, statMsg)
-
-			assertTimeout -= 1
-		}
-	}
-}
-
-// Demuxer internal controller, run as a Goroutine to handle control messages
-func (m_pMux *TsDemuxer) _setupDemuxControl() {
-	// Parsing status related
-	pktCnt := make(map[int]int, 0)
-	m_pMux.isRunning += 1
-
-	defer m_pMux.wg.Done()
-	for {
-		unit := <-m_pMux.control
-		msgId, _ := unit.GetField("id").(common.CM_STATUS)
-
-		if msgId == common.STATUS_CONTROL_DATA {
-			param, _ := unit.GetField("body").(controlParam)
-			switch param.level {
-			case ctrl_ERROR:
-				// Parsing error
-				err, _ := param.data.(error)
-				outMsg := fmt.Sprintf("[%d] At pkt#%d, %s", param.pid, param.curCnt, err.Error())
-				panic(outMsg)
-			case ctrl_INFO:
-				// Inform changes
-				switch param.id {
-				case ctrl_PARSEOK:
-					pid, _ := param.data.(int)
-					pktCnt[pid] += 1
-				case ctrl_NUMERICAL_RISK:
-					infoMsg, _ := param.data.(string)
-					m_pMux.logger.Log(logs.WARN, infoMsg)
-				default:
-					panic("Unknown control id received at monitor")
-				}
-			default:
-				panic("Unknown control level received at monitor")
-			}
-		} else if msgId == common.STATUS_END_ROUTINE {
-			break
-		}
-	}
-
-	duration := m_pMux.demuxPipe.getDuration()
-	m_pMux.isRunning -= 1
-	sum := 0
-	rateSum := 0.0
-
-	// TS statistics
-
-	statMsg := "TS statistics:\n"
-	statMsg += fmt.Sprintf("TS duration: %fs\n", float64(duration)/27000000)
-	statMsg += "-------------------------------------------------\n"
-	statMsg += "|    pid    |   count   |  bitrate  | frequency |\n"
-	statMsg += "|-----------|-----------|-----------|-----------|\n"
-	for pid, cnt := range pktCnt {
-		rate := float64(cnt) * 1504 * 27000000 / float64(duration)
-		rateSum += rate
-		statMsg += fmt.Sprintf("|%11d|%11d|%11.2f|%11.2f|\n", pid, cnt, rate, rate/1504)
-		sum += cnt
-	}
-	statMsg += "-------------------------------------------------\n"
-	statMsg += fmt.Sprintf("|%11s|%11d|%11.2f|%11s|\n", "", sum, rateSum, "")
-	statMsg += "-------------------------------------------------\n"
-
-	m_pMux.logger.Log(logs.INFO, statMsg)
-}
-
-func (m_pMux *TsDemuxer) sendStatus(level ctrl_LEVEL, pid int, id ctrl_ID, curCnt int, data interface{}) {
-	param := controlParam{id: id, pid: pid, curCnt: curCnt, data: data, level: level}
-	controlUnit := common.MakeStatusUnit(common.STATUS_CONTROL_DATA, common.STATUS_CONTROL_DATA, param)
-	m_pMux.control <- controlUnit
+	m_pMux.control.monitor()
 }
 
 func (m_pMux *TsDemuxer) _updateSrcClk(progNum int) *programSrcClk {
@@ -222,8 +113,8 @@ func (m_pMux *TsDemuxer) StartSequence() {
 
 func (m_pMux *TsDemuxer) EndSequence() {
 	m_pMux.logger.Log(logs.INFO, "Shutting down handlers")
-	unit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, common.STATUS_END_ROUTINE, "")
-	m_pMux.control <- unit
+	m_pMux.control.stop()
+	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 	m_pMux.wg.Wait()
 }
 
@@ -249,7 +140,7 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 			psiBuf, isPsiBuf := rv.Buf.(common.PsiBuf)
 			if isPsiBuf {
 				// Use clock of first program as we want relative time only
-				clk := m_pMux._updateSrcClk(m_pMux.demuxPipe.programs[0].ProgNum)
+				clk := m_pMux._updateSrcClk(m_pMux.impl.getProgramNumber(0))
 
 				curCnt, _ := psiBuf.GetField("pktCnt").(int)
 				pcr, _ := clk.requestPcr(rv.Id, curCnt)
@@ -264,6 +155,9 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 		} else {
 			m_pMux.outputQueue = make([]common.IOUnit, 0)
 		}
+
+		m_pMux.control.outputUnitFetched()
+
 		return rv
 	}
 
@@ -271,17 +165,17 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 }
 
 func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
+	m_pMux.control.inputReceived()
+
 	// Perform demuxing on the received TS packet
 	inBuf, _ := inUnit.GetBuf().([]byte)
-	r := common.GetBufferReader(inBuf)
-	tsHeader := model.ReadTsHeader(&r)
-
-	m_pMux.demuxPipe.handleUnit(r.GetRemainedBuffer(), tsHeader, m_pMux.pktCnt)
+	m_pMux.impl.processUnit(inBuf, m_pMux.pktCnt)
 
 	m_pMux.pktCnt += 1
 
 	// Start fetching after clock is ready
-	if len(m_pMux.demuxPipe.programs) != 0 {
+	if m_pMux.impl.clockReady() {
+		m_pMux.control.outputUnitAdded()
 		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 		return reqUnit
 	} else {

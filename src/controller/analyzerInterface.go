@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/tony-507/analyzers/src/ioUtils"
+	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/worker"
 )
@@ -32,7 +33,10 @@ func (ctrl *AnalyzerController) buildParams() []worker.OverallParams {
 	// If demuxer is not needed, go to writer directly
 	if ctrl.itf.DemuxSetting.Mode != 0 {
 		rv = append(rv, worker.ConstructOverallParam("FileReader_1", inputParam, []string{"TsDemuxer_1"}))
-		rv = append(rv, worker.ConstructOverallParam("TsDemuxer_1", nil, []string{"DataHandler_1"}))
+
+		demuxParam := tsdemux.DemuxParams{Mode: tsdemux.DEMUX_FULL}
+
+		rv = append(rv, worker.ConstructOverallParam("TsDemuxer_1", demuxParam, []string{"DataHandler_1"}))
 		rv = append(rv, worker.ConstructOverallParam("DataHandler_1", nil, []string{"FileWriter_1"}))
 	} else {
 		rv = append(rv, worker.ConstructOverallParam("FileReader_1", inputParam, []string{"FileWriter_1"}))
