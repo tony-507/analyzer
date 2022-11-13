@@ -6,6 +6,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -18,6 +19,15 @@ type PAT struct {
 	curNextIdr bool
 	ProgramMap map[int]int
 	Crc32      int
+}
+
+func (t *PAT) ToString() string {
+	msg := fmt.Sprintf("PktCnt %d tableId %d tableIdExt %d version %d curNextIdr %v crc %d",
+		t.PktCnt, t.tableId, t.tableIdExt, t.Version, t.curNextIdr, t.Crc32)
+	for k, v := range t.ProgramMap {
+		msg += fmt.Sprintf("\npid %d => progNum %d", k, v)
+	}
+	return msg
 }
 
 func PATReadyForParse(buf []byte) bool {

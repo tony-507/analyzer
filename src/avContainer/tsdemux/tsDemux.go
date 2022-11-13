@@ -13,6 +13,7 @@ type IDemuxPipe interface {
 	getDuration() int
 	getProgramNumber(int) int
 	clockReady() bool
+	getOutputUnit() common.IOUnit
 }
 
 type PKT_TYPE int
@@ -46,16 +47,13 @@ const (
 )
 
 type TsDemuxer struct {
-	logger         logs.Log
-	impl           IDemuxPipe             // Actual demuxing operation
-	control        *demuxController       // Controller to handle demuxer internal state
-	progClkMap     map[int]*programSrcClk // progNum -> srcClk
-	outputQueue    []common.IOUnit        // Outputs to other plugins
-	isRunning      int                    // Counting channels, similar to waitGroup
-	pktCnt         int                    // The index of currently fed packet
-	resourceLoader *resources.ResourceLoader
-	name           string
-	wg             sync.WaitGroup
+	logger    logs.Log
+	impl      IDemuxPipe       // Actual demuxing operation
+	control   *demuxController // Controller to handle demuxer internal state
+	isRunning int              // Counting channels, similar to waitGroup
+	pktCnt    int              // The index of currently fed packet
+	name      string
+	wg        sync.WaitGroup
 }
 
 func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
@@ -70,20 +68,18 @@ func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
 		impl := getDummyPipe(m_pMux)
 		m_pMux.impl = &impl
 	case DEMUX_FULL:
-		impl := getDemuxPipe(m_pMux)
+		impl := getDemuxPipe(m_pMux.control)
 		m_pMux.impl = &impl
 	}
 	m_pMux._setup()
 }
 
 func (m_pMux *TsDemuxer) SetResource(resourceLoader *resources.ResourceLoader) {
-	m_pMux.resourceLoader = resourceLoader
+	m_pMux.control.setResource(resourceLoader)
 }
 
 func (m_pMux *TsDemuxer) _setup() {
 	m_pMux.logger = logs.CreateLogger("TsDemuxer")
-	m_pMux.progClkMap = make(map[int]*programSrcClk, 0)
-	m_pMux.outputQueue = make([]common.IOUnit, 0)
 	m_pMux.pktCnt = 1
 	m_pMux.isRunning = 0
 
@@ -98,15 +94,6 @@ func (m_pMux *TsDemuxer) _setupMonitor() {
 	m_pMux.control.monitor()
 }
 
-func (m_pMux *TsDemuxer) _updateSrcClk(progNum int) *programSrcClk {
-	_, hasKey := m_pMux.progClkMap[progNum]
-	if !hasKey {
-		clk := getProgramSrcClk(m_pMux)
-		m_pMux.progClkMap[progNum] = &clk
-	}
-	return m_pMux.progClkMap[progNum]
-}
-
 func (m_pMux *TsDemuxer) StartSequence() {
 	m_pMux.logger.Log(logs.INFO, "TSDemuxer has started")
 }
@@ -119,49 +106,37 @@ func (m_pMux *TsDemuxer) EndSequence() {
 }
 
 func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
-	outLen := len(m_pMux.outputQueue)
+	rv := m_pMux.impl.getOutputUnit()
 
-	if outLen != 0 {
-		rv := m_pMux.outputQueue[0]
+	pesBuf, isPes := rv.Buf.(common.PesBuf)
+	if isPes {
+		progNum, _ := pesBuf.GetField("progNum").(int)
 
-		pesBuf, isPes := rv.Buf.(common.PesBuf)
-		if isPes {
-			progNum, _ := pesBuf.GetField("progNum").(int)
+		// Stamp PCR here
+		clk := m_pMux.control.updateSrcClk(progNum)
 
-			// Stamp PCR here
-			clk := m_pMux._updateSrcClk(progNum)
+		curCnt, _ := pesBuf.GetField("pktCnt").(int)
+		pcr, _ := clk.requestPcr(rv.Id, curCnt)
+		pesBuf.SetPcr(pcr)
 
-			curCnt, _ := pesBuf.GetField("pktCnt").(int)
+		rv.Buf = pesBuf
+	} else {
+		psiBuf, isPsiBuf := rv.Buf.(common.PsiBuf)
+		if isPsiBuf {
+			// Use clock of first program as we want relative time only
+			clk := m_pMux.control.updateSrcClk(m_pMux.impl.getProgramNumber(0))
+
+			curCnt, _ := psiBuf.GetField("pktCnt").(int)
 			pcr, _ := clk.requestPcr(rv.Id, curCnt)
-			pesBuf.SetPcr(pcr)
+			psiBuf.SetPcr(pcr)
 
-			rv.Buf = pesBuf
-		} else {
-			psiBuf, isPsiBuf := rv.Buf.(common.PsiBuf)
-			if isPsiBuf {
-				// Use clock of first program as we want relative time only
-				clk := m_pMux._updateSrcClk(m_pMux.impl.getProgramNumber(0))
-
-				curCnt, _ := psiBuf.GetField("pktCnt").(int)
-				pcr, _ := clk.requestPcr(rv.Id, curCnt)
-				psiBuf.SetPcr(pcr)
-
-				rv.Buf = psiBuf
-			}
+			rv.Buf = psiBuf
 		}
-
-		if outLen > 1 {
-			m_pMux.outputQueue = m_pMux.outputQueue[1:]
-		} else {
-			m_pMux.outputQueue = make([]common.IOUnit, 0)
-		}
-
-		m_pMux.control.outputUnitFetched()
-
-		return rv
 	}
 
-	return nil
+	m_pMux.control.outputUnitFetched()
+
+	return rv
 }
 
 func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {

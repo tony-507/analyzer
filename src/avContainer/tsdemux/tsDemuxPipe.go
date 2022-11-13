@@ -15,7 +15,7 @@ type tsDemuxPipe struct {
 	control        *demuxController // Controller from demuxer
 	demuxedBuffers map[int][]byte   // A map mapping pid to bitstreams
 	demuxStartCnt  map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
-	callback       *TsDemuxer
+	outputQueue    []common.IOUnit  // Outputs to other plugins
 	content        model.PAT
 	programs       []model.PMT
 	isRunning      bool
@@ -33,11 +33,14 @@ func (m_pMux *tsDemuxPipe) _setup() {
 // Handle incoming data from demuxer
 func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 	head := model.ReadTsHeader(buf)
+	buf = buf[4:]
 
 	// If scrambled, throw away
 	if head.Tsc != 0 {
 		return
 	}
+
+	dataProcessed := true // controller use
 
 	// Determine the type of the unit
 	pid := head.Pid
@@ -46,6 +49,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 	} else if pid < 32 {
 		// Special pids
+		dataProcessed = false
 	} else {
 		_, hasKey := m_pMux.content.ProgramMap[pid]
 		if hasKey {
@@ -83,11 +87,17 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 					m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 				default:
 					// Not sure, passthrough first
+					dataProcessed = false
 				}
+			} else {
+				// Not contained in PMT
+				dataProcessed = false
 			}
 		}
 	}
-	m_pMux.control.dataParsed(pid)
+	if dataProcessed {
+		m_pMux.control.dataParsed(pid)
+	}
 }
 
 // Handle PSI data
@@ -96,7 +106,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
-	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 	if pusi {
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
@@ -127,6 +137,11 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 
 					if progIdx == -1 {
 						m_pMux.demuxedBuffers[pid] = buf
+						m_pMux.demuxStartCnt[pid] = pktCnt
+
+						if model.PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
+							m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
+						}
 					} else if m_pMux.programs[progIdx].Version != newVersion {
 						m_pMux.logger.Log(logs.INFO, "PMT at pid ", pid, " version change ", m_pMux.programs[progIdx].Version, " -> ", newVersion)
 					}
@@ -170,6 +185,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
+		m_pMux.logger.Log(logs.INFO, "PAT parsed: ", content.ToString())
 	case "PMT":
 		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 
@@ -177,7 +193,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		statMsg := fmt.Sprintf("At pkt#%d\n", pktCnt)
 		statMsg += fmt.Sprintf("Program %d\n", pmt.ProgNum)
 		for idx, stream := range pmt.Streams {
-			statMsg += fmt.Sprintf(" Stream %d: type %s with pid %d\n", idx, m_pMux._queryStreamType(stream.StreamType), stream.StreamPid)
+			statMsg += fmt.Sprintf(" Stream %d: type %s with pid %d\n", idx, m_pMux.control.queryStreamType(stream.StreamType), stream.StreamPid)
 		}
 		m_pMux.logger.Log(logs.INFO, statMsg)
 
@@ -194,7 +210,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 
 	outUnit := common.IOUnit{Buf: outBuf, IoType: 2, Id: pid}
-	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
 // Handle stream data
@@ -202,9 +218,9 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 	// Packet count
 	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
 	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
-	m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
-	clk := m_pMux.callback._updateSrcClk(progNum)
+	clk := m_pMux.control.updateSrcClk(progNum)
 
 	if afc > 1 {
 		af := model.ParseAdaptationField(buf)
@@ -224,7 +240,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 
 			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.GetSectionLength(), pesHeader.GetPts(), pesHeader.GetDts(), m_pMux.demuxedBuffers[pid], streamType)
 			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
-			m_pMux.callback.outputQueue = append(m_pMux.callback.outputQueue, outUnit)
+			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 		} else {
@@ -251,7 +267,7 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	for _, program := range m_pMux.programs {
 		for _, stream := range program.Streams {
 			if stream.StreamPid == pid {
-				return m_pMux._queryStreamType(stream.StreamType)
+				return m_pMux.control.queryStreamType(stream.StreamType)
 			}
 		}
 	}
@@ -259,15 +275,11 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	return ""
 }
 
-func (m_pMux *tsDemuxPipe) _queryStreamType(typeNum int) string {
-	return m_pMux.callback.resourceLoader.Query("streamType", typeNum)
-}
-
 // Duration is independent of program, so just choose the first one
 func (m_pMux *tsDemuxPipe) getDuration() int {
-	clk := m_pMux.callback._updateSrcClk(m_pMux.programs[0].ProgNum)
+	clk := m_pMux.control.updateSrcClk(m_pMux.programs[0].ProgNum)
 	start, _ := clk.requestPcr(-1, 0)
-	end, _ := clk.requestPcr(-1, m_pMux.callback.pktCnt)
+	end, _ := clk.requestPcr(-1, m_pMux.control.getInputCount())
 	return end - start
 }
 
@@ -279,8 +291,21 @@ func (m_pMux *tsDemuxPipe) clockReady() bool {
 	return len(m_pMux.programs) > 0
 }
 
-func getDemuxPipe(callback *TsDemuxer) tsDemuxPipe {
-	rv := tsDemuxPipe{callback: callback, control: callback.control}
+func (m_pMux *tsDemuxPipe) getOutputUnit() common.IOUnit {
+	if len(m_pMux.outputQueue) == 0 {
+		panic("[TsDemuxPipe] Fatal error: Fetching from an empty output queue")
+	}
+	outUnit := m_pMux.outputQueue[0]
+	if len(m_pMux.outputQueue) == 1 {
+		m_pMux.outputQueue = make([]common.IOUnit, 0)
+	} else {
+		m_pMux.outputQueue = m_pMux.outputQueue[1:]
+	}
+	return outUnit
+}
+
+func getDemuxPipe(control *demuxController) tsDemuxPipe {
+	rv := tsDemuxPipe{control: control}
 	rv._setup()
 	return rv
 }

@@ -35,8 +35,7 @@ func PMTReadyForParse(buf []byte) bool {
 	if len(r.GetRemainedBuffer()) < 2 {
 		return false
 	}
-	r.ReadBits(pFieldLen * 8)
-	r.ReadBits(6)
+	r.ReadBits(pFieldLen*8 + 8 + 6)
 
 	pmtLen := pFieldLen + 3
 	pmtLen += r.ReadBits(10)

@@ -52,11 +52,7 @@ func readPMTTest() testUtils.Testcase {
 		parsed := model.ParsePMT(dummyPMT, 258, 0)
 
 		err := testUtils.Assert_obj_equal(expectedPmt, parsed)
-		if err != nil {
-			return nil, err
-		} else {
-			return nil, nil
-		}
+		return nil, err
 	})
 
 	return tc

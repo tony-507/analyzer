@@ -5,9 +5,10 @@ import (
 )
 
 type dummyPipe struct {
-	callback *TsDemuxer
-	ready    bool
-	inCnt    int
+	callback    *TsDemuxer
+	outputQueue []common.IOUnit
+	ready       bool
+	inCnt       int
 }
 
 func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) {
@@ -18,7 +19,7 @@ func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) {
 	}
 	dummy := common.IOUnit{Buf: buf, IoType: 3, Id: -1}
 	if dp.ready {
-		dp.callback.outputQueue = append(dp.callback.outputQueue, dummy)
+		dp.outputQueue = append(dp.outputQueue, dummy)
 	}
 }
 
@@ -32,6 +33,19 @@ func (dp *dummyPipe) getProgramNumber(idx int) int {
 
 func (dp *dummyPipe) clockReady() bool {
 	return dp.ready
+}
+
+func (dp *dummyPipe) getOutputUnit() common.IOUnit {
+	if len(dp.outputQueue) == 0 {
+		panic("[DummyPipe] Fatal error: Fetching from an empty output queue")
+	}
+	outUnit := dp.outputQueue[0]
+	if len(dp.outputQueue) == 1 {
+		dp.outputQueue = make([]common.IOUnit, 0)
+	} else {
+		dp.outputQueue = dp.outputQueue[1:]
+	}
+	return outUnit
 }
 
 func getDummyPipe(callback *TsDemuxer) dummyPipe {

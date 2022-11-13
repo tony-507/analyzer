@@ -1,15 +1,15 @@
 package tsdemux
 
 type programSrcClk struct {
-	pcr       []int       // PCR value from input stream
-	pcrLoc    []int       // Location of the PCR value
-	curMaxLoc int         // Max index that contains PCR, not read from pcrLoc to prevent race condition
-	eptStart  bool        // Indicate if extrapolation has started
-	streamCnt map[int]int // The packet count of each stream received, used for dropping outdated pcr values
-	callback  *TsDemuxer  // Callback to demuxer
+	pcr       []int            // PCR value from input stream
+	pcrLoc    []int            // Location of the PCR value
+	curMaxLoc int              // Max index that contains PCR, not read from pcrLoc to prevent race condition
+	eptStart  bool             // Indicate if extrapolation has started
+	streamCnt map[int]int      // The packet count of each stream received, used for dropping outdated pcr values
+	callback  *demuxController // Callback to demuxer
 }
 
-func getProgramSrcClk(callback *TsDemuxer) programSrcClk {
+func getProgramSrcClk(callback *demuxController) programSrcClk {
 	return programSrcClk{pcr: make([]int, 0), pcrLoc: make([]int, 0), streamCnt: make(map[int]int, 0), callback: callback}
 }
 

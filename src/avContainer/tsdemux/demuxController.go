@@ -3,17 +3,21 @@ package tsdemux
 import (
 	"fmt"
 	"time"
+
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 // Internal controller for demuxer
 // This enhances data protection among structs and provides higher flexibility
 type demuxController struct {
-	isRunning  bool        // State of demuxer
-	pollPeriod int         // Period for stuck detection
-	inCnt      int         // Current input count
-	pCnt       int         // Current parsing count
-	outLen     int         // Output queue length
-	pktCntMap  map[int]int // pid -> # of packets
+	isRunning      bool                   // State of demuxer
+	pollPeriod     int                    // Period for stuck detection
+	inCnt          int                    // Current input count
+	pCnt           int                    // Current parsing count
+	outLen         int                    // Output queue length
+	progClkMap     map[int]*programSrcClk // progNum -> srcClk
+	pktCntMap      map[int]int            // pid -> # of packets
+	resourceLoader *resources.ResourceLoader
 }
 
 func (dc *demuxController) monitor() {
@@ -33,16 +37,41 @@ func (dc *demuxController) inputReceived() {
 	dc.inCnt += 1
 }
 
+func (dc *demuxController) getInputCount() int {
+	return dc.inCnt
+}
+
 func (dc *demuxController) dataParsed(pid int) {
-	fmt.Println("Data parsed!, pid: ", pid)
 	dc.pCnt += 1
 	if _, hasPid := dc.pktCntMap[pid]; !hasPid {
 		dc.pktCntMap[pid] = 0
 	}
+	dc.pktCntMap[pid] += 1
 }
 
 func (dc *demuxController) outputUnitAdded() {
 	dc.outLen += 1
+}
+
+func (dc *demuxController) updateSrcClk(progNum int) *programSrcClk {
+	_, hasKey := dc.progClkMap[progNum]
+	if !hasKey {
+		clk := getProgramSrcClk(dc)
+		dc.progClkMap[progNum] = &clk
+	}
+	return dc.progClkMap[progNum]
+}
+
+func (dc *demuxController) setResource(resourceLoader *resources.ResourceLoader) {
+	dc.resourceLoader = resourceLoader
+}
+
+func (dc *demuxController) queryStreamType(typeNum int) string {
+	if dc.resourceLoader != nil {
+		return dc.resourceLoader.Query("streamType", typeNum)
+	} else {
+		return "undefined"
+	}
 }
 
 func (dc *demuxController) stop() {
@@ -83,6 +112,6 @@ func (dc *demuxController) printSummary(duration int) {
 }
 
 func getControl() *demuxController {
-	rv := demuxController{isRunning: true, pollPeriod: 5, inCnt: 0, pCnt: 0, outLen: 0, pktCntMap: make(map[int]int, 0)}
+	rv := demuxController{isRunning: true, pollPeriod: 5, inCnt: 0, pCnt: 0, outLen: 0, progClkMap: make(map[int]*programSrcClk, 0), pktCntMap: make(map[int]int, 0)}
 	return &rv
 }
