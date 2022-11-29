@@ -1,4 +1,4 @@
-# Analyzer output
-/output/
+build-tools
+build-local.sh
 # Output files
-/build/
+/analyzers/build/
