@@ -3,6 +3,7 @@ package datahandler
 import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 type DataHandler interface {
@@ -11,15 +12,22 @@ type DataHandler interface {
 
 type DataHandlerFactory struct {
 	logger     logs.Log
+	callback   common.PostRequestHandler
 	handlers   map[int]int
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
 }
 
+func (df *DataHandlerFactory) SetCallback(callback common.PostRequestHandler) {
+	df.callback = callback
+}
+
 func (df *DataHandlerFactory) SetParameter(m_parameter interface{}) {
 	df._setup()
 }
+
+func (df *DataHandlerFactory) SetResource(loader *resources.ResourceLoader) {}
 
 func (df *DataHandlerFactory) _setup() {
 	df.logger = logs.CreateLogger("DataHandlerFactory")
@@ -34,12 +42,14 @@ func (df *DataHandlerFactory) StartSequence() {
 
 func (df *DataHandlerFactory) EndSequence() {
 	df.logger.Log(logs.INFO, "Data handler factory is stopped")
+	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
+	common.Post_request(df.callback, df.name, eosUnit)
 }
 
 // Handle only PesBuf
-func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) common.CmUnit {
+func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) {
 	if unit == nil {
-		return nil
+		return
 	}
 
 	// Extract buffer from input unit
@@ -61,7 +71,7 @@ func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) common.CmUnit {
 
 	// Directly output the unit
 	reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
-	return reqUnit
+	common.Post_request(df.callback, df.name, reqUnit)
 }
 
 func (df *DataHandlerFactory) FetchUnit() common.CmUnit {

@@ -17,19 +17,21 @@ type Worker struct {
 
 // Main function for running a graph
 func (w *Worker) RunGraph() {
+	var rootPg *Plugin
 	// Start all plugins with a for loop
 	for _, pg := range w.graph.nodes {
-		pg.Work.SetResource(&w.resourceLoader)
-		pg.SetParameter(pg.m_parameter)
-		pg.StartSequence()
-	}
-	// Suspend the main thread here to keep the pipeline working
-	// Break the loop once all plugins have stopped
-	for {
-		// Break the service loop if stop signal is set
-		if w.isRunning == 0 {
-			break
+		// Handle root separately to prevent race condition
+		if pg.isRoot() {
+			rootPg = pg
 		}
+		pg.setParameter(pg.m_parameter)
+		pg.setResource(&w.resourceLoader)
+		pg.startSequence()
+	}
+	rootPg.deliverUnit(nil)
+
+	// Wait until all plugins stop
+	for w.isRunning != 0 {
 	}
 }
 
@@ -80,18 +82,19 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 
 	switch reqType {
 	case common.FETCH_REQUEST:
-		outputUnit := node.FetchUnit()
+		outputUnit := node.fetchUnit()
 		for _, child := range node.children {
-			child.DeliverUnit(outputUnit)
+			child.deliverUnit(outputUnit)
 		}
 	case common.DELIVER_REQUEST:
-		outputUnit := node.parent[0].FetchUnit()
-		node.DeliverUnit(outputUnit)
+		outputUnit := node.parent[0].fetchUnit()
+		node.deliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
+		w.logger.Log(logs.TRACE, "Worker receives EOS from ", node.Name)
 		// Trigger EndSequence of children nodes
 		for _, child := range node.children {
-			child.EndSequence()
+			child.endSequence()
 		}
 	case common.RESOURCE_REQUEST:
 		query, ok := unit.GetBuf().([]string)

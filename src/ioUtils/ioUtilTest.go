@@ -77,30 +77,27 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY}
 		ir.SetParameter(m_parameter)
 
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+
 		for i := 0; i < 5; i++ {
-			unit := ir.DeliverUnit(nil)
-			reqUnit, _ := unit.(common.ReqUnit)
-			name, isStr := reqUnit.GetBuf().(string)
-			if !isStr {
-				return nil, errors.New("Buffer is not a string")
-			}
-			reqType := reqUnit.GetField("reqType")
-
-			bufErr := testUtils.Assert_equal(name, "dummy")
-			if bufErr != nil {
-				return nil, bufErr
-			}
-
-			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
-			if typeErr != nil {
-				return nil, typeErr
-			}
+			ir.start()
 		}
-		unit := ir.DeliverUnit(nil)
-		reqUnit, _ := unit.(common.ReqUnit)
-		reqType := reqUnit.GetField("reqType")
-		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
-		return nil, err
+
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+		ir.start()
+		return nil, nil
 	})
 
 	tc.Describe("Deliver with skipping does not change behaviour", func(input interface{}) (interface{}, error) {
@@ -108,30 +105,28 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, SkipCnt: 2}
 		ir.SetParameter(m_parameter)
 
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+
 		for i := 0; i < 5; i++ {
-			unit := ir.DeliverUnit(nil)
-			reqUnit, _ := unit.(common.ReqUnit)
-			name, isStr := reqUnit.GetBuf().(string)
-			if !isStr {
-				return nil, errors.New("Buffer is not a string")
-			}
-			reqType := reqUnit.GetField("reqType")
-
-			bufErr := testUtils.Assert_equal(name, "dummy")
-			if bufErr != nil {
-				return nil, bufErr
-			}
-
-			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
-			if typeErr != nil {
-				return nil, typeErr
-			}
+			ir.start()
 		}
-		unit := ir.DeliverUnit(nil)
-		reqUnit, _ := unit.(common.ReqUnit)
-		reqType := reqUnit.GetField("reqType")
-		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
-		return nil, err
+
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+
+		ir.start()
+		return nil, nil
 	})
 
 	tc.Describe("Deliver with max input count", func(input interface{}) (interface{}, error) {
@@ -139,30 +134,28 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, MaxInCnt: 2}
 		ir.SetParameter(m_parameter)
 
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+
 		for i := 0; i < 2; i++ {
-			unit := ir.DeliverUnit(nil)
-			reqUnit, _ := unit.(common.ReqUnit)
-			name, isStr := reqUnit.GetBuf().(string)
-			if !isStr {
-				return nil, errors.New("Buffer is not a string")
-			}
-			reqType := reqUnit.GetField("reqType")
-
-			bufErr := testUtils.Assert_equal(name, "dummy")
-			if bufErr != nil {
-				return nil, bufErr
-			}
-
-			typeErr := testUtils.Assert_equal(reqType, common.FETCH_REQUEST)
-			if typeErr != nil {
-				return nil, typeErr
-			}
+			ir.start()
 		}
-		unit := ir.DeliverUnit(nil)
-		reqUnit, _ := unit.(common.ReqUnit)
-		reqType := reqUnit.GetField("reqType")
-		err := testUtils.Assert_equal(reqType, common.EOS_REQUEST)
-		return nil, err
+
+		ir.SetCallback(func(s string, unit common.CmUnit) {
+			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+			err := testUtils.Assert_obj_equal(expected, unit)
+			if err != nil {
+				panic(err)
+			}
+		})
+
+		ir.start()
+		return nil, nil
 	})
 
 	return tc

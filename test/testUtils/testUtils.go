@@ -103,7 +103,7 @@ func (t *Tester) runNextIfPanic() {
 // Function that runs a test setup
 // It is implemented separately to allow recovery of testing after a test fails
 func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
-	defer t.runNextIfPanic()
+	// defer t.runNextIfPanic()
 	res := true
 
 	fmt.Printf("\tRunning %s\n", pair)

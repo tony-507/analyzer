@@ -10,7 +10,7 @@ import (
 )
 
 func setupLogging() {
-	logs.SetProperty("level", "info")
+	logs.SetProperty("level", "trace")
 	logs.SetProperty("format", "%t [%n] [%l] %s")
 }
 

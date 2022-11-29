@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/controller"
 	"github.com/tony-507/analyzers/src/logs"
@@ -12,6 +12,8 @@ import (
 
 func main() {
 	logger := logs.CreateLogger("main")
+	logs.SetProperty("level", "trace")
+
 	if len(os.Args) != 4 {
 		logger.Log(logs.ERROR, "Wrong number of arguments")
 		logger.Log(logs.INFO, "Usage: editCap <start> <end>")

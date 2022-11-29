@@ -48,12 +48,17 @@ const (
 
 type TsDemuxer struct {
 	logger    logs.Log
+	callback  common.PostRequestHandler
 	impl      IDemuxPipe       // Actual demuxing operation
 	control   *demuxController // Controller to handle demuxer internal state
 	isRunning int              // Counting channels, similar to waitGroup
 	pktCnt    int              // The index of currently fed packet
 	name      string
 	wg        sync.WaitGroup
+}
+
+func (m_pMux *TsDemuxer) SetCallback(callback common.PostRequestHandler) {
+	m_pMux.callback = callback
 }
 
 func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
@@ -103,6 +108,8 @@ func (m_pMux *TsDemuxer) EndSequence() {
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 	m_pMux.wg.Wait()
+	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
+	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
 
 func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
@@ -139,7 +146,7 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
+func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet
@@ -152,10 +159,9 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) common.CmUnit {
 	if m_pMux.impl.clockReady() {
 		m_pMux.control.outputUnitAdded()
 		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
-		return reqUnit
+		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
 	} else {
 		m_pMux.logger.Log(logs.INFO, "Demuxer returns null unit")
-		return nil
 	}
 }
 

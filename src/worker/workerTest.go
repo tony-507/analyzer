@@ -38,10 +38,7 @@ func pluginUnitTest() testUtils.Testcase {
 			return nil, err
 		}
 		inUnit := common.IOUnit{Buf: 2, IoType: 0, Id: 0}
-		_, err := pg.DeliverUnit(inUnit)
-		if err != nil {
-			return nil, err
-		}
+		pg.deliverUnit(inUnit)
 		return pg, nil
 	})
 
@@ -51,7 +48,7 @@ func pluginUnitTest() testUtils.Testcase {
 			err := errors.New("input is not a plugin")
 			return nil, err
 		}
-		unit := pg.FetchUnit()
+		unit := pg.fetchUnit()
 
 		rv, isInt := unit.GetBuf().(int)
 		if !isInt {
@@ -100,15 +97,12 @@ func pluginInterfaceTest() testUtils.Testcase {
 
 	tc.Describe("Deliver to root", func(input interface{}) (interface{}, error) {
 		unit := common.IOUnit{Buf: 20, IoType: 0, Id: 0}
-		_, err := dummy1.DeliverUnit(unit)
-		if err != nil {
-			return nil, err
-		}
+		dummy1.deliverUnit(unit)
 		return nil, nil
 	})
 
 	tc.Describe("Check fetch count of root", func(input interface{}) (interface{}, error) {
-		unit := dummy1.FetchUnit()
+		unit := dummy1.fetchUnit()
 
 		cnt, _ := unit.GetBuf().(int)
 		cnt = cnt % 10
@@ -121,7 +115,7 @@ func pluginInterfaceTest() testUtils.Testcase {
 	})
 
 	tc.Describe("Check fetch count of leaf", func(input interface{}) (interface{}, error) {
-		unit := dummy6.FetchUnit()
+		unit := dummy6.fetchUnit()
 		cnt, _ := unit.GetBuf().(int)
 		err := testUtils.Assert_equal(cnt, 620013)
 		if err != nil {
@@ -143,7 +137,7 @@ func workerRunGraphTest() testUtils.Testcase {
 	dummy3 := GetPluginByName("Dummy_3")
 	dummy4 := GetPluginByName("Dummy_4")
 
-	tc.Describe("Graph with one input edge and one output edge", func (input interface{}) (interface{}, error) {
+	tc.Describe("Graph with one input edge and one output edge", func(input interface{}) (interface{}, error) {
 		// Construct graph now
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
@@ -162,7 +156,7 @@ func workerRunGraphTest() testUtils.Testcase {
 
 		w.RunGraph()
 
-		unit := dummy3.FetchUnit()
+		unit := dummy3.fetchUnit()
 		cnt, _ := unit.GetBuf().(int)
 
 		err := testUtils.Assert_equal(cnt, 20001)
@@ -173,7 +167,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		return nil, nil
 	})
 
-	tc.Describe("Graph with multiple input edges", func (input interface{}) (interface{}, error) {
+	tc.Describe("Graph with multiple input edges", func(input interface{}) (interface{}, error) {
 		// Construct graph now
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
@@ -195,7 +189,7 @@ func workerRunGraphTest() testUtils.Testcase {
 
 		w.RunGraph()
 
-		unit := dummy4.FetchUnit()
+		unit := dummy4.fetchUnit()
 		cnt, _ := unit.GetBuf().(int)
 
 		err := testUtils.Assert_equal(cnt, 4608225)
@@ -206,7 +200,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		return nil, nil
 	})
 
-	tc.Describe("Graph with multiple output edges", func (input interface{}) (interface{}, error) {
+	tc.Describe("Graph with multiple output edges", func(input interface{}) (interface{}, error) {
 		// Construct graph now
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
@@ -227,7 +221,7 @@ func workerRunGraphTest() testUtils.Testcase {
 
 		w.RunGraph()
 
-		unit1 := dummy3.FetchUnit()
+		unit1 := dummy3.fetchUnit()
 		cnt1, _ := unit1.GetBuf().(int)
 
 		err := testUtils.Assert_equal(cnt1, 1514212)
@@ -235,7 +229,7 @@ func workerRunGraphTest() testUtils.Testcase {
 			return nil, err
 		}
 
-		unit2 := dummy4.FetchUnit()
+		unit2 := dummy4.fetchUnit()
 		cnt2, _ := unit2.GetBuf().(int)
 
 		err = testUtils.Assert_equal(cnt2, 68156039)
@@ -249,12 +243,12 @@ func workerRunGraphTest() testUtils.Testcase {
 	return tc
 }
 
-func graphBuildingTest() testUtils.Testcase  {
+func graphBuildingTest() testUtils.Testcase {
 	// Since graph uses pointers to store plugins, we cannot compare the constructed graph with one built manually
 	// As an alternative, we use representative fields to compare the graph
 	tc := testUtils.GetTestCase("GraphBuildingTest", 0)
 
-	tc.Describe("Build graph in which each node has one input edge and one output edge", func (input interface{}) (interface{}, error) {
+	tc.Describe("Build graph in which each node has one input edge and one output edge", func(input interface{}) (interface{}, error) {
 		dummyParam1 := ConstructOverallParam("Dummy_1", 1, []string{"Dummy_2"})
 		dummyParam2 := ConstructOverallParam("Dummy_2", 2, []string{"Dummy_3"})
 		dummyParam3 := ConstructOverallParam("Dummy_3", 3, []string{})
@@ -263,8 +257,8 @@ func graphBuildingTest() testUtils.Testcase  {
 
 		// Check each node
 		for idx, pg := range builtOutput.nodes {
-			pgName := "Dummy_" + strconv.Itoa(idx + 1)
-			if (pg.Name != pgName) {
+			pgName := "Dummy_" + strconv.Itoa(idx+1)
+			if pg.Name != pgName {
 				msg := fmt.Sprintf("Name not match. Expecting %s, but got %s", pgName, pg.Name)
 				return nil, errors.New(msg)
 			}
@@ -272,8 +266,8 @@ func graphBuildingTest() testUtils.Testcase  {
 			if !isInt {
 				return nil, errors.New("Parameter is not an integer")
 			}
-			if param != idx + 1 {
-				msg := fmt.Sprintf("Parameter not match. Expecting %s, but got %s", strconv.Itoa(idx + 1),  strconv.Itoa(param))
+			if param != idx+1 {
+				msg := fmt.Sprintf("Parameter not match. Expecting %s, but got %s", strconv.Itoa(idx+1), strconv.Itoa(param))
 				return nil, errors.New(msg)
 			}
 			if idx != 2 {
@@ -281,7 +275,7 @@ func graphBuildingTest() testUtils.Testcase  {
 					msg := fmt.Sprintf("Output edge count not match. Expecting 1, but got %s", strconv.Itoa(len(pg.children)))
 					return nil, errors.New(msg)
 				}
-				nextName := "Dummy_" + strconv.Itoa(idx + 2)
+				nextName := "Dummy_" + strconv.Itoa(idx+2)
 				if pg.children[0].Name != nextName {
 					msg := fmt.Sprintf("Children edge not match. Expecting %s, but got %s", pg.children[0].Name, nextName)
 					return nil, errors.New(msg)

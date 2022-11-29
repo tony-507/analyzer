@@ -23,7 +23,7 @@ func (g *Graph) SetCallback(w *Worker, curNode *Plugin) {
 				g.SetCallback(w, child)
 			}
 		}
-		curNode.SetCallback(w)
+		curNode.setCallback(w.PostRequest)
 	}
 }
 

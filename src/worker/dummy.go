@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"errors"
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -14,7 +13,7 @@ type DummyPlugin struct {
 	logger   logs.Log
 	inCnt    int
 	fetchCnt int
-	callback *Worker
+	callback common.PostRequestHandler
 	name     string
 	role     int // 0 represents a root, 1 represents non-root
 }
@@ -25,42 +24,37 @@ func (pg *DummyPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
 	// pg.impl.SetResource(resourceLoader)
 }
 
-func (dp *DummyPlugin) StartSequence() {
-	if dp.role == 0 {
-		unit := common.IOUnit{Buf: 20, IoType: 0, Id: 0}
-		go dp.DeliverUnit(unit)
-	}
-}
+func (dp *DummyPlugin) StartSequence() {}
 
 func (dp *DummyPlugin) EndSequence() {
 	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-	dp.callback.PostRequest(dp.name, eosUnit)
+	common.Post_request(dp.callback, dp.name, eosUnit)
 }
 
-func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) (bool, error) {
+func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) {
 	// Ensure correct order of calling by suspending worker thread
 	if dp.role == 0 {
 		time.Sleep(time.Second)
 	}
 
-	buf, isInt := unit.GetBuf().(int)
-	if !isInt {
-		err := errors.New("buf is not int")
-		return false, err
+	buf := 0
+	if unit == nil {
+		buf = 20
+	} else {
+		buf, _ = unit.GetBuf().(int)
 	}
+
 	dp.inCnt += buf
 
 	if buf > 10 {
 		reqUnit := common.MakeReqUnit(dp.name, common.FETCH_REQUEST)
-		dp.callback.PostRequest(dp.name, reqUnit)
+		common.Post_request(dp.callback, dp.name, reqUnit)
 	}
 
 	if dp.role == 0 {
 		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-		dp.callback.PostRequest(dp.name, eosUnit)
+		common.Post_request(dp.callback, dp.name, eosUnit)
 	}
-
-	return true, nil
 }
 
 func (dp *DummyPlugin) FetchUnit() common.CmUnit {
@@ -69,10 +63,12 @@ func (dp *DummyPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (dp *DummyPlugin) SetCallback(callback *Worker) {
+func (dp *DummyPlugin) SetCallback(callback common.PostRequestHandler) {
 	dp.callback = callback
 }
 
 func GetDummyPlugin(name string, isRoot int) DummyPlugin {
-	return DummyPlugin{logger: logs.CreateLogger("Dummy"), inCnt: 0, fetchCnt: 0, name: name, role: isRoot}
+	rv := DummyPlugin{logger: logs.CreateLogger("Dummy"), inCnt: 0, fetchCnt: 0, name: name, role: isRoot}
+	rv.SetCallback(func(s string, cu common.CmUnit) {})
+	return rv
 }

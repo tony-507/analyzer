@@ -93,6 +93,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
+	m_writer.logger.Log(logs.TRACE, "JSON handler for pid ", pid, " starts")
 
 	isInit := false
 
@@ -128,10 +129,12 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	}
 
 	f.Write([]byte("\n]}"))
+	m_writer.logger.Log(logs.TRACE, "JSON handler for pid ", pid, " stops")
 }
 
 func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
+	m_writer.logger.Log(logs.TRACE, "CSV handler for pid ", pid, " starts")
 
 	fname := ""
 	if pid != -1 {
@@ -180,10 +183,12 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 
 		w.Flush()
 	}
+	m_writer.logger.Log(logs.TRACE, "CSV handler for pid ", pid, " stops")
 }
 
 func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
+	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " starts")
 
 	fname := fmt.Sprintf("%sout.ts", m_writer.outFolder)
 	f, err := os.Create(fname)
@@ -202,6 +207,7 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 		_, err := f.Write(buf)
 		check(err)
 	}
+	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " ends")
 }
 
 func GetFileWriter() *FileWriter {

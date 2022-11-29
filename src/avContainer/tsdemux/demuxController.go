@@ -2,6 +2,7 @@ package tsdemux
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/tony-507/analyzers/src/resources"
@@ -18,11 +19,13 @@ type demuxController struct {
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	pktCntMap      map[int]int            // pid -> # of packets
 	resourceLoader *resources.ResourceLoader
+	mtx            sync.Mutex
 }
 
 func (dc *demuxController) monitor() {
 	for dc.isRunning {
 		time.Sleep(time.Duration(dc.pollPeriod) * time.Second)
+		dc.mtx.Lock()
 		if dc.inCnt == dc.pCnt {
 			statMsg := "tsDemuxer status\n"
 			statMsg += fmt.Sprintf("\tCurrent count: %d\n", dc.inCnt)
@@ -30,11 +33,14 @@ func (dc *demuxController) monitor() {
 			statMsg += fmt.Sprintf("\tOutput queue size: %d\n", dc.outLen)
 			fmt.Println(statMsg)
 		}
+		dc.mtx.Unlock()
 	}
 }
 
 func (dc *demuxController) inputReceived() {
+	dc.mtx.Lock()
 	dc.inCnt += 1
+	dc.mtx.Unlock()
 }
 
 func (dc *demuxController) getInputCount() int {
@@ -42,7 +48,10 @@ func (dc *demuxController) getInputCount() int {
 }
 
 func (dc *demuxController) dataParsed(pid int) {
+	dc.mtx.Lock()
 	dc.pCnt += 1
+	dc.mtx.Unlock()
+
 	if _, hasPid := dc.pktCntMap[pid]; !hasPid {
 		dc.pktCntMap[pid] = 0
 	}

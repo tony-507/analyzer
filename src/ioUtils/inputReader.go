@@ -3,6 +3,7 @@ package ioUtils
 import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/resources"
 )
 
 const (
@@ -24,7 +25,9 @@ func check(err error) {
 
 type InputReader struct {
 	logger      logs.Log
+	callback    common.PostRequestHandler
 	impl        IReader
+	isRunning   bool
 	outputQueue []common.CmUnit
 	outCnt      int
 	name        string
@@ -34,12 +37,21 @@ type InputReader struct {
 
 func (ir *InputReader) StartSequence() {
 	ir.logger.Log(logs.INFO, "File reader is started")
+	ir.isRunning = true
+
 	ir.impl.startRecv()
 }
 
 func (ir *InputReader) EndSequence() {
 	ir.logger.Log(logs.INFO, "Stopping file reader, fetch count = ", ir.outCnt)
+	ir.isRunning = false
 	ir.impl.stopRecv()
+	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+	common.Post_request(ir.callback, ir.name, eosUnit)
+}
+
+func (ir *InputReader) SetCallback(callback common.PostRequestHandler) {
+	ir.callback = callback
 }
 
 func (ir *InputReader) SetParameter(m_parameter interface{}) {
@@ -70,18 +82,25 @@ func (ir *InputReader) SetParameter(m_parameter interface{}) {
 	ir.impl.setup()
 }
 
-func (ir *InputReader) DeliverUnit(unit common.CmUnit) common.CmUnit {
+func (ir *InputReader) SetResource(loader *resources.ResourceLoader) {}
+
+func (ir *InputReader) DeliverUnit(unit common.CmUnit) {
+	for ir.isRunning {
+		ir.start()
+	}
+}
+
+func (ir *InputReader) start() {
+	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
 	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
 		ir.outCnt += 1
 		ir.maxInCnt -= 1
 		ir.outputQueue = append(ir.outputQueue, newUnit)
 		reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-		return reqUnit
+		common.Post_request(ir.callback, ir.name, reqUnit)
 	} else {
 		ir.EndSequence()
-		reqUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-		return reqUnit
 	}
 }
 
