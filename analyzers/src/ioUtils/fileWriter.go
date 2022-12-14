@@ -31,7 +31,7 @@ func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
 	for i := range m_writer.writerMap {
-		m_writer.writerMap[i] = make(chan common.CmUnit)
+		m_writer.writerMap[i] = make(chan common.CmUnit, 1)
 	}
 
 	err := os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary

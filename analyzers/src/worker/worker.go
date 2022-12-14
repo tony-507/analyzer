@@ -114,6 +114,10 @@ func (w *Worker) SetGraph(graph Graph) {
 	isRunning := 0
 	for _, node := range w.graph.nodes {
 		isRunning += len(node.children)
+		if len(node.parent) == 0 {
+			// Root node
+			isRunning += 1
+		}
 	}
 	w.isRunning = isRunning
 }

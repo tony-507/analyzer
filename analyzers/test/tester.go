@@ -11,9 +11,13 @@ import (
 func ConstructTestFlow() testUtils.Tester {
 	// We may accept some filters here
 	t := testUtils.GetTester()
+
+	// Unit tests
 	common.AddUnitTestSuite(&t)
 	ioUtils.AddIoUtilsTestSuite(&t)
+	ioUtils.AddIoUtilFileTestSuite(&t)
 	avContainer.AddUnitTestSuite(&t)
 	worker.AddUnitTestSuite(&t)
+
 	return t
 }

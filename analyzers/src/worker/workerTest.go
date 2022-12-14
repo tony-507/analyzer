@@ -128,17 +128,16 @@ func pluginInterfaceTest() testUtils.Testcase {
 	return tc
 }
 
-func workerRunGraphTest() testUtils.Testcase {
-	tc := testUtils.GetTestCase("workerRunGraphTest", 5)
+func simpleGraphTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("simpleGraphTest", 5)
 
 	// Declare here to prevent dangling pointer
 	dummy1 := GetPluginByName("Dummy_root")
 	dummy2 := GetPluginByName("Dummy_2")
 	dummy3 := GetPluginByName("Dummy_3")
-	dummy4 := GetPluginByName("Dummy_4")
 
 	tc.Describe("Graph with one input edge and one output edge", func(input interface{}) (interface{}, error) {
-		// Construct graph now
+		// 1 -> 2 -> 3
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
 		graph.AddNode(&dummy2)
@@ -167,8 +166,22 @@ func workerRunGraphTest() testUtils.Testcase {
 		return nil, nil
 	})
 
+	return tc
+}
+
+func multiInputGraphTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("multiInputGraphTest", 5)
+
+	// Declare here to prevent dangling pointer
+	dummy1 := GetPluginByName("Dummy_root")
+	dummy2 := GetPluginByName("Dummy_2")
+	dummy3 := GetPluginByName("Dummy_3")
+	dummy4 := GetPluginByName("Dummy_4")
+
 	tc.Describe("Graph with multiple input edges", func(input interface{}) (interface{}, error) {
-		// Construct graph now
+		//   -> 2
+		// 1      -> 4
+		//   -> 3
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
 		graph.AddNode(&dummy2)
@@ -192,7 +205,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		unit := dummy4.fetchUnit()
 		cnt, _ := unit.GetBuf().(int)
 
-		err := testUtils.Assert_equal(cnt, 4608225)
+		err := testUtils.Assert_equal(cnt, 40002)
 		if err != nil {
 			return nil, err
 		}
@@ -200,8 +213,22 @@ func workerRunGraphTest() testUtils.Testcase {
 		return nil, nil
 	})
 
+	return tc
+}
+
+func multiOutputGraphTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("multiOutputGraphTest", 5)
+
+	// Declare here to prevent dangling pointer
+	dummy1 := GetPluginByName("Dummy_root")
+	dummy2 := GetPluginByName("Dummy_2")
+	dummy3 := GetPluginByName("Dummy_3")
+	dummy4 := GetPluginByName("Dummy_4")
+
 	tc.Describe("Graph with multiple output edges", func(input interface{}) (interface{}, error) {
-		// Construct graph now
+		//        -> 3
+		// 1 -> 2
+		//        -> 4
 		graph := GetEmptyGraph()
 		graph.AddNode(&dummy1)
 		graph.AddNode(&dummy2)
@@ -224,7 +251,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		unit1 := dummy3.fetchUnit()
 		cnt1, _ := unit1.GetBuf().(int)
 
-		err := testUtils.Assert_equal(cnt1, 1514212)
+		err := testUtils.Assert_equal(cnt1, 20001)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +259,7 @@ func workerRunGraphTest() testUtils.Testcase {
 		unit2 := dummy4.fetchUnit()
 		cnt2, _ := unit2.GetBuf().(int)
 
-		err = testUtils.Assert_equal(cnt2, 68156039)
+		err = testUtils.Assert_equal(cnt2, 20001)
 		if err != nil {
 			return nil, err
 		}
@@ -295,7 +322,9 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 
 	tmg.AddTest(pluginUnitTest, []string{"worker"})
 	tmg.AddTest(pluginInterfaceTest, []string{"worker"})
-	tmg.AddTest(workerRunGraphTest, []string{"worker"})
+	tmg.AddTest(simpleGraphTest, []string{"worker"})
+	tmg.AddTest(multiInputGraphTest, []string{"worker"})
+	tmg.AddTest(multiOutputGraphTest, []string{"worker"})
 	tmg.AddTest(graphBuildingTest, []string{"worker"})
 
 	t.AddSuite("unitTest", tmg)
