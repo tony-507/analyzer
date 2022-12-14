@@ -20,8 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ex, _ := os.Executable()
-	curDir := filepath.Dir(ex)
+	curDir, _ := os.Getwd()
 
 	fname := os.Args[1]
 	skipCnt, _ := strconv.Atoi(os.Args[2])

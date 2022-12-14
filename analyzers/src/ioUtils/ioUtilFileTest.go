@@ -6,7 +6,7 @@ import (
 )
 
 // Helper
-var TEST_OUT_DIR = "test_output/"
+var TEST_OUT_DIR = testUtils.GetOutputDir() + "/test_output/"
 
 func writerMultiThreadTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("writerMultiThreadTest", 0)
