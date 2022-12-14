@@ -2,3 +2,5 @@ build-tools
 build-local.sh
 # Output files
 /analyzers/build/
+# Test debug output
+/analyzers/test_output/

@@ -1,31 +1,35 @@
 #!/bin/bash
 
-showHelp() {
-	echo "Usage: sh build.sh <options> <flags>"
-}
+buildDir="${MODULE_DIR}/build"
 
 init() {
-	cd ${MODULE_DIR}
-	rm -rf build
+	rm -rf $buildDir
 
-	mkdir -p build
-	cd build
+	mkdir -p $buildDir
 }
 
 build_app() {
+	cd $MODULE_DIR
+
 	echo -e "build_tsa:\n"
 	go build ${MODULE_DIR}/cmd/tsa/main.go
-	mv main tsa
+	mv $MODULE_DIR/main $buildDir/tsa
 
 	echo -e "build_editCap:\n"
 	go build ${MODULE_DIR}/cmd/editCap/main.go
-	mv main editCap
+	mv $MODULE_DIR/main $buildDir/editCap
+
+	cd ..
 }
 
 build_test() {
+	cd $MODULE_DIR
+
 	echo -e "build_unitTest:\n"
 	go build ${MODULE_DIR}/cmd/unitTest/main.go
-	mv main unitTest
+	mv $MODULE_DIR/main $buildDir/unitTest
+
+	cd ..
 }
 
 userBuild () {
@@ -39,6 +43,5 @@ userBuild () {
 
 userTest() {
 	build_test
-
-	./unitTest
+	exec ${MODULE_DIR}/build/unitTest
 }
