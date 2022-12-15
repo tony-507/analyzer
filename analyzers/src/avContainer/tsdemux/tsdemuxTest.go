@@ -14,9 +14,9 @@ func tsDemuxerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := DemuxParams{Mode: DEMUX_DUMMY}
 		m_pMux.SetParameter(m_parameter)
 
-		m_pMux.SetCallback(func(s string, unit common.CmUnit) {
+		m_pMux.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit("dummy", common.FETCH_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}

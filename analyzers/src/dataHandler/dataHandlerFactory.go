@@ -12,14 +12,14 @@ type DataHandler interface {
 
 type DataHandlerFactory struct {
 	logger     logs.Log
-	callback   common.PostRequestHandler
+	callback   common.RequestHandler
 	handlers   map[int]int
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
 }
 
-func (df *DataHandlerFactory) SetCallback(callback common.PostRequestHandler) {
+func (df *DataHandlerFactory) SetCallback(callback common.RequestHandler) {
 	df.callback = callback
 }
 
@@ -46,15 +46,14 @@ func (df *DataHandlerFactory) EndSequence() {
 	common.Post_request(df.callback, df.name, eosUnit)
 }
 
-// Handle only PesBuf
 func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) {
 	if unit == nil {
 		return
 	}
 
 	// Extract buffer from input unit
-	_, isPes := unit.GetBuf().(common.PesBuf)
-	if isPes {
+	_, isCmBuf := unit.GetBuf().(common.CmBuf)
+	if isCmBuf {
 		pid, isPidInt := unit.GetField("id").(int)
 		if !isPidInt {
 			panic("Something wrong with the data")

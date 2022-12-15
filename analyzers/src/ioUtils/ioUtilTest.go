@@ -80,9 +80,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY}
 		ir.SetParameter(m_parameter)
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}
@@ -92,9 +92,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 			ir.start()
 		}
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}
@@ -108,9 +108,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, SkipCnt: 2}
 		ir.SetParameter(m_parameter)
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}
@@ -120,9 +120,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 			ir.start()
 		}
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}
@@ -137,9 +137,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 		m_parameter := IOReaderParam{Source: SOURCE_DUMMY, MaxInCnt: 2}
 		ir.SetParameter(m_parameter)
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}
@@ -149,9 +149,9 @@ func readerDeliverUnitTest() testUtils.Testcase {
 			ir.start()
 		}
 
-		ir.SetCallback(func(s string, unit common.CmUnit) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-			err := testUtils.Assert_obj_equal(expected, unit)
+			err := testUtils.Assert_obj_equal(expected, obj)
 			if err != nil {
 				panic(err)
 			}

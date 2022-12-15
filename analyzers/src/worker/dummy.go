@@ -13,7 +13,7 @@ type DummyPlugin struct {
 	logger   logs.Log
 	inCnt    int
 	fetchCnt int
-	callback common.PostRequestHandler
+	callback common.RequestHandler
 	name     string
 	role     int // 0 represents a root, 1 represents non-root
 }
@@ -63,12 +63,12 @@ func (dp *DummyPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (dp *DummyPlugin) SetCallback(callback common.PostRequestHandler) {
+func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
 	dp.callback = callback
 }
 
 func GetDummyPlugin(name string, isRoot int) DummyPlugin {
 	rv := DummyPlugin{logger: logs.CreateLogger("Dummy"), inCnt: 0, fetchCnt: 0, name: name, role: isRoot}
-	rv.SetCallback(func(s string, cu common.CmUnit) {})
+	rv.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {})
 	return rv
 }

@@ -25,7 +25,7 @@ func check(err error) {
 
 type InputReader struct {
 	logger      logs.Log
-	callback    common.PostRequestHandler
+	callback    common.RequestHandler
 	impl        IReader
 	isRunning   bool
 	outputQueue []common.CmUnit
@@ -50,7 +50,7 @@ func (ir *InputReader) EndSequence() {
 	common.Post_request(ir.callback, ir.name, eosUnit)
 }
 
-func (ir *InputReader) SetCallback(callback common.PostRequestHandler) {
+func (ir *InputReader) SetCallback(callback common.RequestHandler) {
 	ir.callback = callback
 }
 

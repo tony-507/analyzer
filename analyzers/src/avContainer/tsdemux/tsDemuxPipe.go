@@ -103,11 +103,6 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 // Handle PSI data
 // Currently only support PAT, PMT and SCTE-35
 func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) {
-	// Packet count
-	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
-	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
-	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
-
 	if pusi {
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
 			m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
@@ -215,11 +210,6 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 
 // Handle stream data
 func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int, streamType int) {
-	// Packet count
-	psiBufUnit := common.MakePsiBuf(pktCnt, pid)
-	outUnit := common.IOUnit{Buf: psiBufUnit, IoType: 1, Id: -1}
-	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
-
 	clk := m_pMux.control.updateSrcClk(progNum)
 
 	if afc > 1 {
@@ -238,7 +228,13 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 				m_pMux.control.throwError(pid, pktCnt, err.Error())
 			}
 
-			outBuf := common.MakePesBuf(pktCnt, progNum, pesHeader.GetSectionLength(), pesHeader.GetPts(), pesHeader.GetDts(), m_pMux.demuxedBuffers[pid], streamType)
+			outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid])
+			outBuf.SetField("pktCnt", pktCnt, false)
+			outBuf.SetField("progNum", progNum, true)
+			outBuf.SetField("streamType", streamType, true)
+			outBuf.SetField("size", pesHeader.GetSectionLength(), false)
+			outBuf.SetField("PTS", pesHeader.GetPts(), false)
+			outBuf.SetField("DTS", pesHeader.GetDts(), false)
 			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
@@ -287,14 +283,11 @@ func (m_pMux *tsDemuxPipe) getProgramNumber(idx int) int {
 	return m_pMux.programs[idx].ProgNum
 }
 
-func (m_pMux *tsDemuxPipe) clockReady() bool {
-	return len(m_pMux.programs) > 0
+func (m_pMux *tsDemuxPipe) readyForFetch() bool {
+	return len(m_pMux.programs) > 0 && len(m_pMux.outputQueue) > 0
 }
 
 func (m_pMux *tsDemuxPipe) getOutputUnit() common.IOUnit {
-	if len(m_pMux.outputQueue) == 0 {
-		panic("[TsDemuxPipe] Fatal error: Fetching from an empty output queue")
-	}
 	outUnit := m_pMux.outputQueue[0]
 	if len(m_pMux.outputQueue) == 1 {
 		m_pMux.outputQueue = make([]common.IOUnit, 0)

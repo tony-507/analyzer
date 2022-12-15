@@ -25,7 +25,7 @@ type basePlugin interface {
 // A plugin serves as a graph node of operation graph
 type Plugin struct {
 	Work          interface{} // The struct that performs the work
-	setCallback   func(common.PostRequestHandler)
+	setCallback   func(common.RequestHandler)
 	setParameter  func(interface{})
 	setResource   func(*resources.ResourceLoader)
 	startSequence func()

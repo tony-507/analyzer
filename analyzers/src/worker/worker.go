@@ -67,6 +67,17 @@ func (w *Worker) _searchNode(name string, curPos *Plugin) *Plugin {
 	return nil
 }
 
+func (w *Worker) HandleRequests(name string, reqType common.WORKER_REQUEST, obj interface{}) {
+	if reqType == common.POST_REQUEST {
+		unit, _ := obj.(common.CmUnit)
+		w.PostRequest(name, unit)
+	} else if reqType == common.ERROR_REQUEST {
+		err, _ := obj.(error)
+		w.logger.Log(logs.ERROR, name, "throws an error")
+		panic(err)
+	}
+}
+
 func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 	if unit == nil {
 		return

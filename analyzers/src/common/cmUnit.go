@@ -2,6 +2,13 @@ package common
 
 // Structs to provide a unified interface for communication
 
+/*
+ * CmUnit:       The basic interface for different units
+ * CmStatusUnit: The unit that stores status information
+ * IOUnit:       The basic unit containing data from one plugin to another
+ * ReqUnit:      The unit that contains requests to worker
+ */
+
 type CmUnit interface {
 	GetBuf() interface{}
 	GetField(name string) interface{}
@@ -13,8 +20,7 @@ type CmUnit interface {
 type CM_STATUS int
 
 const (
-	STATUS_END_ROUTINE  CM_STATUS = 1
-	STATUS_CONTROL_DATA CM_STATUS = 2
+	STATUS_END_ROUTINE CM_STATUS = 1
 )
 
 type CmStatusUnit struct {
@@ -64,76 +70,16 @@ func (unit IOUnit) GetField(name string) interface{} {
 	}
 }
 
-// ====================     demuxer     ====================
-// A unit for parsing PSI
-type PsiUnit struct {
-	buf  []byte
-	cnt  int
-	pid  int
-	pusi bool
-}
-
-func MakePsiUnit(buf []byte, cnt int, pid int, pusi bool) PsiUnit {
-	return PsiUnit{buf: buf, cnt: cnt, pid: pid, pusi: pusi}
-}
-
-func (unit PsiUnit) GetBuf() interface{} {
-	return unit.buf
-}
-
-func (unit PsiUnit) GetField(name string) interface{} {
-	switch name {
-	case "pid":
-		return unit.pid
-	case "pusi":
-		return unit.pusi
-	case "count":
-		return unit.cnt
-	default:
-		panic("Unknown field in PSI unit")
-	}
-}
-
-// A unit for demuxing PES
-type StreamUnit struct {
-	buf  []byte
-	cnt  int
-	pid  int
-	pusi bool
-	afc  int
-}
-
-func MakeStreamUnit(buf []byte, cnt int, pid int, pusi bool, afc int) StreamUnit {
-	return StreamUnit{buf: buf, cnt: cnt, pid: pid, pusi: pusi, afc: afc}
-}
-
-func (unit StreamUnit) GetBuf() interface{} {
-	return unit.buf
-}
-
-func (unit StreamUnit) GetField(name string) interface{} {
-	switch name {
-	case "pid":
-		return unit.pid
-	case "pusi":
-		return unit.pusi
-	case "afc":
-		return unit.afc
-	case "count":
-		return unit.cnt
-	default:
-		panic("Unknown field in stream unit")
-	}
-}
-
 // ====================     worker     ====================
 type WORKER_REQUEST int
 
 const (
-	FETCH_REQUEST    WORKER_REQUEST = 1 // Ready for fetch
-	DELIVER_REQUEST  WORKER_REQUEST = 2 // Request for input
-	EOS_REQUEST      WORKER_REQUEST = 3 // Root has nothing more to do, please stop
-	RESOURCE_REQUEST WORKER_REQUEST = 4 // Request for querying resourceLoader. buf should be ["path", "key"]
+	POST_REQUEST     WORKER_REQUEST = 0  // Request type < 10 are all post requests
+	FETCH_REQUEST    WORKER_REQUEST = 1  // Ready for fetch
+	DELIVER_REQUEST  WORKER_REQUEST = 2  // Request for input
+	EOS_REQUEST      WORKER_REQUEST = 3  // Root has nothing more to do, please stop
+	RESOURCE_REQUEST WORKER_REQUEST = 4  // Request for querying resourceLoader. buf should be ["path", "key"]
+	ERROR_REQUEST    WORKER_REQUEST = 11 // Throw error
 )
 
 type ReqUnit struct {

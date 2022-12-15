@@ -2,111 +2,74 @@ package common
 
 import (
 	"strconv"
+	"strings"
 )
 
 // General buffer unit design
+/*
+ * CmBuf:     The basic interface for buffer
+ * SimpleBuf: The simplest buffer. However, it assumes all data are integers
+ */
 
 type CmBuf interface {
-	ToString() string         // Return data as byte string
-	GetFieldAsString() string // Return name of the fields as byte string
-	GetField(name string) interface{}
+	ToString() string                                         // Return data as byte string
+	GetFieldAsString() string                                 // Return name of the fields as byte string
+	SetField(name string, datum interface{}, jsonIgnore bool) // Set datum to buffer. If jsonIgnore is true, the field would not appear in toString
+	GetField(name string) (interface{}, bool)                 // Return data corresponding to name and whether data can be found
 }
 
-// Buffer unit carrying PSI packet timing data
-type PsiBuf struct {
-	pktCnt int
-	pid    int
-	pcr    int
-}
-
-func (pb *PsiBuf) ToString() string {
-	rv := ""
-	rv += strconv.Itoa(pb.pktCnt)
-	rv += ","
-	rv += strconv.Itoa(pb.pid)
-	rv += ","
-	rv += strconv.Itoa(pb.pcr / 300)
-	rv += "\n"
-	return rv
-}
-
-func (pb *PsiBuf) GetFieldAsString() string {
-	return "pktCnt,pid,pcr\n"
-}
-
-func (pb *PsiBuf) GetField(name string) interface{} {
-	switch name {
-	case "pktCnt":
-		return pb.pktCnt
-	}
-	return -1
-}
-
-func (pb *PsiBuf) SetPcr(pcr int) {
-	pb.pcr = pcr
-}
-
-func MakePsiBuf(pktCnt int, pid int) PsiBuf {
-	return PsiBuf{pktCnt: pktCnt, pid: pid}
-}
-
-// Buffer unit carrying PES packet data
-
-type PesBuf struct {
-	pktCnt     int
-	progNum    int
-	size       int
-	pts        int
-	dts        int
-	pcr        int
-	delay      int
+type SimpleBuf struct {
+	dataKey    []string
+	dataVal    []interface{}
+	jsonIgnore []bool
 	buf        []byte
-	streamType int
 }
 
-func (pb *PesBuf) ToString() string {
-	rv := ""
-	rv += strconv.Itoa(pb.pktCnt)
-	rv += ","
-	rv += strconv.Itoa(pb.size)
-	rv += ","
-	rv += strconv.Itoa(pb.pcr / 300)
-	rv += ","
-	rv += strconv.Itoa(pb.pts)
-	rv += ","
-	rv += strconv.Itoa(pb.dts)
-	rv += ","
-	rv += strconv.Itoa(pb.delay)
+func (b *SimpleBuf) ToString() string {
+	valArr := make([]string, 0)
+	for idx, datum := range b.dataVal {
+		if b.jsonIgnore[idx] {
+			continue
+		}
+		val, isVal := datum.(int)
+		if !isVal {
+			panic("SimpleBuf ToString: data is not an integer")
+		}
+		valArr = append(valArr, strconv.Itoa(val))
+	}
+	rv := strings.Join(valArr, ",")
 	rv += "\n"
-
 	return rv
 }
 
-func (pb *PesBuf) GetFieldAsString() string {
-	return "pktCnt,size,pcr,pts,dts,delay\n"
-}
-
-func (pb *PesBuf) GetField(name string) interface{} {
-	switch name {
-	case "pktCnt":
-		return pb.pktCnt
-	case "progNum":
-		return pb.progNum
-	case "type":
-		return pb.streamType
+func (b *SimpleBuf) GetFieldAsString() string {
+	keyArr := make([]string, 0)
+	for idx, k := range b.dataKey {
+		if b.jsonIgnore[idx] {
+			continue
+		}
+		keyArr = append(keyArr, k)
 	}
-	return -1
+	rv := strings.Join(keyArr, ",")
+	rv += "\n"
+	return rv
 }
 
-func (pb *PesBuf) SetPcr(pcr int) {
-	pb.pcr = pcr
-	if pcr != -1 {
-		pb.delay = pb.dts - pb.pcr/300
-	} else {
-		pb.delay = -1
+func (b *SimpleBuf) SetField(name string, datum interface{}, jsonIgnore bool) {
+	b.dataKey = append(b.dataKey, name)
+	b.dataVal = append(b.dataVal, datum)
+	b.jsonIgnore = append(b.jsonIgnore, jsonIgnore)
+}
+
+func (b *SimpleBuf) GetField(name string) (interface{}, bool) {
+	for i := range b.dataKey {
+		if b.dataKey[i] == name {
+			return b.dataVal[i], true
+		}
 	}
+	return nil, false
 }
 
-func MakePesBuf(pktCnt int, progNum int, size int, pts int, dts int, buf []byte, streamType int) PesBuf {
-	return PesBuf{pktCnt: pktCnt, progNum: progNum, size: size, pts: pts, dts: dts, buf: buf, streamType: streamType}
+func MakeSimpleBuf(inBuf []byte) SimpleBuf {
+	return SimpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
 }

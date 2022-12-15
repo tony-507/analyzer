@@ -1,6 +1,8 @@
 package tsdemux
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -12,7 +14,7 @@ type IDemuxPipe interface {
 	processUnit([]byte, int)
 	getDuration() int
 	getProgramNumber(int) int
-	clockReady() bool
+	readyForFetch() bool
 	getOutputUnit() common.IOUnit
 }
 
@@ -48,7 +50,7 @@ const (
 
 type TsDemuxer struct {
 	logger    logs.Log
-	callback  common.PostRequestHandler
+	callback  common.RequestHandler
 	impl      IDemuxPipe       // Actual demuxing operation
 	control   *demuxController // Controller to handle demuxer internal state
 	isRunning int              // Counting channels, similar to waitGroup
@@ -57,7 +59,7 @@ type TsDemuxer struct {
 	wg        sync.WaitGroup
 }
 
-func (m_pMux *TsDemuxer) SetCallback(callback common.PostRequestHandler) {
+func (m_pMux *TsDemuxer) SetCallback(callback common.RequestHandler) {
 	m_pMux.callback = callback
 }
 
@@ -104,6 +106,12 @@ func (m_pMux *TsDemuxer) StartSequence() {
 }
 
 func (m_pMux *TsDemuxer) EndSequence() {
+	// Fetch all remaining units
+	for m_pMux.impl.readyForFetch() {
+		m_pMux.control.outputUnitAdded()
+		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
+		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
+	}
 	m_pMux.logger.Log(logs.INFO, "Shutting down handlers")
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
@@ -114,31 +122,34 @@ func (m_pMux *TsDemuxer) EndSequence() {
 
 func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
+	errMsg := ""
 
-	pesBuf, isPes := rv.Buf.(common.PesBuf)
-	if isPes {
-		progNum, _ := pesBuf.GetField("progNum").(int)
+	if cmBuf, isCmBuf := rv.Buf.(common.SimpleBuf); isCmBuf {
+		if field, hasField := cmBuf.GetField("progNum"); hasField {
+			progNum, _ := field.(int)
+			// Stamp PCR here
+			clk := m_pMux.control.updateSrcClk(progNum)
 
-		// Stamp PCR here
-		clk := m_pMux.control.updateSrcClk(progNum)
+			if field, hasField = cmBuf.GetField("pktCnt"); hasField {
+				curCnt, _ := field.(int)
+				pcr, _ := clk.requestPcr(rv.Id, curCnt)
+				cmBuf.SetField("PCR", pcr, false)
+				if field, hasField = cmBuf.GetField("DTS"); hasField {
+					dts, _ := field.(int)
+					cmBuf.SetField("Delay", dts-pcr/300, false)
+				}
 
-		curCnt, _ := pesBuf.GetField("pktCnt").(int)
-		pcr, _ := clk.requestPcr(rv.Id, curCnt)
-		pesBuf.SetPcr(pcr)
-
-		rv.Buf = pesBuf
-	} else {
-		psiBuf, isPsiBuf := rv.Buf.(common.PsiBuf)
-		if isPsiBuf {
-			// Use clock of first program as we want relative time only
-			clk := m_pMux.control.updateSrcClk(m_pMux.impl.getProgramNumber(0))
-
-			curCnt, _ := psiBuf.GetField("pktCnt").(int)
-			pcr, _ := clk.requestPcr(rv.Id, curCnt)
-			psiBuf.SetPcr(pcr)
-
-			rv.Buf = psiBuf
+				rv.Buf = cmBuf
+			} else {
+				errMsg = "Unable to get pktCnt"
+			}
+		} else {
+			errMsg = "Unable to get progNum"
 		}
+	}
+
+	if errMsg != "" {
+		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxer::FetchUnit] %s", errMsg)))
 	}
 
 	m_pMux.control.outputUnitFetched()
@@ -156,12 +167,10 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.pktCnt += 1
 
 	// Start fetching after clock is ready
-	if m_pMux.impl.clockReady() {
+	if m_pMux.impl.readyForFetch() {
 		m_pMux.control.outputUnitAdded()
 		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
-	} else {
-		m_pMux.logger.Log(logs.INFO, "Demuxer returns null unit")
 	}
 }
 

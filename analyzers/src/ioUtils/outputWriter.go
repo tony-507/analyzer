@@ -14,13 +14,13 @@ type IWriter interface {
 
 type OutputWriter struct {
 	logger    logs.Log
-	callback  common.PostRequestHandler
+	callback  common.RequestHandler
 	impl      IWriter
 	name      string
 	isRunning bool
 }
 
-func (w *OutputWriter) SetCallback(callback common.PostRequestHandler) {
+func (w *OutputWriter) SetCallback(callback common.RequestHandler) {
 	w.callback = callback
 }
 

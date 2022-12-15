@@ -161,16 +161,9 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 			break
 		}
 
-		pesBuf, isPesBuf := unit.GetBuf().(common.PesBuf)
-		if isPesBuf {
-			header = pesBuf.GetFieldAsString()
-			body = pesBuf.ToString()
-		} else {
-			psiBuf, isPsiBuf := unit.GetBuf().(common.PsiBuf)
-			if isPsiBuf {
-				header = psiBuf.GetFieldAsString()
-				body = psiBuf.ToString()
-			}
+		if cmBuf, isCmBuf := unit.GetBuf().(common.SimpleBuf); isCmBuf {
+			header = cmBuf.GetFieldAsString()
+			body = cmBuf.ToString()
 		}
 
 		if !b_HasHeader {

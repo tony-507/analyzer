@@ -6,6 +6,46 @@ import (
 	"github.com/tony-507/analyzers/test/testUtils"
 )
 
+func simpleBufTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("simpleBufTest", 0)
+
+	tc.Describe("Set data to simpleBuf", func(input interface{}) (interface{}, error) {
+		buf := []byte{1, 2, 3}
+		simpleBuf := MakeSimpleBuf(buf)
+		simpleBuf.SetField("dummy", 100, false)
+		return simpleBuf, nil
+	})
+
+	tc.Describe("Get data from simpleBuf", func(input interface{}) (interface{}, error) {
+		simpleBuf, isBuf := input.(SimpleBuf)
+		if !isBuf {
+			panic("Input is not simpleBuf")
+		}
+		if field, hasField := simpleBuf.GetField("dummy"); hasField {
+			if v, isInt := field.(int); isInt {
+				testUtils.Assert_equal(v, 100)
+			} else {
+				panic("Data not int")
+			}
+		} else {
+			panic("No data found")
+		}
+		return simpleBuf, nil
+	})
+
+	tc.Describe("Print simpleBuf data", func(input interface{}) (interface{}, error) {
+		simpleBuf, isBuf := input.(SimpleBuf)
+		if !isBuf {
+			panic("Input is not simpleBuf")
+		}
+		testUtils.Assert_equal(simpleBuf.GetFieldAsString(), "dummy\n")
+		testUtils.Assert_equal(simpleBuf.ToString(), "100\n")
+		return nil, nil
+	})
+
+	return tc
+}
+
 func readPcrTest() testUtils.Testcase {
 	tc := testUtils.GetTestCase("readerTest", 0)
 
@@ -86,6 +126,7 @@ func AddUnitTestSuite(t *testUtils.Tester) {
 	// We may add custom test filter here later
 
 	// common
+	tmg.AddTest(simpleBufTest, []string{"common"})
 	tmg.AddTest(readPcrTest, []string{"common"})
 	tmg.AddTest(bsWriterTest, []string{"common"})
 
