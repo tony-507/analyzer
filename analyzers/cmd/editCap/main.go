@@ -16,7 +16,7 @@ func main() {
 
 	if len(os.Args) != 4 {
 		logger.Log(logs.ERROR, "Wrong number of arguments")
-		logger.Log(logs.INFO, "Usage: editCap <start> <end>")
+		logger.Log(logs.INFO, "Usage: editCap <source> <start> <end>")
 		os.Exit(1)
 	}
 

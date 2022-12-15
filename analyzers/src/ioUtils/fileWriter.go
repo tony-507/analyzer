@@ -31,7 +31,7 @@ func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
 	for i := range m_writer.writerMap {
-		m_writer.writerMap[i] = make(chan common.CmUnit, 1)
+		m_writer.writerMap[i] = make(chan common.CmUnit)
 	}
 
 	err := os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary
@@ -41,9 +41,9 @@ func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
 }
 
 func (m_writer *FileWriter) stop() {
-	for _, writer := range m_writer.writerMap {
+	for idx := range m_writer.idMapping {
 		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, 1, "")
-		writer <- stopUnit
+		m_writer.writerMap[idx] <- stopUnit
 	}
 
 	m_writer.wg.Wait()
