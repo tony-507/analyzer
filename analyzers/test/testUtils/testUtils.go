@@ -2,6 +2,7 @@ package testUtils
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 )
 
@@ -129,8 +130,21 @@ func (t *Tester) _runTestSetup(test Testcase, pair string) bool {
 	return res
 }
 
+// Function to handle test case filtering
+func skipTest(filters []string, suiteName string, testName string) bool {
+	if len(filters) > 1 {
+		targetTestName := filters[1]
+		match, err := regexp.Match(targetTestName, []byte(testName))
+		if err != nil {
+			panic(err)
+		}
+		return !match
+	}
+	return false
+}
+
 // Function that runs all selected tests
-func (t *Tester) RunTests() bool {
+func (t *Tester) RunTests(filters []string) bool {
 	testCh := make(chan bool, 1)
 	isPass := true
 
@@ -141,6 +155,9 @@ func (t *Tester) RunTests() bool {
 		for _, setup := range suite.tests {
 			outMsg := ""
 			test := setup()
+			if skipTest(filters, suite.suiteName, test.testName) {
+				continue
+			}
 			pair := fmt.Sprintf("%s.%s", suite.suiteName, test.testName)
 			// Set default timeout
 			if test.timeout == 0 {
