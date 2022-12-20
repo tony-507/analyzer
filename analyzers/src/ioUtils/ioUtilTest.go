@@ -2,9 +2,11 @@ package ioUtils
 
 import (
 	"errors"
+	"os"
+	"strconv"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/test/testUtils"
+	"github.com/tony-507/analyzers/src/testUtils"
 )
 
 // Helper
@@ -200,8 +202,8 @@ func writerMultiThreadTest() testUtils.Testcase {
 	tc.Describe("Start two raw data processors", func(input interface{}) (interface{}, error) {
 		fw, _ := input.(*FileWriter)
 
-		rawUnit := common.IOUnit{Buf: 1, IoType: 3, Id: 5}
-		rawUnit2 := common.IOUnit{Buf: 1, IoType: 3, Id: 2}
+		rawUnit := common.IOUnit{Buf: []byte{1}, IoType: 3, Id: 5}
+		rawUnit2 := common.IOUnit{Buf: []byte{1}, IoType: 3, Id: 2}
 		fw.processUnit(rawUnit)
 		fw.processUnit(rawUnit2)
 
@@ -211,6 +213,20 @@ func writerMultiThreadTest() testUtils.Testcase {
 	tc.Describe("Stop file writer", func(input interface{}) (interface{}, error) {
 		fw, _ := input.(*FileWriter)
 		fw.stop()
+		return nil, nil
+	})
+
+	tc.Describe("Validate file content", func(input interface{}) (interface{}, error) {
+		filesArr := []int{2, 5}
+		for _, id := range filesArr {
+			f, err := os.Open(TEST_OUT_DIR + "out_" + strconv.Itoa(id) + ".ts")
+			if err != nil {
+				panic(err)
+			}
+			data := make([]byte, 1)
+			f.Read(data)
+			testUtils.Assert_equal(data[0], 1)
+		}
 		return nil, nil
 	})
 

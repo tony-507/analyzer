@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/test/testUtils"
+	"github.com/tony-507/analyzers/src/testUtils"
 )
 
 func pluginUnitTest() testUtils.Testcase {

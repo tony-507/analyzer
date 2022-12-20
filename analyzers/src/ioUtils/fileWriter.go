@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -183,7 +184,11 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
 	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " starts")
 
-	fname := fmt.Sprintf("%sout.ts", m_writer.outFolder)
+	suffix := ""
+	if pid != -1 {
+		suffix = "_" + strconv.Itoa(pid)
+	}
+	fname := fmt.Sprintf("%sout%s.ts", m_writer.outFolder, suffix)
 	f, err := os.Create(fname)
 	check(err)
 

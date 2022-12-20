@@ -8,8 +8,8 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/testUtils"
 	"github.com/tony-507/analyzers/src/worker"
-	"github.com/tony-507/analyzers/test/testUtils"
 )
 
 func main() {

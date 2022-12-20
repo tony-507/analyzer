@@ -3,7 +3,7 @@ package common
 import (
 	"errors"
 
-	"github.com/tony-507/analyzers/test/testUtils"
+	"github.com/tony-507/analyzers/src/testUtils"
 )
 
 func simpleBufTest() testUtils.Testcase {

@@ -3,7 +3,7 @@ package tsdemux
 import (
 	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/test/testUtils"
+	"github.com/tony-507/analyzers/src/testUtils"
 )
 
 func tsDemuxerDeliverUnitTest() testUtils.Testcase {

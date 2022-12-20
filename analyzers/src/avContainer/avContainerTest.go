@@ -3,7 +3,7 @@ package avContainer
 import (
 	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
-	"github.com/tony-507/analyzers/test/testUtils"
+	"github.com/tony-507/analyzers/src/testUtils"
 )
 
 func readPATTest() testUtils.Testcase {
