@@ -30,6 +30,7 @@ type Plugin struct {
 	setResource   func(*resources.ResourceLoader)
 	startSequence func()
 	deliverUnit   func(common.CmUnit)
+	deliverStatus func(common.CmUnit)
 	fetchUnit     func() common.CmUnit
 	endSequence   func()
 	m_parameter   interface{} // Store plugin parameters
@@ -70,6 +71,7 @@ func GetPluginByName(inputName string) Plugin {
 		rv.deliverUnit = work.DeliverUnit
 		rv.fetchUnit = work.FetchUnit
 		rv.endSequence = work.EndSequence
+		rv.deliverStatus = work.DeliverStatus
 		rv.bIsRoot = false // This plugin must be a root
 	case "TsDemuxer":
 		work := tsdemux.GetTsDemuxer(inputName)

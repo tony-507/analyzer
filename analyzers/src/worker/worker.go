@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"fmt"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
@@ -13,6 +15,7 @@ type Worker struct {
 	graph          Graph
 	resourceLoader resources.ResourceLoader
 	isRunning      int
+	statusStore    map[int][]string // Map from msgId to an array of plugin names
 }
 
 // Main function for running a graph
@@ -71,6 +74,23 @@ func (w *Worker) HandleRequests(name string, reqType common.WORKER_REQUEST, obj 
 	if reqType == common.POST_REQUEST {
 		unit, _ := obj.(common.CmUnit)
 		w.PostRequest(name, unit)
+	} else if reqType == common.STATUS_LISTEN_REQUEST {
+		if msgId, isInt := obj.(int); isInt {
+			if _, hasKey := w.statusStore[msgId]; hasKey {
+				w.statusStore[msgId] = append(w.statusStore[msgId], name)
+			} else {
+				w.statusStore[msgId] = make([]string, 1)
+				w.statusStore[msgId][0] = name
+			}
+		} else {
+			panic(fmt.Sprintf("Attempt to listen to a status message with invalid ID: %v", obj))
+		}
+	} else if reqType == common.STATUS_REQUEST {
+		if unit, isValid := obj.(common.CmStatusUnit); isValid {
+			w.PostStatus(unit)
+		} else {
+			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: ", obj)
+		}
 	} else if reqType == common.ERROR_REQUEST {
 		err, _ := obj.(error)
 		w.logger.Log(logs.ERROR, name, "throws an error")
@@ -117,6 +137,17 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 
 }
 
+func (w *Worker) PostStatus(unit common.CmUnit) {
+	if id, isInt := unit.GetField("id").(int); isInt {
+		if arr, hasKey := w.statusStore[id]; hasKey {
+			for _, name := range arr {
+				node := w._searchNode(name, nil)
+				node.deliverStatus(unit)
+			}
+		}
+	}
+}
+
 func (w *Worker) SetGraph(graph Graph) {
 	w.graph = graph
 	// Recursively set callback for nodes
@@ -134,6 +165,6 @@ func (w *Worker) SetGraph(graph Graph) {
 }
 
 func GetWorker() Worker {
-	w := Worker{isRunning: 0, resourceLoader: resources.CreateResourceLoader(), logger: logs.CreateLogger("Worker")}
+	w := Worker{isRunning: 0, resourceLoader: resources.CreateResourceLoader(), logger: logs.CreateLogger("Worker"), statusStore: make(map[int][]string, 0)}
 	return w
 }

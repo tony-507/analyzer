@@ -8,7 +8,7 @@ import (
 // General buffer unit design
 /*
  * CmBuf:     The basic interface for buffer
- * SimpleBuf: The simplest buffer. However, it assumes all data are integers
+ * simpleBuf: The simplest buffer. However, it assumes all data are integers
  */
 
 type CmBuf interface {
@@ -18,14 +18,14 @@ type CmBuf interface {
 	GetField(name string) (interface{}, bool)                 // Return data corresponding to name and whether data can be found
 }
 
-type SimpleBuf struct {
+type simpleBuf struct {
 	dataKey    []string
 	dataVal    []interface{}
 	jsonIgnore []bool
 	buf        []byte
 }
 
-func (b *SimpleBuf) ToString() string {
+func (b *simpleBuf) ToString() string {
 	valArr := make([]string, 0)
 	for idx, datum := range b.dataVal {
 		if b.jsonIgnore[idx] {
@@ -33,7 +33,7 @@ func (b *SimpleBuf) ToString() string {
 		}
 		val, isVal := datum.(int)
 		if !isVal {
-			panic("SimpleBuf ToString: data is not an integer")
+			panic("simpleBuf ToString: data is not an integer")
 		}
 		valArr = append(valArr, strconv.Itoa(val))
 	}
@@ -42,7 +42,7 @@ func (b *SimpleBuf) ToString() string {
 	return rv
 }
 
-func (b *SimpleBuf) GetFieldAsString() string {
+func (b *simpleBuf) GetFieldAsString() string {
 	keyArr := make([]string, 0)
 	for idx, k := range b.dataKey {
 		if b.jsonIgnore[idx] {
@@ -55,13 +55,13 @@ func (b *SimpleBuf) GetFieldAsString() string {
 	return rv
 }
 
-func (b *SimpleBuf) SetField(name string, datum interface{}, jsonIgnore bool) {
+func (b *simpleBuf) SetField(name string, datum interface{}, jsonIgnore bool) {
 	b.dataKey = append(b.dataKey, name)
 	b.dataVal = append(b.dataVal, datum)
 	b.jsonIgnore = append(b.jsonIgnore, jsonIgnore)
 }
 
-func (b *SimpleBuf) GetField(name string) (interface{}, bool) {
+func (b *simpleBuf) GetField(name string) (interface{}, bool) {
 	for i := range b.dataKey {
 		if b.dataKey[i] == name {
 			return b.dataVal[i], true
@@ -70,6 +70,6 @@ func (b *SimpleBuf) GetField(name string) (interface{}, bool) {
 	return nil, false
 }
 
-func MakeSimpleBuf(inBuf []byte) SimpleBuf {
-	return SimpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
+func MakeSimpleBuf(inBuf []byte) simpleBuf {
+	return simpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
 }

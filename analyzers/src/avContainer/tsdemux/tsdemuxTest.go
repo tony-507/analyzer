@@ -70,7 +70,7 @@ func tsDemuxPipeProcessTest() testUtils.Testcase {
 
 		expectedPmt := model.CreatePMT(258, 2, 10, 0, true, expectedProgDesc, streams, -1)
 
-		err := testUtils.Assert_obj_equal(expectedPmt, impl.programs[0])
+		err := testUtils.Assert_obj_equal(expectedPmt, impl.programs[10])
 		return impl, err
 	})
 
@@ -87,11 +87,44 @@ func tsDemuxPipeProcessTest() testUtils.Testcase {
 	return tc
 }
 
+func tsDemuxPidStatusTest() testUtils.Testcase {
+	tc := testUtils.GetTestCase("tsDemuxPidStatusTest", 0)
+
+	tc.Describe("Check the existence of status messages when PAT is parsed", func(input interface{}) (interface{}, error) {
+		dummyPAT := []byte{0x47, 0x40, 0x00, 0x14, 0x00, 0x00, 0xB0, 0x0D, 0x11, 0x11, 0xC1,
+			0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
+
+		control := getControl()
+		impl := getDemuxPipe(control)
+
+		impl.processUnit(dummyPAT, 0)
+		err := testUtils.Assert_obj_equal(2, len(impl.control.StatusList))
+		control.StatusList = make([]common.CmStatusUnit, 0)
+		return impl, err
+	})
+
+	tc.Describe("DemuxPipe is able to set PMT", func(input interface{}) (interface{}, error) {
+		dummyPMT := []byte{0x47, 0x41, 0x02, 0x14, 0x00, 0x02, 0xb0, 0x1d, 0x00, 0x0a, 0xc1,
+			0x00, 0x00, 0xe0, 0x20, 0xf0, 0x00, 0x02, 0xe0, 0x20,
+			0xf0, 0x00, 0x04, 0xe0, 0x21, 0xf0, 0x06, 0x0a, 0x04,
+			0x65, 0x6e, 0x67, 0x00, 0x75, 0xff, 0x59, 0x3a}
+
+		impl, _ := input.(tsDemuxPipe)
+		impl.processUnit(dummyPMT, 0)
+
+		err := testUtils.Assert_obj_equal(2, len(impl.control.StatusList))
+		return impl, err
+	})
+
+	return tc
+}
+
 func AddUnitTestSuite(t *testUtils.Tester) {
 	tmg := testUtils.GetTestCaseMgr()
 
 	tmg.AddTest(tsDemuxerDeliverUnitTest, []string{"avContainer"})
 	tmg.AddTest(tsDemuxPipeProcessTest, []string{"avContainer"})
+	tmg.AddTest(tsDemuxPidStatusTest, []string{"avContainer"})
 
 	t.AddSuite("unitTest", tmg)
 }

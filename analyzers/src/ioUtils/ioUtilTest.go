@@ -202,6 +202,19 @@ func writerMultiThreadTest() testUtils.Testcase {
 	tc.Describe("Start two raw data processors", func(input interface{}) (interface{}, error) {
 		fw, _ := input.(*FileWriter)
 
+		buf1 := common.MakeSimpleBuf([]byte{})
+		buf1.SetField("addPid", true, false)
+		buf1.SetField("pid", 5, false)
+		buf1.SetField("type", 3, false)
+
+		buf2 := common.MakeSimpleBuf([]byte{})
+		buf2.SetField("addPid", true, false)
+		buf2.SetField("pid", 2, false)
+		buf2.SetField("type", 3, false)
+
+		fw.processControl(common.MakeStatusUnit(0x10, &buf1))
+		fw.processControl(common.MakeStatusUnit(0x10, &buf2))
+
 		rawUnit := common.IOUnit{Buf: []byte{1}, IoType: 3, Id: 5}
 		rawUnit2 := common.IOUnit{Buf: []byte{1}, IoType: 3, Id: 2}
 		fw.processUnit(rawUnit)

@@ -14,35 +14,35 @@ type CmUnit interface {
 	GetField(name string) interface{}
 }
 
-// ====================     Status     ====================
-
-// related status id
-type CM_STATUS int
-
+/*
+ * CmStatusUnit
+ *
+ * This is a type that allows communication of plugins independent of the working graph for plugin configuration update.
+ * Plugins can listen to a particular status type. No quit option is allowed.
+ * Status is assumed to be immutable and has unique id. IDs less than 10 are reserved for common use.
+ */
 const (
-	STATUS_END_ROUTINE CM_STATUS = 1
+	STATUS_END_ROUTINE int = 1
 )
 
 type CmStatusUnit struct {
-	status CM_STATUS
-	body   interface{}
-	id     CM_STATUS // Identify the purpose of the message
+	body CmBuf
+	id   int
 }
 
-func MakeStatusUnit(status CM_STATUS, id CM_STATUS, body interface{}) CmStatusUnit {
-	return CmStatusUnit{status: status, id: id, body: body}
+func MakeStatusUnit(id int, body CmBuf) CmStatusUnit {
+	return CmStatusUnit{id: id, body: body}
 }
 
+// Unused
 func (unit CmStatusUnit) GetBuf() interface{} {
-	return unit.status
+	return unit.body
 }
 
 func (unit CmStatusUnit) GetField(name string) interface{} {
 	switch name {
 	case "id":
 		return unit.id
-	case "body":
-		return unit.body
 	default:
 		panic("Unknown field in statusUnit")
 	}
@@ -74,24 +74,26 @@ func (unit IOUnit) GetField(name string) interface{} {
 type WORKER_REQUEST int
 
 const (
-	POST_REQUEST     WORKER_REQUEST = 0  // Request type < 10 are all post requests
-	FETCH_REQUEST    WORKER_REQUEST = 1  // Ready for fetch
-	DELIVER_REQUEST  WORKER_REQUEST = 2  // Request for input
-	EOS_REQUEST      WORKER_REQUEST = 3  // Root has nothing more to do, please stop
-	RESOURCE_REQUEST WORKER_REQUEST = 4  // Request for querying resourceLoader. buf should be ["path", "key"]
-	ERROR_REQUEST    WORKER_REQUEST = 11 // Throw error
+	POST_REQUEST          WORKER_REQUEST = 0  // Request type < 10 are all post requests
+	FETCH_REQUEST         WORKER_REQUEST = 1  // Ready for fetch
+	DELIVER_REQUEST       WORKER_REQUEST = 2  // Request for input
+	EOS_REQUEST           WORKER_REQUEST = 3  // Root has nothing more to do, please stop
+	RESOURCE_REQUEST      WORKER_REQUEST = 4  // Request for querying resourceLoader. buf should be ["path", "key"]
+	STATUS_LISTEN_REQUEST WORKER_REQUEST = 6  // Request to register a status message destination
+	STATUS_REQUEST        WORKER_REQUEST = 7  // Send a status
+	ERROR_REQUEST         WORKER_REQUEST = 11 // Throw error
 )
 
-type ReqUnit struct {
+type reqUnit struct {
 	buf     interface{}
 	reqType WORKER_REQUEST
 }
 
-func (unit ReqUnit) GetBuf() interface{} {
+func (unit reqUnit) GetBuf() interface{} {
 	return unit.buf
 }
 
-func (unit ReqUnit) GetField(name string) interface{} {
+func (unit reqUnit) GetField(name string) interface{} {
 	switch name {
 	case "reqType":
 		return unit.reqType
@@ -100,6 +102,6 @@ func (unit ReqUnit) GetField(name string) interface{} {
 	}
 }
 
-func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) ReqUnit {
-	return ReqUnit{buf: buf, reqType: reqType}
+func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) reqUnit {
+	return reqUnit{buf: buf, reqType: reqType}
 }

@@ -18,3 +18,5 @@ func (dw *DummyWriter) processUnit(unit common.CmUnit) {
 	v, _ := unit.GetBuf().(int)
 	*dw.dummyOut = (*dw.dummyOut)*10 + v
 }
+
+func (dw *DummyWriter) processControl(unit common.CmUnit) {}

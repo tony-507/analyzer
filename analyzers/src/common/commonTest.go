@@ -17,7 +17,7 @@ func simpleBufTest() testUtils.Testcase {
 	})
 
 	tc.Describe("Get data from simpleBuf", func(input interface{}) (interface{}, error) {
-		simpleBuf, isBuf := input.(SimpleBuf)
+		simpleBuf, isBuf := input.(simpleBuf)
 		if !isBuf {
 			panic("Input is not simpleBuf")
 		}
@@ -34,7 +34,7 @@ func simpleBufTest() testUtils.Testcase {
 	})
 
 	tc.Describe("Print simpleBuf data", func(input interface{}) (interface{}, error) {
-		simpleBuf, isBuf := input.(SimpleBuf)
+		simpleBuf, isBuf := input.(simpleBuf)
 		if !isBuf {
 			panic("Input is not simpleBuf")
 		}

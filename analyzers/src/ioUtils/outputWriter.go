@@ -10,6 +10,7 @@ type IWriter interface {
 	setup(IOWriterParam)
 	stop()
 	processUnit(common.CmUnit)
+	processControl(common.CmUnit)
 }
 
 type OutputWriter struct {
@@ -43,6 +44,8 @@ func (w *OutputWriter) SetResource(loader *resources.ResourceLoader) {}
 func (w *OutputWriter) StartSequence() {
 	w.logger.Log(logs.INFO, "Output writer is started")
 	w.isRunning = true
+
+	common.Listen_msg(w.callback, w.name, 0x10)
 }
 
 func (w *OutputWriter) EndSequence() {
@@ -60,6 +63,10 @@ func (w *OutputWriter) DeliverUnit(unit common.CmUnit) {
 
 func (w *OutputWriter) FetchUnit() common.CmUnit {
 	return nil
+}
+
+func (w *OutputWriter) DeliverStatus(unit common.CmUnit) {
+	w.impl.processControl(unit)
 }
 
 func GetOutputWriter(name string) OutputWriter {

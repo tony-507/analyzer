@@ -124,7 +124,7 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	errMsg := ""
 
-	if cmBuf, isCmBuf := rv.Buf.(common.SimpleBuf); isCmBuf {
+	if cmBuf, isCmBuf := rv.Buf.(common.CmBuf); isCmBuf {
 		if field, hasField := cmBuf.GetField("progNum"); hasField {
 			progNum, _ := field.(int)
 			// Stamp PCR here
@@ -165,6 +165,12 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.impl.processUnit(inBuf, m_pMux.pktCnt)
 
 	m_pMux.pktCnt += 1
+
+	// Clean up status
+	for _, status := range m_pMux.control.StatusList {
+		common.Post_status(m_pMux.callback, m_pMux.name, status)
+	}
+	m_pMux.control.StatusList = make([]common.CmStatusUnit, 0)
 
 	// Start fetching after clock is ready
 	if m_pMux.impl.readyForFetch() {

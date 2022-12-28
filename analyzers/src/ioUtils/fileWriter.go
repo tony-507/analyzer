@@ -43,7 +43,7 @@ func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
 
 func (m_writer *FileWriter) stop() {
 	for idx := range m_writer.idMapping {
-		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, 1, "")
+		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, nil)
 		m_writer.writerMap[idx] <- stopUnit
 	}
 
@@ -67,28 +67,9 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	}
 
 	if idIdx == -1 {
-		idIdx = len(m_writer.idMapping)
-
-		outType := unit.GetField("type")
-		m_writer.idMapping = append(m_writer.idMapping, outId)
-
-		switch outType {
-		case 0:
-			// Undefined, skip
-		case 1:
-			m_writer.wg.Add(1)
-			go m_writer._processCsvOutput(outId, idIdx)
-		case 2:
-			m_writer.wg.Add(1)
-			go m_writer._processJsonOutput(outId, idIdx)
-		case 3:
-			m_writer.wg.Add(1)
-			go m_writer._processRawOutput(outId, idIdx)
-		default:
-			m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
-			panic("Unknown output type")
-		}
+		m_writer.logger.Log(logs.CRITICAL, "Handler not found for unit: ", unit)
 	}
+
 	m_writer.writerMap[idIdx] <- unit
 }
 
@@ -162,7 +143,7 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 			break
 		}
 
-		if cmBuf, isCmBuf := unit.GetBuf().(common.SimpleBuf); isCmBuf {
+		if cmBuf, isCmBuf := unit.GetBuf().(common.CmBuf); isCmBuf {
 			header = cmBuf.GetFieldAsString()
 			body = cmBuf.ToString()
 		}
@@ -206,6 +187,60 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 		check(err)
 	}
 	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " ends")
+}
+
+func (m_writer *FileWriter) processControl(unit common.CmUnit) {
+	id, isValidId := unit.GetField("id").(int)
+	if !isValidId {
+		return
+	}
+	buf, isValidBuf := unit.GetBuf().(common.CmBuf)
+	if !isValidBuf {
+		return
+	}
+	if id == 0x10 {
+		field, hasField := buf.GetField("addPid")
+		if !hasField {
+			return
+		}
+		addPid, isBool := field.(bool)
+		if !isBool {
+			return
+		}
+
+		field, hasField = buf.GetField("pid")
+		if !hasField {
+			return
+		}
+		outId, isInt := field.(int)
+		if !isInt {
+			return
+		}
+
+		field, hasField = buf.GetField("type")
+		outType, isInt := field.(int)
+
+		if addPid {
+			idIdx := len(m_writer.idMapping)
+			m_writer.idMapping = append(m_writer.idMapping, outId)
+			switch outType {
+			case 0:
+				// Undefined, skip
+			case 1:
+				m_writer.wg.Add(1)
+				go m_writer._processCsvOutput(outId, idIdx)
+			case 2:
+				m_writer.wg.Add(1)
+				go m_writer._processJsonOutput(outId, idIdx)
+			case 3:
+				m_writer.wg.Add(1)
+				go m_writer._processRawOutput(outId, idIdx)
+			default:
+				m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
+				panic("Unknown output type")
+			}
+		}
+	}
 }
 
 func GetFileWriter() *FileWriter {

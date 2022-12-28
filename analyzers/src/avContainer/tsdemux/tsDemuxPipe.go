@@ -17,7 +17,7 @@ type tsDemuxPipe struct {
 	demuxStartCnt  map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
 	outputQueue    []common.IOUnit  // Outputs to other plugins
 	content        model.PAT
-	programs       []model.PMT
+	programs       map[int]model.PMT // A map from program number to PMT
 	isRunning      bool
 }
 
@@ -26,7 +26,7 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
 	m_pMux.content = model.PAT{Version: -1}
-	m_pMux.programs = make([]model.PMT, 0)
+	m_pMux.programs = make(map[int]model.PMT, 0)
 	m_pMux.isRunning = false
 }
 
@@ -57,19 +57,19 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 			m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 		} else {
 			// Others
-			progIdx := -1
+			progNum := -1
 			streamIdx := -1
 			for idx, program := range m_pMux.programs {
 				for sIdx, stream := range program.Streams {
 					if stream.StreamPid == pid {
-						progIdx = idx
+						progNum = idx
 						streamIdx = sIdx
 					}
 				}
 			}
 
 			// Contained in PMT, continue the parsing
-			if progIdx != -1 && streamIdx != -1 {
+			if progNum != -1 && streamIdx != -1 {
 				pktType := m_pMux._getPktType(pid)
 				// Determine stream type from last word
 				actualTypeSlice := strings.Split(pktType, " ")
@@ -77,12 +77,12 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				switch actualType {
 				case "video":
 					m_pMux._handleStreamData(buf, pid,
-						m_pMux.programs[progIdx].ProgNum, head.Pusi, head.Afc,
-						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
+						progNum, head.Pusi, head.Afc,
+						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
 				case "audio":
 					m_pMux._handleStreamData(buf, pid,
-						m_pMux.programs[progIdx].ProgNum, head.Pusi, head.Afc,
-						pktCnt, int(m_pMux.programs[progIdx].Streams[streamIdx].StreamType))
+						progNum, head.Pusi, head.Afc,
+						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
 				case "data":
 					m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
 				default:
@@ -122,23 +122,23 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 				}
 			case "PMT":
 				if len(m_pMux.programs) != 0 {
-					progIdx := -1
+					progNum := -1
 					for idx, program := range m_pMux.programs {
 						if program.PmtPid == pid {
-							progIdx = idx
+							progNum = idx
 							break
 						}
 					}
 
-					if progIdx == -1 {
+					if progNum == -1 {
 						m_pMux.demuxedBuffers[pid] = buf
 						m_pMux.demuxStartCnt[pid] = pktCnt
 
 						if model.PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
 							m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 						}
-					} else if m_pMux.programs[progIdx].Version != newVersion {
-						m_pMux.logger.Log(logs.INFO, "PMT at pid ", pid, " version change ", m_pMux.programs[progIdx].Version, " -> ", newVersion)
+					} else if m_pMux.programs[progNum].Version != newVersion {
+						m_pMux.logger.Log(logs.INFO, "PMT at pid ", pid, " version change ", m_pMux.programs[progNum].Version, " -> ", newVersion)
 					}
 				} else {
 					m_pMux.demuxedBuffers[pid] = buf
@@ -178,6 +178,29 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		if err != nil {
 			m_pMux.control.throwError(pid, pktCnt, err.Error())
 		}
+		if m_pMux.content.Version == -1 {
+			m_pMux.control.updatePidStatus(0, true, 2)
+		}
+		// Check if PMT pids are updated
+		newProgramMap := content.ProgramMap
+		for oldPid := range m_pMux.content.ProgramMap {
+			hasPid := false
+			for newPid := range content.ProgramMap {
+				if oldPid == newPid {
+					hasPid = true
+					newProgramMap[newPid] = -1
+					break
+				}
+			}
+			if !hasPid {
+				m_pMux.control.updatePidStatus(oldPid, false, 2)
+			}
+		}
+		for pid, progNum := range newProgramMap {
+			if progNum > 0 {
+				m_pMux.control.updatePidStatus(pid, true, 2)
+			}
+		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
 		m_pMux.logger.Log(logs.INFO, "PAT parsed: ", content.ToString())
@@ -192,7 +215,29 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		}
 		m_pMux.logger.Log(logs.INFO, statMsg)
 
-		m_pMux.programs = append(m_pMux.programs, pmt)
+		// Check if PMT pids are updated
+		newPmt := pmt
+		if oldPmt, hasPmt := m_pMux.programs[pmt.ProgNum]; hasPmt {
+			for _, stream := range oldPmt.Streams {
+				hasPid := false
+				for idx, newStream := range pmt.Streams {
+					if stream.StreamPid == newStream.StreamPid {
+						hasPid = true
+						newPmt.Streams[idx].StreamPid = -1
+					}
+				}
+				if !hasPid {
+					m_pMux.control.updatePidStatus(stream.StreamPid, false, 1)
+				}
+			}
+		}
+		for _, stream := range newPmt.Streams {
+			if stream.StreamPid != -1 {
+				m_pMux.control.updatePidStatus(stream.StreamPid, true, 1)
+			}
+		}
+
+		m_pMux.programs[pmt.ProgNum] = pmt
 		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")
 	case "SCTE-35 DPI data":
 		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
@@ -271,16 +316,21 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	return ""
 }
 
-// Duration is independent of program, so just choose the first one
+// Duration is independent of program, so just choose one
 func (m_pMux *tsDemuxPipe) getDuration() int {
-	clk := m_pMux.control.updateSrcClk(m_pMux.programs[0].ProgNum)
+	firstProgNum := -1
+	for _, prog := range m_pMux.programs {
+		firstProgNum = prog.ProgNum
+		break
+	}
+	clk := m_pMux.control.updateSrcClk(firstProgNum)
 	start, _ := clk.requestPcr(-1, 0)
 	end, _ := clk.requestPcr(-1, m_pMux.control.getInputCount())
 	return end - start
 }
 
 func (m_pMux *tsDemuxPipe) getProgramNumber(idx int) int {
-	return m_pMux.programs[idx].ProgNum
+	return idx
 }
 
 func (m_pMux *tsDemuxPipe) readyForFetch() bool {

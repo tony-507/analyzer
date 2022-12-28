@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/resources"
 )
 
@@ -18,6 +19,7 @@ type demuxController struct {
 	outLen         int                    // Output queue length
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	pktCntMap      map[int]int            // pid -> # of packets
+	StatusList     []common.CmStatusUnit  // List of status
 	resourceLoader *resources.ResourceLoader
 	mtx            sync.Mutex
 }
@@ -120,7 +122,16 @@ func (dc *demuxController) printSummary(duration int) {
 	fmt.Println(statMsg)
 }
 
+func (dc *demuxController) updatePidStatus(pid int, addPid bool, outType int) {
+	buf := common.MakeSimpleBuf([]byte{})
+	buf.SetField("pid", pid, false)
+	buf.SetField("addPid", addPid, false)
+	buf.SetField("type", outType, false)
+	unit := common.MakeStatusUnit(0x10, &buf)
+	dc.StatusList = append(dc.StatusList, unit)
+}
+
 func getControl() *demuxController {
-	rv := demuxController{isRunning: true, pollPeriod: 5, inCnt: 0, pCnt: 0, outLen: 0, progClkMap: make(map[int]*programSrcClk, 0), pktCntMap: make(map[int]int, 0)}
+	rv := demuxController{isRunning: true, pollPeriod: 5, inCnt: 0, pCnt: 0, outLen: 0, progClkMap: make(map[int]*programSrcClk, 0), pktCntMap: make(map[int]int, 0), StatusList: make([]common.CmStatusUnit, 0)}
 	return &rv
 }
