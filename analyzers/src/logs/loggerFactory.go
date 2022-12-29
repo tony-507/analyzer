@@ -13,7 +13,7 @@ const (
 // Global configuration for logger
 type globalLoggerConfig struct {
 	logLevel  int
-	msgFormat string
+	msgPrefix string
 }
 
 var globalConfig globalLoggerConfig
@@ -38,8 +38,8 @@ func SetProperty(key string, val string) {
 		default:
 			panic("Error in setting logger level")
 		}
-	case "format":
-		globalConfig.msgFormat = val
+	case "prefix":
+		globalConfig.msgPrefix = val
 	default:
 		panic("Unknown property for Logger")
 	}

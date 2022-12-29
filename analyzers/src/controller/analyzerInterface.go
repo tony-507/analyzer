@@ -3,8 +3,8 @@ package controller
 import (
 	"os"
 
-	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
+	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/worker"
 )
@@ -17,7 +17,7 @@ type AnalyzerController struct {
 }
 
 func (ctrl *AnalyzerController) buildParamException(name string) {
-	ctrl.logger.Log(logs.FATAL, "Error in building overallParams, unknown field:", name)
+	ctrl.logger.Log(logs.FATAL, "Error in building overallParams, unknown field: %s", name)
 	os.Exit(1)
 }
 
@@ -56,7 +56,7 @@ func GetController(itf CtrlInterface) AnalyzerController {
 	ctrl.id = "Default"
 
 	ctrl.provider = worker.GetWorker()
-	ctrl.logger.Log(logs.INFO, "Controller input: ", itf)
+	ctrl.logger.Log(logs.INFO, "Controller input: %v", itf)
 
 	return ctrl
 }

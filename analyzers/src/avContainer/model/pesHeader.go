@@ -126,7 +126,7 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
-		logger.Log(logs.ERROR, r)
+		logger.Log(logs.ERROR, "%v", r)
 		return PESHeader{}, err
 	}
 	streamId := r.ReadBits(8)
@@ -135,7 +135,7 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 	// TODO: May not have optional header
 	optionalHeader, err := ParseOptionalHeader(r.GetRemainedBuffer())
 	if err != nil {
-		logger.Log(logs.ERROR, r)
+		logger.Log(logs.ERROR, "%v", r)
 		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
 		err = errors.New(errMsg)
 		return PESHeader{}, err

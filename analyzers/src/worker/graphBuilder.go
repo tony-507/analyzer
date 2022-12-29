@@ -1,8 +1,9 @@
 package worker
 
 import (
-	"github.com/tony-507/analyzers/src/logs"
 	"fmt"
+
+	"github.com/tony-507/analyzers/src/logs"
 )
 
 type OverallParams struct {
@@ -63,7 +64,7 @@ func buildGraph(params []OverallParams) Graph {
 		}
 
 		pg.setParameterStr(param.pluginParam)
-		
+
 		// Handle children nodes
 		for _, childName := range param.children {
 			bExist = false

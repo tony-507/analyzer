@@ -12,22 +12,12 @@ build_app() {
 	cd $MODULE_DIR
 
 	echo -e "build_tsa:\n"
-	go build ${MODULE_DIR}/cmd/tsa/main.go
+	go build ${MODULE_DIR}/cmd/_tsa_/main.go
 	mv $MODULE_DIR/main $buildDir/tsa
 
 	echo -e "build_editCap:\n"
-	go build ${MODULE_DIR}/cmd/editCap/main.go
+	go build ${MODULE_DIR}/cmd/_editCap_/main.go
 	mv $MODULE_DIR/main $buildDir/editCap
-
-	cd ..
-}
-
-build_test() {
-	cd $MODULE_DIR
-
-	echo -e "build_unitTest:\n"
-	go build ${MODULE_DIR}/cmd/unitTest/main.go
-	mv $MODULE_DIR/main $buildDir/unitTest
 
 	cd ..
 }
@@ -42,6 +32,7 @@ userBuild () {
 }
 
 userTest() {
-	build_test
-	exec ${MODULE_DIR}/build/unitTest
+	cd $MODULE_DIR
+	go test $(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils) -coverprofile $MODULE_DIR/build/unitTestCoverage.txt
+	cd ..
 }

@@ -43,7 +43,7 @@ func (ir *InputReader) StartSequence() {
 }
 
 func (ir *InputReader) EndSequence() {
-	ir.logger.Log(logs.INFO, "Stopping file reader, fetch count = ", ir.outCnt)
+	ir.logger.Log(logs.INFO, "Stopping file reader, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
 	ir.impl.stopRecv()
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)

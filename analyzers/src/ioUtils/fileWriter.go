@@ -67,7 +67,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	}
 
 	if idIdx == -1 {
-		m_writer.logger.Log(logs.CRITICAL, "Handler not found for unit: ", unit)
+		m_writer.logger.Log(logs.CRITICAL, "Handler not found for unit: %v", unit)
 	}
 
 	m_writer.writerMap[idIdx] <- unit
@@ -75,7 +75,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "JSON handler for pid ", pid, " starts")
+	m_writer.logger.Log(logs.TRACE, "JSON handler for pid %d starts", pid)
 
 	isInit := false
 
@@ -111,12 +111,12 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	}
 
 	f.Write([]byte("\n]}"))
-	m_writer.logger.Log(logs.TRACE, "JSON handler for pid ", pid, " stops")
+	m_writer.logger.Log(logs.TRACE, "JSON handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "CSV handler for pid ", pid, " starts")
+	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d starts", pid)
 
 	fname := ""
 	if pid != -1 {
@@ -158,12 +158,12 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 
 		w.Flush()
 	}
-	m_writer.logger.Log(logs.TRACE, "CSV handler for pid ", pid, " stops")
+	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " starts")
+	m_writer.logger.Log(logs.TRACE, "Raw handler for pid %d starts", pid)
 
 	suffix := ""
 	if pid != -1 {
@@ -186,7 +186,7 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 		_, err := f.Write(buf)
 		check(err)
 	}
-	m_writer.logger.Log(logs.TRACE, "Raw handler for pid ", pid, " ends")
+	m_writer.logger.Log(logs.TRACE, "Raw handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) processControl(unit common.CmUnit) {
@@ -236,7 +236,7 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 				m_writer.wg.Add(1)
 				go m_writer._processRawOutput(outId, idIdx)
 			default:
-				m_writer.logger.Log(logs.ERROR, "unknown output type %v for id %v", outType, idIdx)
+				m_writer.logger.Log(logs.ERROR, "unknown output type %d for id %d", outType, idIdx)
 				panic("Unknown output type")
 			}
 		}

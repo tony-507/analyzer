@@ -2,6 +2,7 @@ package logs
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -14,13 +15,13 @@ func CreateLogger(id string) Log {
 	return Log{id: id}
 }
 
-func (l *Log) Log(level int, msg ...interface{}) {
+func (l *Log) Log(level int, msg string, param ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
 		globalConfig.logLevel = DISABLED
 	}
-	if globalConfig.msgFormat == "" {
-		globalConfig.msgFormat = "%t [%n] [%l] %s"
+	if globalConfig.msgPrefix == "" {
+		globalConfig.msgPrefix = "[%l]"
 	}
 
 	if globalConfig.logLevel == DISABLED {
@@ -32,33 +33,30 @@ func (l *Log) Log(level int, msg ...interface{}) {
 
 		// Use a string builder pattern to build the message
 		bNextIsOpt := false
-		for _, chr := range globalConfig.msgFormat {
+		for _, chr := range globalConfig.msgPrefix {
 			// Start of an option
 			if chr == '%' {
 				bNextIsOpt = true
 				continue
 			}
 			if bNextIsOpt {
-				sb += l.getLogOpt(chr, level, msg...)
+				sb += l.getLogOpt(chr, level)
 				bNextIsOpt = false
 			} else {
 				sb += string(chr)
 			}
 		}
 
-		fmt.Println(sb)
+		log.Printf(sb+" "+msg, param...)
 	}
 }
 
-func (l *Log) getLogOpt(opt rune, level int, msg ...interface{}) string {
+func (l *Log) getLogOpt(opt rune, level int) string {
 	switch opt {
 	case 't':
 		return time.Now().UTC().String()
 	case 'n':
 		return l.id
-	case 's':
-		parsed := fmt.Sprint(msg...)
-		return parsed
 	case 'l':
 		switch level {
 		case TRACE:

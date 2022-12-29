@@ -118,7 +118,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 					}
 				} else if m_pMux.content.Version != newVersion {
-					m_pMux.logger.Log(logs.INFO, "PAT version change ", m_pMux.content.Version, " -> ", newVersion)
+					m_pMux.logger.Log(logs.INFO, "PAT version change %d -> %d", m_pMux.content.Version, newVersion)
 				}
 			case "PMT":
 				if len(m_pMux.programs) != 0 {
@@ -138,7 +138,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 							m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 						}
 					} else if m_pMux.programs[progNum].Version != newVersion {
-						m_pMux.logger.Log(logs.INFO, "PMT at pid ", pid, " version change ", m_pMux.programs[progNum].Version, " -> ", newVersion)
+						m_pMux.logger.Log(logs.INFO, "PMT at pid %d version change %d -> %d", pid, m_pMux.programs[progNum].Version, newVersion)
 					}
 				} else {
 					m_pMux.demuxedBuffers[pid] = buf
@@ -156,7 +156,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 					m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 				}
 			default:
-				m_pMux.logger.Log(logs.ERROR, "Don't know how to handle ", dType)
+				m_pMux.logger.Log(logs.ERROR, "Don't know how to handle %s", dType)
 				panic("What?!")
 			}
 		}
@@ -203,7 +203,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		}
 		m_pMux.content = content
 		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
-		m_pMux.logger.Log(logs.INFO, "PAT parsed: ", content.ToString())
+		m_pMux.logger.Log(logs.INFO, "PAT parsed: %s", content.ToString())
 	case "PMT":
 		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 

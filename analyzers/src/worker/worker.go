@@ -89,7 +89,7 @@ func (w *Worker) HandleRequests(name string, reqType common.WORKER_REQUEST, obj 
 		if unit, isValid := obj.(common.CmStatusUnit); isValid {
 			w.PostStatus(unit)
 		} else {
-			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: ", obj)
+			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: %v", obj)
 		}
 	} else if reqType == common.ERROR_REQUEST {
 		err, _ := obj.(error)
@@ -122,7 +122,7 @@ func (w *Worker) PostRequest(name string, unit common.CmUnit) {
 		node.deliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
-		w.logger.Log(logs.TRACE, "Worker receives EOS from ", node.Name)
+		w.logger.Log(logs.TRACE, "Worker receives EOS from %s", node.Name)
 		// Trigger EndSequence of children nodes
 		for _, child := range node.children {
 			child.endSequence()
