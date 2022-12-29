@@ -8,7 +8,7 @@ import (
 
 type OverallParams struct {
 	pluginName  string
-	pluginParam interface{}
+	pluginParam string
 	children    []string
 }
 
@@ -19,7 +19,7 @@ func (param OverallParams) toString() string {
 	return str
 }
 
-func ConstructOverallParam(name string, params interface{}, children []string) OverallParams {
+func ConstructOverallParam(name string, params string, children []string) OverallParams {
 	return OverallParams{pluginName: name, pluginParam: params, children: children}
 }
 

@@ -1,6 +1,7 @@
 package tsdemux
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -63,10 +64,10 @@ func (m_pMux *TsDemuxer) SetCallback(callback common.RequestHandler) {
 	m_pMux.callback = callback
 }
 
-func (m_pMux *TsDemuxer) SetParameter(m_parameter interface{}) {
-	demuxParam, isParam := m_parameter.(DemuxParams)
-	if !isParam {
-		panic("Unknown type received at TsDemuxer::SetParameter")
+func (m_pMux *TsDemuxer) SetParameter(m_parameter string) {
+	var demuxParam DemuxParams
+	if err := json.Unmarshal([]byte(m_parameter), &demuxParam); err != nil {
+		panic(err)
 	}
 	// Do this here to prevent seg fault
 	m_pMux.control = getControl()

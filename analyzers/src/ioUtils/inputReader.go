@@ -1,6 +1,8 @@
 package ioUtils
 
 import (
+	"encoding/json"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
@@ -54,10 +56,10 @@ func (ir *InputReader) SetCallback(callback common.RequestHandler) {
 	ir.callback = callback
 }
 
-func (ir *InputReader) SetParameter(m_parameter interface{}) {
-	param, isInputParam := m_parameter.(IOReaderParam)
-	if !isInputParam {
-		panic("File reader param has unknown format")
+func (ir *InputReader) SetParameter(m_parameter string) {
+	var param IOReaderParam
+	if err := json.Unmarshal([]byte(m_parameter), &param); err != nil {
+		panic(err)
 	}
 	if param.SkipCnt > 0 {
 		ir.skipCnt = param.SkipCnt

@@ -15,10 +15,10 @@ import (
 var TEST_OUT_DIR = testUtils.GetOutputDir() + "/test_output/"
 
 func TestReaderSetParameter(t *testing.T) {
-	specs := []IOReaderParam{
-		IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "dummy.ts"}},
-		IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc.ts"}},
-		IOReaderParam{Source: SOURCE_FILE, FileInput: FileInputParam{Fname: "hello.abc"}},
+	specs := []string{
+		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"dummy.ts\"}}",
+		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc.ts\"}}",
+		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
 	}
 
 	expectedExt := []INPUT_TYPE{INPUT_TS, INPUT_TS, INPUT_UNKNOWN}
@@ -37,10 +37,10 @@ func TestReaderSetParameter(t *testing.T) {
 }
 
 func TestReaderDeliverUnit(t *testing.T) {
-	specs := []IOReaderParam{
-		IOReaderParam{Source: SOURCE_DUMMY},
-		IOReaderParam{Source: SOURCE_DUMMY, SkipCnt: 2},  // Deliver with skipping does not change behaviour
-		IOReaderParam{Source: SOURCE_DUMMY, MaxInCnt: 2}, // Deliver with max input count
+	specs := []string{
+		"{\"Source\": \"SOURCE_DUMMY\"}",
+		"{\"Source\": \"SOURCE_DUMMY\",\"SkipCnt\":2}",  // Deliver with skipping does not change behaviour
+		"{\"Source\": \"SOURCE_DUMMY\",\"MaxInCnt\":2}", // Deliver with max input count
 	}
 
 	expectedDeliverCnt := []int{5, 5, 2}
@@ -64,21 +64,6 @@ func TestReaderDeliverUnit(t *testing.T) {
 		})
 		ir.start()
 	}
-}
-
-func TestOutputWriterDeliverUnit(t *testing.T) {
-	ow := GetOutputWriter("dummy")
-	x := 0
-	m_parameter := IOWriterParam{OutputType: OUTPUT_DUMMY, dummyOut: &x}
-	ow.SetParameter(m_parameter)
-
-	// Deliver some dummy units
-	for i := 1; i < 5; i++ {
-		unit := common.IOUnit{Buf: i}
-		ow.DeliverUnit(unit)
-	}
-
-	assert.Equal(t, 1234, x, "Expect output to be 1234")
 }
 
 func TestWriterMultiThread(t *testing.T) {

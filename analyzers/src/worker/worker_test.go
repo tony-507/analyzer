@@ -42,10 +42,6 @@ func TestSimpleGraph(t *testing.T) {
 	AddPath(&dummy1, []*Plugin{&dummy2})
 	AddPath(&dummy2, []*Plugin{&dummy3})
 
-	dummy1.setParameterStr(0)
-	dummy2.setParameterStr(1)
-	dummy3.setParameterStr(1)
-
 	w := GetWorker()
 	w.SetGraph(graph)
 
@@ -77,11 +73,6 @@ func TestGraphMultipleInput(t *testing.T) {
 	AddPath(&dummy2, []*Plugin{&dummy4})
 	AddPath(&dummy3, []*Plugin{&dummy4})
 
-	dummy1.setParameterStr(0)
-	dummy2.setParameterStr(1)
-	dummy3.setParameterStr(1)
-	dummy4.setParameterStr(2)
-
 	w := GetWorker()
 	w.SetGraph(graph)
 
@@ -112,11 +103,6 @@ func TestGraphMultipleOutput(t *testing.T) {
 	AddPath(&dummy1, []*Plugin{&dummy2})
 	AddPath(&dummy2, []*Plugin{&dummy3, &dummy4})
 
-	dummy1.setParameterStr(0)
-	dummy2.setParameterStr(1)
-	dummy3.setParameterStr(1)
-	dummy4.setParameterStr(1)
-
 	w := GetWorker()
 	w.SetGraph(graph)
 
@@ -136,9 +122,9 @@ func TestGraphMultipleOutput(t *testing.T) {
 func TestGraphBuilding(t *testing.T) {
 	// Since graph uses pointers to store plugins, we cannot compare the constructed graph with one built manually
 	// As an alternative, we use representative fields to compare the graph
-	dummyParam1 := ConstructOverallParam("Dummy_1", 1, []string{"Dummy_2"})
-	dummyParam2 := ConstructOverallParam("Dummy_2", 2, []string{"Dummy_3"})
-	dummyParam3 := ConstructOverallParam("Dummy_3", 3, []string{})
+	dummyParam1 := ConstructOverallParam("Dummy_1", "{}", []string{"Dummy_2"})
+	dummyParam2 := ConstructOverallParam("Dummy_2", "{}", []string{"Dummy_3"})
+	dummyParam3 := ConstructOverallParam("Dummy_3", "{}", []string{})
 
 	builtOutput := buildGraph([]OverallParams{dummyParam1, dummyParam2, dummyParam3})
 
@@ -148,13 +134,7 @@ func TestGraphBuilding(t *testing.T) {
 		if pg.Name != pgName {
 			panic(fmt.Sprintf("Name not match. Expecting %s, but got %s", pgName, pg.Name))
 		}
-		param, isInt := pg.m_parameter.(int)
-		if !isInt {
-			panic("Parameter is not an integer")
-		}
-		if param != idx+1 {
-			panic(fmt.Sprintf("Parameter not match. Expecting %d, but got %d", idx+1, param))
-		}
+		assert.Equal(t, "{}", pg.m_parameter)
 		if idx != 2 {
 			if len(pg.children) != 1 {
 				panic(fmt.Sprintf("Output edge count not match. Expecting 1, but got %d", len(pg.children)))

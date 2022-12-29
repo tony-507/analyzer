@@ -1,4 +1,4 @@
-package datahandler
+package dataHandler
 
 import (
 	"github.com/tony-507/analyzers/src/common"
@@ -23,7 +23,7 @@ func (df *DataHandlerFactory) SetCallback(callback common.RequestHandler) {
 	df.callback = callback
 }
 
-func (df *DataHandlerFactory) SetParameter(m_parameter interface{}) {
+func (df *DataHandlerFactory) SetParameter(m_parameter string) {
 	df._setup()
 }
 

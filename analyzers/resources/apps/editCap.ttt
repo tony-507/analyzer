@@ -1,0 +1,20 @@
+import ioUtils;
+
+input = #ioUtils.InputReader;
+
+if ($IN_FILE) {
+    input.Source = SOURCE_FILE;
+    input.FileInput.Fname = $IN_FILE;
+}
+
+input.SkipCnt = $SKIP_CNT;
+input.MaxInCnt = $MAX_IN_CNT;
+
+output = #ioUtils.OutputWriter;
+
+if ($OUT_FOLDER) {
+    output.OutputType = OUTPUT_FILE;
+    output.FileOutput.OutFolder = $OUT_FOLDER;
+}
+
+link(input, output);

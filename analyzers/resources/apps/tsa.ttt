@@ -1,0 +1,25 @@
+input = #InputReader_1;
+
+alias(file, f);
+alias(output, o);
+
+if $f;
+    input.Source = SOURCE_FILE;
+    input.FileInput.Fname = $f;
+end;
+
+input.SkipCnt = $skipCnt | 0;
+input.MaxInCnt = $maxInCnt | 0;
+
+demuxer = #TsDemuxer_1;
+demuxer.Mode = $demuxMode | DEMUX_DUMMY;
+
+output = #OutputWriter_1;
+
+if $o;
+    output.OutputType = OUTPUT_FILE;
+    output.FileOutput.OutFolder = $o | output/;
+end;
+
+link(input, demuxer);
+link(demuxer, output);

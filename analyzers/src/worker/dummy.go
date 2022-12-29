@@ -18,7 +18,7 @@ type DummyPlugin struct {
 	role     int // 0 represents a root, 1 represents non-root
 }
 
-func (dp *DummyPlugin) SetParameter(m_parameter interface{}) {}
+func (dp *DummyPlugin) SetParameter(m_parameter string) {}
 
 func (pg *DummyPlugin) SetResource(resourceLoader *resources.ResourceLoader) {
 	// pg.impl.SetResource(resourceLoader)

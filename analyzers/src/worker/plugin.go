@@ -6,14 +6,14 @@ import (
 
 	"github.com/tony-507/analyzers/src/avContainer/tsdemux"
 	"github.com/tony-507/analyzers/src/common"
-	datahandler "github.com/tony-507/analyzers/src/dataHandler"
+	"github.com/tony-507/analyzers/src/dataHandler"
 	"github.com/tony-507/analyzers/src/ioUtils"
 	"github.com/tony-507/analyzers/src/resources"
 )
 
 // A basePlugin provides unified interface to perform different functionalities
 type basePlugin interface {
-	SetParameter(interface{})                // Set up parameters of the plugin
+	SetParameter(string)                     // Set up parameters of the plugin
 	SetResource(*resources.ResourceLoader)   // Set resources of the plugin, which is loaded from the one of worker
 	DeliverUnit(common.CmUnit) (bool, error) // Worker sends a unit to the plugin
 	FetchUnit() common.CmUnit                // Worker gets a unit from the plugin, and sends it to next plugin(s)
@@ -26,14 +26,14 @@ type basePlugin interface {
 type Plugin struct {
 	Work          interface{} // The struct that performs the work
 	setCallback   func(common.RequestHandler)
-	setParameter  func(interface{})
+	setParameter  func(string)
 	setResource   func(*resources.ResourceLoader)
 	startSequence func()
 	deliverUnit   func(common.CmUnit)
 	deliverStatus func(common.CmUnit)
 	fetchUnit     func() common.CmUnit
 	endSequence   func()
-	m_parameter   interface{} // Store plugin parameters
+	m_parameter   string // Store plugin parameters
 	Name          string
 	children      []*Plugin
 	parent        []*Plugin
@@ -50,7 +50,7 @@ func GetPluginByName(inputName string) Plugin {
 	rv := Plugin{}
 
 	switch splitName[0] {
-	case "FileReader":
+	case "InputReader":
 		work := ioUtils.GetReader(inputName)
 		rv = initPlugin(&work, inputName, true)
 		rv.setCallback = work.SetCallback
@@ -61,7 +61,7 @@ func GetPluginByName(inputName string) Plugin {
 		rv.fetchUnit = work.FetchUnit
 		rv.endSequence = work.EndSequence
 		rv.bIsRoot = true // This plugin must be a root
-	case "FileWriter":
+	case "OutputWriter":
 		work := ioUtils.GetOutputWriter(inputName)
 		rv = initPlugin(&work, inputName, false)
 		rv.setCallback = work.SetCallback
@@ -72,7 +72,7 @@ func GetPluginByName(inputName string) Plugin {
 		rv.fetchUnit = work.FetchUnit
 		rv.endSequence = work.EndSequence
 		rv.deliverStatus = work.DeliverStatus
-		rv.bIsRoot = false // This plugin must be a root
+		rv.bIsRoot = false
 	case "TsDemuxer":
 		work := tsdemux.GetTsDemuxer(inputName)
 		rv = initPlugin(&work, inputName, false)
@@ -83,9 +83,9 @@ func GetPluginByName(inputName string) Plugin {
 		rv.deliverUnit = work.DeliverUnit
 		rv.fetchUnit = work.FetchUnit
 		rv.endSequence = work.EndSequence
-		rv.bIsRoot = false // This plugin must be a root
+		rv.bIsRoot = false
 	case "DataHandler":
-		work := datahandler.GetDataHandlerFactory(inputName)
+		work := dataHandler.GetDataHandlerFactory(inputName)
 		rv = initPlugin(&work, inputName, false)
 		rv.setCallback = work.SetCallback
 		rv.setParameter = work.SetParameter
@@ -94,7 +94,7 @@ func GetPluginByName(inputName string) Plugin {
 		rv.deliverUnit = work.DeliverUnit
 		rv.fetchUnit = work.FetchUnit
 		rv.endSequence = work.EndSequence
-		rv.bIsRoot = false // This plugin must be a root
+		rv.bIsRoot = false
 	case "Dummy":
 		isRoot := 1
 		if splitName[1] == "root" {
@@ -127,6 +127,6 @@ func (pn *Plugin) isRoot() bool {
 	return pn.bIsRoot
 }
 
-func (pn *Plugin) setParameterStr(m_parameter interface{}) {
+func (pn *Plugin) setParameterStr(m_parameter string) {
 	pn.m_parameter = m_parameter
 }

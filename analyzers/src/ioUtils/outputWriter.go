@@ -1,6 +1,8 @@
 package ioUtils
 
 import (
+	"encoding/json"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/resources"
@@ -25,14 +27,12 @@ func (w *OutputWriter) SetCallback(callback common.RequestHandler) {
 	w.callback = callback
 }
 
-func (w *OutputWriter) SetParameter(m_parameter interface{}) {
-	writerParam, isWriterParam := m_parameter.(IOWriterParam)
-	if !isWriterParam {
-		panic("Writer param has unknown format")
+func (w *OutputWriter) SetParameter(m_parameter string) {
+	var writerParam IOWriterParam
+	if err := json.Unmarshal([]byte(m_parameter), &writerParam); err != nil {
+		panic(err)
 	}
 	switch writerParam.OutputType {
-	case OUTPUT_DUMMY:
-		w.impl = &DummyWriter{}
 	case OUTPUT_FILE:
 		w.impl = GetFileWriter()
 	}

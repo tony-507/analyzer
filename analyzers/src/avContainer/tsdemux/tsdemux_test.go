@@ -10,7 +10,7 @@ import (
 
 func TestDemuxDeliverUnit(t *testing.T) {
 	m_pMux := GetTsDemuxer("dummy")
-	m_parameter := DemuxParams{Mode: DEMUX_DUMMY}
+	m_parameter := "{\"Mode\": \"DEMUX_DUMMY\"}"
 	m_pMux.SetParameter(m_parameter)
 
 	m_pMux.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
