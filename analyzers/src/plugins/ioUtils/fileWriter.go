@@ -27,7 +27,7 @@ type FileWriter struct {
 	wg        sync.WaitGroup
 }
 
-func (m_writer *FileWriter) setup(writerParam IOWriterParam) {
+func (m_writer *FileWriter) setup(writerParam ioWriterParam) {
 	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
@@ -243,7 +243,7 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 	}
 }
 
-func GetFileWriter() *FileWriter {
+func getFileWriter() *FileWriter {
 	rv := FileWriter{logger: logs.CreateLogger("fileWriter")}
 	return &rv
 }

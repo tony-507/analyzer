@@ -3,7 +3,7 @@ import ioUtils;
 input = #ioUtils.InputReader;
 
 if ($IN_FILE) {
-    input.Source = SOURCE_FILE;
+    input.Source = _SOURCE_FILE;
     input.FileInput.Fname = $IN_FILE;
 }
 

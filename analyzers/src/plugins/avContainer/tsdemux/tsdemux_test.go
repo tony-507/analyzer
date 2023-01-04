@@ -4,23 +4,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
 )
 
 func TestDemuxDeliverUnit(t *testing.T) {
-	m_pMux := GetTsDemuxer("dummy")
-	m_parameter := "{\"Mode\": \"DEMUX_DUMMY\"}"
-	m_pMux.SetParameter(m_parameter)
+	m_pMux := TsDemuxer{name: "dummy"}
+	m_parameter := "{\"Mode\": \"_DEMUX_DUMMY\"}"
+	m_pMux.setParameter(m_parameter)
 
-	m_pMux.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+	m_pMux.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 		expected := common.MakeReqUnit("dummy", common.FETCH_REQUEST)
 		assert.Equal(t, expected, obj, "Unit not equal")
 	})
 
 	for i := 0; i < 2; i++ {
 		dummy := common.IOUnit{Buf: i, IoType: 1, Id: 0}
-		m_pMux.DeliverUnit(dummy)
+		m_pMux.deliverUnit(dummy)
 	}
 }
 

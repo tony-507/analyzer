@@ -5,11 +5,10 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
-	"github.com/tony-507/analyzers/src/resources"
 )
 
 type IWriter interface {
-	setup(IOWriterParam)
+	setup(ioWriterParam)
 	stop()
 	processUnit(common.CmUnit)
 	processControl(common.CmUnit)
@@ -23,32 +22,32 @@ type OutputWriter struct {
 	isRunning bool
 }
 
-func (w *OutputWriter) SetCallback(callback common.RequestHandler) {
+func (w *OutputWriter) setCallback(callback common.RequestHandler) {
 	w.callback = callback
 }
 
-func (w *OutputWriter) SetParameter(m_parameter string) {
-	var writerParam IOWriterParam
+func (w *OutputWriter) setParameter(m_parameter string) {
+	var writerParam ioWriterParam
 	if err := json.Unmarshal([]byte(m_parameter), &writerParam); err != nil {
 		panic(err)
 	}
 	switch writerParam.OutputType {
-	case OUTPUT_FILE:
-		w.impl = GetFileWriter()
+	case _OUTPUT_FILE:
+		w.impl = getFileWriter()
 	}
 	w.impl.setup(writerParam)
 }
 
-func (w *OutputWriter) SetResource(loader *resources.ResourceLoader) {}
+func (w *OutputWriter) setResource(loader *common.ResourceLoader) {}
 
-func (w *OutputWriter) StartSequence() {
+func (w *OutputWriter) startSequence() {
 	w.logger.Log(logs.INFO, "Output writer is started")
 	w.isRunning = true
 
 	common.Listen_msg(w.callback, w.name, 0x10)
 }
 
-func (w *OutputWriter) EndSequence() {
+func (w *OutputWriter) endSequence() {
 	w.logger.Log(logs.INFO, "Output writer end sequence")
 	w.isRunning = false
 	w.impl.stop()
@@ -57,18 +56,30 @@ func (w *OutputWriter) EndSequence() {
 	common.Post_request(w.callback, w.name, eosUnit)
 }
 
-func (w *OutputWriter) DeliverUnit(unit common.CmUnit) {
+func (w *OutputWriter) deliverUnit(unit common.CmUnit) {
 	w.impl.processUnit(unit)
 }
 
-func (w *OutputWriter) FetchUnit() common.CmUnit {
+func (w *OutputWriter) fetchUnit() common.CmUnit {
 	return nil
 }
 
-func (w *OutputWriter) DeliverStatus(unit common.CmUnit) {
+func (w *OutputWriter) deliverStatus(unit common.CmUnit) {
 	w.impl.processControl(unit)
 }
 
-func GetOutputWriter(name string) OutputWriter {
-	return OutputWriter{name: name, isRunning: false, logger: logs.CreateLogger("OutputWriter")}
+func GetOutputWriter(name string) common.Plugin {
+	rv := OutputWriter{name: name, isRunning: false, logger: logs.CreateLogger(name)}
+	return common.CreatePlugin(
+		name,
+		false,
+		rv.setCallback,
+		rv.setParameter,
+		rv.setResource,
+		rv.startSequence,
+		rv.deliverUnit,
+		rv.deliverStatus,
+		rv.fetchUnit,
+		rv.endSequence,
+	)
 }

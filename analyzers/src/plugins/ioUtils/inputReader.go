@@ -5,7 +5,6 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
-	"github.com/tony-507/analyzers/src/resources"
 )
 
 const (
@@ -37,14 +36,14 @@ type InputReader struct {
 	maxInCnt    int
 }
 
-func (ir *InputReader) StartSequence() {
+func (ir *InputReader) startSequence() {
 	ir.logger.Log(logs.INFO, "File reader is started")
 	ir.isRunning = true
 
 	ir.impl.startRecv()
 }
 
-func (ir *InputReader) EndSequence() {
+func (ir *InputReader) endSequence() {
 	ir.logger.Log(logs.INFO, "Stopping file reader, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
 	ir.impl.stopRecv()
@@ -52,12 +51,12 @@ func (ir *InputReader) EndSequence() {
 	common.Post_request(ir.callback, ir.name, eosUnit)
 }
 
-func (ir *InputReader) SetCallback(callback common.RequestHandler) {
+func (ir *InputReader) setCallback(callback common.RequestHandler) {
 	ir.callback = callback
 }
 
-func (ir *InputReader) SetParameter(m_parameter string) {
-	var param IOReaderParam
+func (ir *InputReader) setParameter(m_parameter string) {
+	var param ioReaderParam
 	if err := json.Unmarshal([]byte(m_parameter), &param); err != nil {
 		panic(err)
 	}
@@ -75,22 +74,24 @@ func (ir *InputReader) SetParameter(m_parameter string) {
 	ir.outCnt = 0
 
 	switch param.Source {
-	case SOURCE_DUMMY:
+	case _SOURCE_DUMMY:
 		ir.impl = &dummyReader{}
-	case SOURCE_FILE:
+	case _SOURCE_FILE:
 		ir.impl = &fileReader{fname: param.FileInput.Fname}
 	}
 
 	ir.impl.setup()
 }
 
-func (ir *InputReader) SetResource(loader *resources.ResourceLoader) {}
+func (ir *InputReader) setResource(loader *common.ResourceLoader) {}
 
-func (ir *InputReader) DeliverUnit(unit common.CmUnit) {
+func (ir *InputReader) deliverUnit(unit common.CmUnit) {
 	for ir.isRunning {
 		ir.start()
 	}
 }
+
+func (ir *InputReader) deliverStatus(unit common.CmUnit) {}
 
 func (ir *InputReader) start() {
 	// Here, we will keep delivering until EOS is signaled
@@ -102,11 +103,11 @@ func (ir *InputReader) start() {
 		reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 		common.Post_request(ir.callback, ir.name, reqUnit)
 	} else {
-		ir.EndSequence()
+		ir.endSequence()
 	}
 }
 
-func (ir *InputReader) FetchUnit() common.CmUnit {
+func (ir *InputReader) fetchUnit() common.CmUnit {
 	if len(ir.outputQueue) != 0 && ir.skipCnt <= 0 {
 		rv := ir.outputQueue[0]
 		if len(ir.outputQueue) == 1 {
@@ -123,7 +124,18 @@ func (ir *InputReader) FetchUnit() common.CmUnit {
 	return rv
 }
 
-// Wrapper to skip initialization line outside package
-func GetReader(name string) InputReader {
-	return InputReader{name: name, logger: logs.CreateLogger("inputReader")}
+func GetInputReader(name string) common.Plugin {
+	rv := InputReader{name: name, logger: logs.CreateLogger(name)}
+	return common.CreatePlugin(
+		name,
+		true,
+		rv.setCallback,
+		rv.setParameter,
+		rv.setResource,
+		rv.startSequence,
+		rv.deliverUnit,
+		rv.deliverStatus,
+		rv.fetchUnit,
+		rv.endSequence,
+	)
 }

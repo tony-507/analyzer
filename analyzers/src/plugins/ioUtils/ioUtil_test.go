@@ -3,29 +3,36 @@ package ioUtils
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/testUtils"
+	"github.com/tony-507/analyzers/src/logs"
 )
 
+func getOutputDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Dir(filename)
+}
+
 // Helper
-var TEST_OUT_DIR = testUtils.GetOutputDir() + "/test_output/"
+var TEST_OUT_DIR = getOutputDir() + "/../../../build/test_output/"
 
 func TestReaderSetParameter(t *testing.T) {
 	specs := []string{
-		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"dummy.ts\"}}",
-		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc.ts\"}}",
-		"{\"Source\":\"SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
+		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"dummy.ts\"}}",
+		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc.ts\"}}",
+		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
 	}
 
 	expectedExt := []INPUT_TYPE{INPUT_TS, INPUT_TS, INPUT_UNKNOWN}
 
 	for idx, param := range specs {
-		fr := GetReader("dummy")
-		fr.SetParameter(param)
+		fr := InputReader{name: "dummy", logger: logs.CreateLogger("dummy")}
+		fr.setParameter(param)
 
 		impl, isFileReader := fr.impl.(*fileReader)
 		if !isFileReader {
@@ -38,18 +45,18 @@ func TestReaderSetParameter(t *testing.T) {
 
 func TestReaderDeliverUnit(t *testing.T) {
 	specs := []string{
-		"{\"Source\": \"SOURCE_DUMMY\"}",
-		"{\"Source\": \"SOURCE_DUMMY\",\"SkipCnt\":2}",  // Deliver with skipping does not change behaviour
-		"{\"Source\": \"SOURCE_DUMMY\",\"MaxInCnt\":2}", // Deliver with max input count
+		"{\"Source\": \"_SOURCE_DUMMY\"}",
+		"{\"Source\": \"_SOURCE_DUMMY\",\"SkipCnt\":2}",  // Deliver with skipping does not change behaviour
+		"{\"Source\": \"_SOURCE_DUMMY\",\"MaxInCnt\":2}", // Deliver with max input count
 	}
 
 	expectedDeliverCnt := []int{5, 5, 2}
 
 	for idx, param := range specs {
-		ir := GetReader("dummy")
-		ir.SetParameter(param)
+		ir := InputReader{name: "dummy", logger: logs.CreateLogger("dummy")}
+		ir.setParameter(param)
 
-		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+		ir.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			assert.Equal(t, expected, obj, fmt.Sprintf("[%d] Expect a fetch request", idx))
 		})
@@ -58,7 +65,7 @@ func TestReaderDeliverUnit(t *testing.T) {
 			ir.start()
 		}
 
-		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+		ir.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
 			assert.Equal(t, expected, obj, "Expect an EOS request")
 		})
@@ -67,8 +74,8 @@ func TestReaderDeliverUnit(t *testing.T) {
 }
 
 func TestWriterMultiThread(t *testing.T) {
-	fw := GetFileWriter()
-	param := IOWriterParam{FileOutput: FileOutputParam{OutFolder: TEST_OUT_DIR}}
+	fw := getFileWriter()
+	param := ioWriterParam{FileOutput: fileOutputParam{OutFolder: TEST_OUT_DIR}}
 	fw.setup(param)
 
 	buf1 := common.MakeSimpleBuf([]byte{})
@@ -90,6 +97,8 @@ func TestWriterMultiThread(t *testing.T) {
 	fw.processUnit(rawUnit2)
 
 	fw.stop()
+
+	t.Logf(TEST_OUT_DIR)
 
 	filesArr := []int{2, 5}
 	for _, id := range filesArr {

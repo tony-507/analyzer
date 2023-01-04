@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/avContainer/model"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
 )
 
 type tsDemuxPipe struct {

@@ -1,4 +1,4 @@
-package controller
+package tttKernel
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/logs"
-	"github.com/tony-507/analyzers/src/worker"
 )
 
 type _VARTYPE int
@@ -44,15 +43,16 @@ func (v *scriptVar) getAttributeStr() string {
 }
 
 // Migration in progress
-type migrateController struct {
+type tttKernel struct {
 	logger    logs.Log
 	aliasMap  map[string]string
 	edgeMap   map[string][]string
+	statusMap map[string][]string
 	variables []*scriptVar
 }
 
-func GetMigratedController(script string, input []string) {
-	ctrl := migrateController{
+func StartApp(script string, input []string) {
+	ctrl := tttKernel{
 		logger:    logs.CreateLogger("Controller"),
 		variables: []*scriptVar{},
 		edgeMap:   map[string][]string{},
@@ -61,20 +61,20 @@ func GetMigratedController(script string, input []string) {
 
 	ctrl.buildParams(script, input)
 
-	provider := worker.GetWorker()
+	provider := getWorker()
 
-	pluginParams := make([]worker.OverallParams, 0)
+	pluginParams := make([]OverallParams, 0)
 	for _, v := range ctrl.variables {
 		if v.varType == _VAR_PLUGIN {
-			pluginParams = append(pluginParams, worker.ConstructOverallParam(v.value, v.getAttributeStr(), ctrl.edgeMap[v.name]))
+			pluginParams = append(pluginParams, constructOverallParam(v.value, v.getAttributeStr(), ctrl.edgeMap[v.name]))
 		}
 	}
 
-	provider.StartService(pluginParams)
+	provider.startService(pluginParams)
 }
 
 // Read from script and input to prepare plugins and the respective parameters
-func (ctrl *migrateController) buildParams(script string, input []string) {
+func (ctrl *tttKernel) buildParams(script string, input []string) {
 	lines := strings.FieldsFunc(script, func(r rune) bool { return r == ';' || r == '\n' })
 	syntaxErrLine := 0
 	msg := ""
@@ -204,12 +204,12 @@ func (ctrl *migrateController) buildParams(script string, input []string) {
 	}
 }
 
-func (ctrl *migrateController) handleAliasing(alias string, orig string) {
+func (ctrl *tttKernel) handleAliasing(alias string, orig string) {
 	ctrl.aliasMap[alias] = orig
 	ctrl.logger.Log(logs.INFO, "Alias mapping: %s -> %s", alias, orig)
 }
 
-func (ctrl *migrateController) getVariable(components []string, createIfNeeded bool) *scriptVar {
+func (ctrl *tttKernel) getVariable(components []string, createIfNeeded bool) *scriptVar {
 	depth := len(components)
 	curArrPtr := &ctrl.variables
 	var match *scriptVar
@@ -237,7 +237,7 @@ func (ctrl *migrateController) getVariable(components []string, createIfNeeded b
 	return match
 }
 
-func (ctrl *migrateController) getValueFromArgs(input []string, opt string, def string) string {
+func (ctrl *tttKernel) getValueFromArgs(input []string, opt string, def string) string {
 	for idx, param := range input {
 		firstChar := []rune(param)[0]
 		if firstChar == '-' {
@@ -253,7 +253,7 @@ func (ctrl *migrateController) getValueFromArgs(input []string, opt string, def 
 	return def
 }
 
-func (ctrl *migrateController) getValueFromName(name string) string {
+func (ctrl *tttKernel) getValueFromName(name string) string {
 	for _, v := range ctrl.variables {
 		if v.name == name {
 			return v.value
@@ -265,7 +265,7 @@ func (ctrl *migrateController) getValueFromName(name string) string {
 // Determine if RHS is another variable
 // If yes, return value of the variable (no recursion)
 // else, return the string itself
-func (ctrl *migrateController) resolveRHS(rhs string) string {
+func (ctrl *tttKernel) resolveRHS(rhs string) string {
 	if x := ctrl.getValueFromName(rhs); x != "" {
 		return x
 	}

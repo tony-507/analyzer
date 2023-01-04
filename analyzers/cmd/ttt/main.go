@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/controller"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 var resourceDir string
@@ -62,6 +62,6 @@ func main() {
 		if len(os.Args) > 2 {
 			params = os.Args[2:]
 		}
-		controller.GetMigratedController(script, params)
+		tttKernel.StartApp(script, params)
 	}
 }

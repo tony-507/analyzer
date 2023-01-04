@@ -3,7 +3,6 @@ package dataHandler
 import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
-	"github.com/tony-507/analyzers/src/resources"
 )
 
 type DataHandler interface {
@@ -19,15 +18,15 @@ type DataHandlerFactory struct {
 	name       string
 }
 
-func (df *DataHandlerFactory) SetCallback(callback common.RequestHandler) {
+func (df *DataHandlerFactory) setCallback(callback common.RequestHandler) {
 	df.callback = callback
 }
 
-func (df *DataHandlerFactory) SetParameter(m_parameter string) {
+func (df *DataHandlerFactory) setParameter(m_parameter string) {
 	df._setup()
 }
 
-func (df *DataHandlerFactory) SetResource(loader *resources.ResourceLoader) {}
+func (df *DataHandlerFactory) setResource(loader *common.ResourceLoader) {}
 
 func (df *DataHandlerFactory) _setup() {
 	df.logger = logs.CreateLogger("DataHandlerFactory")
@@ -36,17 +35,17 @@ func (df *DataHandlerFactory) _setup() {
 	df.isRunning = true
 }
 
-func (df *DataHandlerFactory) StartSequence() {
+func (df *DataHandlerFactory) startSequence() {
 	df.logger.Log(logs.INFO, "Data handler factory is started")
 }
 
-func (df *DataHandlerFactory) EndSequence() {
+func (df *DataHandlerFactory) endSequence() {
 	df.logger.Log(logs.INFO, "Data handler factory is stopped")
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
 	common.Post_request(df.callback, df.name, eosUnit)
 }
 
-func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) {
+func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 	if unit == nil {
 		return
 	}
@@ -73,7 +72,9 @@ func (df *DataHandlerFactory) DeliverUnit(unit common.CmUnit) {
 	common.Post_request(df.callback, df.name, reqUnit)
 }
 
-func (df *DataHandlerFactory) FetchUnit() common.CmUnit {
+func (df *DataHandlerFactory) deliverStatus(unit common.CmUnit) {}
+
+func (df *DataHandlerFactory) fetchUnit() common.CmUnit {
 	if len(df.outputUnit) == 0 {
 		return nil
 	} else if len(df.outputUnit) == 1 {
@@ -87,7 +88,18 @@ func (df *DataHandlerFactory) FetchUnit() common.CmUnit {
 	}
 }
 
-func GetDataHandlerFactory(name string) DataHandlerFactory {
+func GetDataHandlerFactory(name string) common.Plugin {
 	rv := DataHandlerFactory{name: name}
-	return rv
+	return common.CreatePlugin(
+		name,
+		false,
+		rv.setCallback,
+		rv.setParameter,
+		rv.setResource,
+		rv.startSequence,
+		rv.deliverUnit,
+		rv.deliverStatus,
+		rv.fetchUnit,
+		rv.endSequence,
+	)
 }

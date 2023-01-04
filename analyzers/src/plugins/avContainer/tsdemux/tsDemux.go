@@ -8,7 +8,6 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
-	"github.com/tony-507/analyzers/src/resources"
 )
 
 type IDemuxPipe interface {
@@ -60,29 +59,29 @@ type TsDemuxer struct {
 	wg        sync.WaitGroup
 }
 
-func (m_pMux *TsDemuxer) SetCallback(callback common.RequestHandler) {
+func (m_pMux *TsDemuxer) setCallback(callback common.RequestHandler) {
 	m_pMux.callback = callback
 }
 
-func (m_pMux *TsDemuxer) SetParameter(m_parameter string) {
-	var demuxParam DemuxParams
+func (m_pMux *TsDemuxer) setParameter(m_parameter string) {
+	var demuxParam demuxParams
 	if err := json.Unmarshal([]byte(m_parameter), &demuxParam); err != nil {
 		panic(err)
 	}
 	// Do this here to prevent seg fault
 	m_pMux.control = getControl()
 	switch demuxParam.Mode {
-	case DEMUX_DUMMY:
+	case _DEMUX_DUMMY:
 		impl := getDummyPipe(m_pMux)
 		m_pMux.impl = &impl
-	case DEMUX_FULL:
+	case _DEMUX_FULL:
 		impl := getDemuxPipe(m_pMux.control)
 		m_pMux.impl = &impl
 	}
 	m_pMux._setup()
 }
 
-func (m_pMux *TsDemuxer) SetResource(resourceLoader *resources.ResourceLoader) {
+func (m_pMux *TsDemuxer) setResource(resourceLoader *common.ResourceLoader) {
 	m_pMux.control.setResource(resourceLoader)
 }
 
@@ -102,11 +101,11 @@ func (m_pMux *TsDemuxer) _setupMonitor() {
 	m_pMux.control.monitor()
 }
 
-func (m_pMux *TsDemuxer) StartSequence() {
+func (m_pMux *TsDemuxer) startSequence() {
 	m_pMux.logger.Log(logs.INFO, "TSDemuxer has started")
 }
 
-func (m_pMux *TsDemuxer) EndSequence() {
+func (m_pMux *TsDemuxer) endSequence() {
 	// Fetch all remaining units
 	for m_pMux.impl.readyForFetch() {
 		m_pMux.control.outputUnitAdded()
@@ -121,7 +120,7 @@ func (m_pMux *TsDemuxer) EndSequence() {
 	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
 
-func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
+func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	errMsg := ""
 
@@ -158,7 +157,7 @@ func (m_pMux *TsDemuxer) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
+func (m_pMux *TsDemuxer) deliverUnit(inUnit common.CmUnit) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet
@@ -181,6 +180,20 @@ func (m_pMux *TsDemuxer) DeliverUnit(inUnit common.CmUnit) {
 	}
 }
 
-func GetTsDemuxer(name string) TsDemuxer {
-	return TsDemuxer{name: name}
+func (m_pMux *TsDemuxer) deliverStatus(unit common.CmUnit) {}
+
+func GetTsDemuxer(name string) common.Plugin {
+	rv := TsDemuxer{name: name}
+	return common.CreatePlugin(
+		name,
+		false,
+		rv.setCallback,
+		rv.setParameter,
+		rv.setResource,
+		rv.startSequence,
+		rv.deliverUnit,
+		rv.deliverStatus,
+		rv.fetchUnit,
+		rv.endSequence,
+	)
 }

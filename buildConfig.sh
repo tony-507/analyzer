@@ -11,17 +11,14 @@ init() {
 build_app() {
 	cd $MODULE_DIR
 
-	#for d in $MODULE_DIR/cmd/*; do
-	#	app=$(basename $d)
-	#	echo "Building $app"
-#
-#		go build $d/main.go
-#		mv $MODULE_DIR/main $buildDir/$app
-#		echo ""
-#	done
+	for d in $MODULE_DIR/cmd/*; do
+		app=$(basename $d)
+		echo "Building $app"
 
-	go build $MODULE_DIR/cmd/ttt/main.go
-	mv $MODULE_DIR/main $buildDir/ttt
+		go build $d/main.go
+		mv $MODULE_DIR/main $buildDir/$app
+		echo ""
+	done
 
 	echo "Copy apps to .resources"
 	cp -r $MODULE_DIR/resources/apps $buildDir/.resources
@@ -40,6 +37,6 @@ userBuild () {
 
 userTest() {
 	cd $MODULE_DIR
-	go test $(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) -coverprofile $MODULE_DIR/build/unitTestCoverage.txt
+	go test $(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) -coverprofile $MODULE_DIR/build/unitTestCoverage.txt -timeout 5s
 	cd ..
 }

@@ -1,4 +1,4 @@
-package worker
+package tttKernel
 
 import (
 	"fmt"
@@ -19,21 +19,21 @@ func (param OverallParams) toString() string {
 	return str
 }
 
-func ConstructOverallParam(name string, params string, children []string) OverallParams {
+func constructOverallParam(name string, params string, children []string) OverallParams {
 	return OverallParams{pluginName: name, pluginParam: params, children: children}
 }
 
-func (w *Worker) StartService(params []OverallParams) {
-	w.SetGraph(buildGraph(params))
-	w.RunGraph()
+func (w *Worker) startService(params []OverallParams) {
+	w.setGraph(buildGraph(params))
+	w.runGraph()
 }
 
 // Construct graph from parameters and run the graph
-func buildGraph(params []OverallParams) Graph {
+func buildGraph(params []OverallParams) []*graphNode {
 	logger := logs.CreateLogger("GraphBuilder")
-	graph := GetEmptyGraph()
+	nodeList := []*graphNode{}
 
-	createdPlugin := make([]*Plugin, 0)
+	createdPlugin := make([]*graphNode, 0)
 	// Constrution of graph
 	paramStr := ""
 	for _, param := range params {
@@ -48,18 +48,18 @@ func buildGraph(params []OverallParams) Graph {
 	for _, param := range params {
 		// Create node if not exist
 		bExist := false
-		var pg *Plugin
+		var pg *graphNode
 		for _, node := range createdPlugin {
-			if node.Name == param.pluginName {
+			if node.impl.Name() == param.pluginName {
 				pg = node
 				bExist = true
 			}
 		}
 		if !bExist {
-			tmp := GetPluginByName(param.pluginName)
+			tmp := getPluginByName(param.pluginName)
 			pg = &tmp
 
-			graph.AddNode(pg)
+			nodeList = append(nodeList, pg)
 			createdPlugin = append(createdPlugin, pg)
 		}
 
@@ -70,30 +70,30 @@ func buildGraph(params []OverallParams) Graph {
 			bExist = false
 
 			for _, node := range createdPlugin {
-				if node.Name == childName {
-					AddPath(pg, []*Plugin{node})
+				if node.impl.Name() == childName {
+					addPath(pg, []*graphNode{node})
 					bExist = true
 					break
 				}
 			}
 			if !bExist {
-				tmp := GetPluginByName(childName)
+				tmp := getPluginByName(childName)
 				pg_new := &tmp
 				createdPlugin = append(createdPlugin, pg_new)
-				graph.AddNode(pg_new)
-				AddPath(pg, []*Plugin{pg_new})
+				nodeList = append(nodeList, pg_new)
+				addPath(pg, []*graphNode{pg_new})
 			}
 		}
 	}
 
-	statMsg := "Start running graph:"
-	for _, node := range graph.nodes {
-		statMsg += "\n\tName: " + node.Name
+	statMsg := fmt.Sprintf("Start running graph(%d):", len(nodeList))
+	for _, node := range nodeList {
+		statMsg += "\n\tName: " + node.impl.Name()
 		statMsg += fmt.Sprintf("\n\tParameters: %v", node.m_parameter)
 		statMsg += fmt.Sprintf("\n\tOutput: %v", node.children)
 		statMsg += "\n"
 	}
 	logger.Log(logs.TRACE, statMsg)
 
-	return graph
+	return nodeList
 }

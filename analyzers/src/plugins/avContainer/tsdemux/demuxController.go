@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/resources"
 )
 
 // Internal controller for demuxer
@@ -20,7 +19,7 @@ type demuxController struct {
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	pktCntMap      map[int]int            // pid -> # of packets
 	StatusList     []common.CmStatusUnit  // List of status
-	resourceLoader *resources.ResourceLoader
+	resourceLoader *common.ResourceLoader
 	mtx            sync.Mutex
 }
 
@@ -73,7 +72,7 @@ func (dc *demuxController) updateSrcClk(progNum int) *programSrcClk {
 	return dc.progClkMap[progNum]
 }
 
-func (dc *demuxController) setResource(resourceLoader *resources.ResourceLoader) {
+func (dc *demuxController) setResource(resourceLoader *common.ResourceLoader) {
 	dc.resourceLoader = resourceLoader
 }
 
