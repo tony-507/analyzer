@@ -31,17 +31,29 @@ func ReadTsHeader(buf []byte) TsHeader {
 }
 
 // TsHeader construction
-func ConstructTsHeader(pusi int, pid int, afc int, cc int) []byte {
+func (th *TsHeader) Serialize() []byte {
 	w := common.GetBufferWriter(4)
 
 	w.WriteByte(0x47)
-	w.Write(0, 1)
-	w.Write(pusi, 1)
-	w.Write(0, 1)
-	w.Write(pid, 13)
-	w.Write(0, 2)
-	w.Write(afc, 2)
-	w.Write(cc, 4)
+	if th.Tei {
+		w.Write(1, 1)
+	} else {
+		w.Write(0, 1)
+	}
+	if th.Pusi {
+		w.Write(1, 1)
+	} else {
+		w.Write(0, 1)
+	}
+	if th.Priority {
+		w.Write(1, 1)
+	} else {
+		w.Write(0, 1)
+	}
+	w.Write(th.Pid, 13)
+	w.Write(th.Tsc, 2)
+	w.Write(th.Afc, 2)
+	w.Write(th.Cc, 4)
 
 	return w.GetBuf()
 }

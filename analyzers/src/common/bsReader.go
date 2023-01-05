@@ -17,10 +17,6 @@ func GetBufferReader(rawBs []byte) BsReader {
 	return BsReader{rawBs, 0, 8, -1, -1}
 }
 
-func (br *BsReader) GetCurByte() int {
-	return int(br.rawBs[br.pos])
-}
-
 func (br *BsReader) GetRemainedBuffer() []byte {
 	// Seems like Go returns this by reference, so returning the buf directly may result in seg fault
 	return append(make([]byte, 0), br.rawBs[br.pos:]...)
@@ -36,10 +32,6 @@ func (br *BsReader) GetPos() int {
 
 func (br *BsReader) GetOffset() int {
 	return br.offset
-}
-
-func (br *BsReader) AddData(r BsReader) {
-	br.rawBs = append(br.rawBs, r.GetRemainedBuffer()...)
 }
 
 func (br *BsReader) ReadHex(n int) string {
@@ -79,18 +71,6 @@ func (br *BsReader) ReadBits(n int) int {
 		mask := getMask(br.offset) - getMask(br.offset-n)
 		rv = (int(br.rawBs[br.pos]) & mask) >> (br.offset - n)
 		br.offset -= n
-		// Normalize offset back to [0,8]
-		if br.offset < 0 {
-			for {
-				if br.offset > 0 {
-					break
-				}
-				br.offset += 8
-			}
-		}
-		if br.offset == 8 {
-			br.pos += 1
-		}
 	}
 	return rv
 }

@@ -1,34 +1,38 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/tony-507/analyzers/src/common"
 )
 
 type AdaptationField struct {
 	AfLen        int
+	DisCnt_cnt   int
+	RandomAccess int
+	EsIdr        int
 	Pcr          int
+	Opcr         int
 	Splice_point int
 	Private_data string
+	StuffSize    int
 }
 
 func ParseAdaptationField(buf []byte) AdaptationField {
 	actualAfLen := 0
 	pcr := -1
+	opcr := -1
 	splice_point := -1
 	private_data := ""
 
 	r := common.GetBufferReader(buf)
 	afLen := r.ReadBits(8)
 	if afLen == 0 {
-		return AdaptationField{Pcr: -1}
+		return AdaptationField{AfLen: 0}
 	} else {
-		actualAfLen = afLen + 1
+		actualAfLen = afLen
 	}
-	r.ReadBits(1) // Discontinuity counter
-	r.ReadBits(1) // Random access indicator
-	r.ReadBits(1) // ES indicator
+	disCnt_cnt := r.ReadBits(1)   // Discontinuity counter
+	randomAccess := r.ReadBits(1) // Random access indicator
+	esIdr := r.ReadBits(1)        // ES indicator
 	pcr_flag := r.ReadBits(1) != 0
 	opcr_flag := r.ReadBits(1) != 0
 	splice_flag := r.ReadBits(1) != 0
@@ -43,7 +47,9 @@ func ParseAdaptationField(buf []byte) AdaptationField {
 		afLen -= 6
 	}
 	if opcr_flag {
-		r.ReadBits(48)
+		opcr = r.ReadBits(33)
+		r.ReadBits(6)                   // Reserved
+		opcr = opcr*300 + r.ReadBits(9) // Extension
 		afLen -= 6
 	}
 	if splice_flag {
@@ -53,17 +59,21 @@ func ParseAdaptationField(buf []byte) AdaptationField {
 	if private_flag {
 		dataLen := r.ReadBits(8)
 		for i := 0; i < dataLen; i++ {
-			private_data += fmt.Sprint(r.ReadBits(8))
+			private_data += string(rune(r.ReadBits(8)))
 		}
+		afLen -= dataLen + 1
 	}
 
 	r.ReadBits(afLen)
 
-	return AdaptationField{AfLen: actualAfLen, Pcr: pcr, Splice_point: splice_point, Private_data: private_data}
+	return AdaptationField{AfLen: actualAfLen, DisCnt_cnt: disCnt_cnt, RandomAccess: randomAccess, EsIdr: esIdr, Pcr: pcr, Opcr: opcr, Splice_point: splice_point, Private_data: private_data, StuffSize: afLen}
 }
 
 // Adaptation field construction
-func ConstructAdapationField(random_access bool, pcr int, opcr int, splice_point int, privateBytes []byte, stuffing []byte) []byte {
+func (af *AdaptationField) Serialize() []byte {
+	if af.AfLen == 0 {
+		return []byte{0x00}
+	}
 	// We need section length before actual construction
 	actualAfLen := 2
 	pcrFlag := 0
@@ -71,36 +81,32 @@ func ConstructAdapationField(random_access bool, pcr int, opcr int, splice_point
 	spliceFlag := 0
 	privateFlag := 0
 	stuffFlag := 0
-	if pcr != -1 {
+	if af.Pcr != -1 {
 		actualAfLen += 6
 		pcrFlag = 1
 	}
-	if opcr != -1 {
+	if af.Opcr != -1 {
 		actualAfLen += 6
 		opcrFlag = 1
 	}
-	if splice_point != -1 {
+	if af.Splice_point != -1 {
 		actualAfLen += 1
 		spliceFlag = 1
 	}
-	if len(privateBytes) != 0 {
-		actualAfLen += len(privateBytes)
+	if len(af.Private_data) != 0 {
+		actualAfLen += len(af.Private_data) + 1
 		privateFlag = 1
 	}
-	if len(stuffing) != 0 {
-		actualAfLen += len(stuffing)
+	if af.StuffSize != 0 {
+		actualAfLen += af.StuffSize
 		stuffFlag = 1
 	}
 
 	w := common.GetBufferWriter(actualAfLen)
-	w.WriteInt(actualAfLen)
+	w.WriteByte(actualAfLen - 1) // Omit this byte
 	w.Write(0, 1)
 
-	if random_access {
-		w.Write(1, 1)
-	} else {
-		w.Write(0, 1)
-	}
+	w.Write(af.RandomAccess, 1)
 
 	w.Write(0, 1)
 	w.Write(pcrFlag, 1)
@@ -110,25 +116,26 @@ func ConstructAdapationField(random_access bool, pcr int, opcr int, splice_point
 	w.Write(0, 1)
 
 	if pcrFlag == 1 {
-		w.Write(pcr/300, 33)
+		w.Write(af.Pcr/300, 33)
 		w.Write(0x3f, 6)
-		w.Write(pcr%300, 9)
+		w.Write(af.Pcr%300, 9)
 	}
 	if opcrFlag == 1 {
-		w.Write(opcr/300, 33)
+		w.Write(af.Opcr/300, 33)
 		w.Write(0x3f, 6)
-		w.Write(opcr%300, 9)
+		w.Write(af.Opcr%300, 9)
 	}
 	if spliceFlag == 1 {
-		w.Write(splice_point, 8)
+		w.Write(af.Splice_point, 8)
 	}
 	if privateFlag == 1 {
-		for _, data := range privateBytes {
+		w.WriteByte(len(af.Private_data))
+		for _, data := range af.Private_data {
 			w.WriteByte(int(data))
 		}
 	}
 	if stuffFlag == 1 {
-		for i := 0; i < len(stuffing); i++ {
+		for i := 0; i < af.StuffSize; i++ {
 			w.WriteByte(0xff)
 		}
 	}

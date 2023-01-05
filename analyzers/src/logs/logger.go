@@ -18,7 +18,7 @@ func CreateLogger(id string) Log {
 func (l *Log) Log(level int, msg string, param ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
-		globalConfig.logLevel = TRACE
+		globalConfig.logLevel = DISABLED
 	}
 	if globalConfig.msgPrefix == "" {
 		globalConfig.msgPrefix = "[%l]"

@@ -31,10 +31,6 @@ func PMTReadyForParse(buf []byte) bool {
 	// Peek the length of the table and compare with current buffer size
 	r := common.GetBufferReader(buf)
 	pFieldLen := r.ReadBits(8)
-	// First check here to see if we can safely get the section length
-	if len(r.GetRemainedBuffer()) < 2 {
-		return false
-	}
 	r.ReadBits(pFieldLen*8 + 8 + 6)
 
 	pmtLen := pFieldLen + 3

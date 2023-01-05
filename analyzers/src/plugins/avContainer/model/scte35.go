@@ -23,10 +23,7 @@ type Splice_info_section struct {
 	Tier             int
 	SpliceCmdLen     int
 	SpliceCmdType    int
-	SpliceSchedule   Splice_schedule
-	SpliceInsert     Splice_event
-	TimeSignal       Time_signal
-	PrivateCommand   Private_command
+	Splice_command   interface{}
 	Crc32            int
 }
 
@@ -124,34 +121,32 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 	spliceCmdLen := r.ReadBits(12)
 	spliceCmdType := r.ReadBits(8)
 
-	spliceSchedule := Splice_schedule{}
-	spliceInsert := Splice_event{}
-	timeSignal := Time_signal{}
-	privateCmd := Private_command{}
+	var spliceCmd interface{}
 
 	switch spliceCmdType {
 	case 0x00:
 		// Splice null, do nothing
 		logger.Log(logs.TRACE, "Splice null received")
+		spliceCmd = Splice_null{}
 	case 0x04:
 		// Splice schedule
 		logger.Log(logs.TRACE, "Splice schedule received")
-		spliceSchedule = readSpliceSchedule(&r)
+		spliceCmd = readSpliceSchedule(&r)
 	case 0x05:
 		// Splice insert
 		logger.Log(logs.TRACE, "Splice insert received")
-		spliceInsert = readSpliceEvent(&r, true)
+		spliceCmd = readSpliceEvent(&r, true)
 	case 0x06:
 		// Time signal
 		logger.Log(logs.TRACE, "Time signal received")
-		timeSignal = readTimeSignal(&r)
+		spliceCmd = readTimeSignal(&r)
 	case 0x07:
 		// Bandwidth reservation
 		logger.Log(logs.TRACE, "Bandwidth reservation received")
 	case 0xff:
 		// Private command
 		logger.Log(logs.TRACE, "Private command received")
-		privateCmd = readPrivateCommand(&r)
+		spliceCmd = readPrivateCommand(&r)
 	default:
 		msg := fmt.Sprint("Unknown splice command type ", spliceCmdType)
 		logger.Log(logs.ERROR, msg)
@@ -160,8 +155,7 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 
 	return Splice_info_section{TableId: tableId, SectionSyntaxIdr: sectionSyntaxIdr, PrivateIdr: privateIdr,
 		SectionLen: sectionLen, ProtocolVersion: protocolVersion, EncryptedPkt: encryptedPkt, EncryptAlgo: encryptedAlgo,
-		PtsAdjustment: ptsAdjustment, CwIdx: cwIdx, Tier: tier, SpliceCmdLen: spliceCmdLen, SpliceCmdType: spliceCmdType, SpliceSchedule: spliceSchedule,
-		SpliceInsert: spliceInsert, TimeSignal: timeSignal, PrivateCommand: privateCmd}
+		PtsAdjustment: ptsAdjustment, CwIdx: cwIdx, Tier: tier, SpliceCmdLen: spliceCmdLen, SpliceCmdType: spliceCmdType, Splice_command: spliceCmd}
 }
 
 func readSpliceSchedule(r *common.BsReader) Splice_schedule {

@@ -34,10 +34,6 @@ func PATReadyForParse(buf []byte) bool {
 	r := common.GetBufferReader(buf)
 
 	pFieldLen := r.ReadBits(8)
-	// First check here to see if we can safely get the section length
-	if len(r.GetRemainedBuffer()) < 2 {
-		return false
-	}
 	r.ReadBits(pFieldLen*8 + 8 + 6)
 
 	pktLen := pFieldLen + 3

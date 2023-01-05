@@ -19,25 +19,25 @@ type DummyPlugin struct {
 }
 
 func (dp *DummyPlugin) setParameter(m_parameter string) {
-	fmt.Println(fmt.Sprintf("[%s] setParameter called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setParameter called", dp.name))
 }
 
 func (dp *DummyPlugin) setResource(resourceLoader *common.ResourceLoader) {
-	fmt.Println(fmt.Sprintf("[%s] setResource called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setResource called", dp.name))
 }
 
 func (dp *DummyPlugin) startSequence() {
-	fmt.Println(fmt.Sprintf("[%s] startSequence called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] startSequence called", dp.name))
 }
 
 func (dp *DummyPlugin) endSequence() {
-	fmt.Println(fmt.Sprintf("[%s] endSequence called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] endSequence called", dp.name))
 	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
 	common.Post_request(dp.callback, dp.name, eosUnit)
 }
 
 func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
-	fmt.Println(fmt.Sprintf("[%s] deliverUnit called with unit %v", dp.name, unit))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] deliverUnit called with unit %v", dp.name, unit))
 	// Ensure correct order of calling by suspending worker thread
 	if dp.role == 0 {
 		time.Sleep(time.Second)
@@ -64,18 +64,18 @@ func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
 }
 
 func (dp *DummyPlugin) deliverStatus(unit common.CmUnit) {
-	fmt.Println(fmt.Sprintf("[%s] deliverStatus called with status %v", dp.name, unit))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] deliverStatus called with status %v", dp.name, unit))
 }
 
 func (dp *DummyPlugin) fetchUnit() common.CmUnit {
-	fmt.Println(fmt.Sprintf("[%s] fetchUnit called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] fetchUnit called", dp.name))
 	rv := common.IOUnit{Buf: dp.inCnt*10 + dp.fetchCnt, IoType: 0, Id: -1}
 	dp.fetchCnt += 1
 	return rv
 }
 
 func (dp *DummyPlugin) setCallback(callback common.RequestHandler) {
-	fmt.Println(fmt.Sprintf("[%s] setCallback called", dp.name))
+	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setCallback called", dp.name))
 	dp.callback = callback
 }
 

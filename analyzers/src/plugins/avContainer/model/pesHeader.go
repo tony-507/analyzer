@@ -144,7 +144,7 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 	if pesLen != 0 {
 		pesLen -= optionalHeader.length
 	} else {
-		pesLen = len(r.GetRemainedBuffer())
+		pesLen = len(r.GetRemainedBuffer()) - optionalHeader.length
 	}
 
 	return PESHeader{streamId, pesLen, optionalHeader}, nil
