@@ -86,7 +86,7 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	defer f.Close()
 
 	// We are writing array of jsons, so add first line
-	f.Write([]byte("{[\n"))
+	f.Write([]byte("[\n"))
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
@@ -110,7 +110,7 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 		check(err)
 	}
 
-	f.Write([]byte("\n]}"))
+	f.Write([]byte("\n]"))
 	m_writer.logger.Log(logs.TRACE, "JSON handler for pid %d stops", pid)
 }
 

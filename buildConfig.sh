@@ -43,7 +43,7 @@ userTest() {
 	echo "Generating code coverage report"
 	while read p || [[ -n $p ]]; do
 		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/unitTestCoverage.txt
-	done <$MODULE_DIR/.unitTestCoverageIgnore
+	done <$MODULE_DIR/.testCoverageIgnore
 	go tool cover -html=$MODULE_DIR/build/unitTestCoverage.txt -o $MODULE_DIR/build/unitTestCoverage.html
 	cd ..
 }

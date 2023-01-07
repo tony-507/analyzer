@@ -8,11 +8,15 @@ import (
 
 func TestSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
-	simpleBuf := MakeSimpleBuf(buf)
-	simpleBuf.SetField("dummy", 100, false)
-	simpleBuf.SetField("dummy2", 50, true)
+	buffer := MakeSimpleBuf(buf)
 
-	if field, hasField := simpleBuf.GetField("dummy"); hasField {
+	// Test if simpleBuf implements CmBuf
+	var _ CmBuf = (*simpleBuf)(&buffer)
+
+	buffer.SetField("dummy", 100, false)
+	buffer.SetField("dummy2", 50, true)
+
+	if field, hasField := buffer.GetField("dummy"); hasField {
 		if v, isInt := field.(int); isInt {
 			assert.Equal(t, v, 100, "dummy field should be 100")
 		} else {
@@ -22,12 +26,12 @@ func TestSimpleBuf(t *testing.T) {
 		panic("No data found")
 	}
 
-	assert.Equal(t, 2, len(simpleBuf.dataKey), "buf should have two keys")
-	assert.Equal(t, buf, simpleBuf.buf, "buf should be [1, 2, 3]")
-	assert.Equal(t, "dummy\n", simpleBuf.GetFieldAsString(), "buf field should be dummy")
-	assert.Equal(t, "100\n", simpleBuf.ToString(), "buf string should be 100")
+	assert.Equal(t, 2, len(buffer.dataKey), "buf should have two keys")
+	assert.Equal(t, buf, buffer.buf, "buf should be [1, 2, 3]")
+	assert.Equal(t, "dummy\n", buffer.GetFieldAsString(), "buf field should be dummy")
+	assert.Equal(t, "100\n", buffer.ToString(), "buf string should be 100")
 
-	_, hasField := simpleBuf.GetField("hi")
+	_, hasField := buffer.GetField("hi")
 	assert.Equal(t, false, hasField, "buf does not has field hi")
 }
 
