@@ -2,6 +2,7 @@ package tttKernel
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"strings"
 
@@ -51,7 +52,7 @@ type tttKernel struct {
 	variables []*scriptVar
 }
 
-func StartApp(script string, input []string) {
+func StartApp(resourceDir string, appName string, input []string) {
 	ctrl := tttKernel{
 		logger:    logs.CreateLogger("Controller"),
 		variables: []*scriptVar{},
@@ -59,7 +60,7 @@ func StartApp(script string, input []string) {
 		aliasMap:  map[string]string{},
 	}
 
-	ctrl.buildParams(script, input)
+	ctrl.buildParams(getApp(resourceDir, appName), input)
 
 	provider := getWorker()
 
@@ -71,6 +72,27 @@ func StartApp(script string, input []string) {
 	}
 
 	provider.startService(pluginParams)
+}
+
+func getApp(resourceDir string, appName string) string {
+	fileInfo, err := ioutil.ReadDir(resourceDir)
+	if err != nil {
+		panic(err)
+	}
+	rv := ""
+
+	for _, file := range fileInfo {
+		app := strings.Split(file.Name(), ".")[0]
+		if app == appName {
+			buf, err := ioutil.ReadFile(resourceDir + file.Name())
+			if err != nil {
+				panic(err)
+			}
+			rv = string(buf)
+		}
+	}
+
+	return rv
 }
 
 // Read from script and input to prepare plugins and the respective parameters

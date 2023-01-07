@@ -2,16 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
-
-var resourceDir string
 
 func setupLogging() {
 	logs.SetProperty("level", "trace")
@@ -22,31 +18,10 @@ func showHelp() {
 	fmt.Println("Usage: ttt <appName> <parameters>...")
 }
 
-func getApps(appName string) string {
-	fileInfo, err := ioutil.ReadDir(resourceDir)
-	if err != nil {
-		panic(err)
-	}
-	rv := ""
-
-	for _, file := range fileInfo {
-		app := strings.Split(file.Name(), ".")[0]
-		if app == appName {
-			buf, err := ioutil.ReadFile(resourceDir + file.Name())
-			if err != nil {
-				panic(err)
-			}
-			rv = string(buf)
-		}
-	}
-
-	return rv
-}
-
 func main() {
 	setupLogging()
 	ex, _ := os.Executable()
-	resourceDir = filepath.Dir(ex) + "/.resources/"
+	resourceDir := filepath.Dir(ex) + "/.resources/"
 
 	if len(os.Args) < 2 {
 		showHelp()
@@ -57,11 +32,10 @@ func main() {
 	case "help":
 		showHelp()
 	default:
-		script := getApps(os.Args[1])
 		params := make([]string, 0)
 		if len(os.Args) > 2 {
 			params = os.Args[2:]
 		}
-		tttKernel.StartApp(script, params)
+		tttKernel.StartApp(resourceDir, os.Args[1], params)
 	}
 }
