@@ -262,7 +262,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 		if af.Pcr >= 0 {
 			clk.updatePcrRecord(af.Pcr, pktCnt)
 		}
-		buf = buf[af.AfLen:]
+		buf = buf[(af.AfLen + 1):]
 	}
 
 	// Payload
