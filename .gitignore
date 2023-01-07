@@ -2,4 +2,3 @@ build-tools
 build-local.sh
 # Output files
 /analyzers/build/
-/analyzers/go.sum

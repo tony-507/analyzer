@@ -20,9 +20,6 @@ build_app() {
 		echo ""
 	done
 
-	echo "Copy apps to .resources"
-	cp -r $MODULE_DIR/resources/apps $buildDir/.resources
-
 	cd ..
 }
 
@@ -37,7 +34,7 @@ userBuild () {
 
 userTest() {
 	cd $MODULE_DIR
-	go get -u github.com/jstemmer/go-junit-report
+	go install github.com/jstemmer/go-junit-report
 	binPath="$(go env GOPATH)/bin/"
 	pkgList=$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) 
 
@@ -45,7 +42,7 @@ userTest() {
 
 	echo "Generating code coverage report"
 	while read p || [[ -n $p ]]; do
-		sed -i "/${p//\//\\/}/d" $MODULE_DIR/build/unitTestCoverage.txt
+		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/unitTestCoverage.txt
 	done <$MODULE_DIR/.unitTestCoverageIgnore
 	go tool cover -html=$MODULE_DIR/build/unitTestCoverage.txt -o $MODULE_DIR/build/unitTestCoverage.html
 	cd ..
