@@ -34,7 +34,7 @@ func (v *scriptVar) getAttributeStr() string {
 		s += strings.Join(fieldArr, ",") + "}"
 	} else {
 		_, err := strconv.Atoi(v.value)
-		if err != nil {
+		if err != nil && v.value != "true" && v.value != "false" {
 			s = "\"" + v.value + "\""
 		} else {
 			s = v.value

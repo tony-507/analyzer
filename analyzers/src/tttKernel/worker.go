@@ -14,7 +14,9 @@ type Worker struct {
 	nodes          []*graphNode
 	resourceLoader common.ResourceLoader
 	isRunning      int
+	ready          bool             // All plugins are initialized
 	statusStore    map[int][]string // Map from msgId to an array of plugin names
+	statusList     []common.CmUnit  // Store status from plugins sent before finishing initialization
 }
 
 // Main function for running a graph
@@ -30,11 +32,20 @@ func (w *Worker) runGraph() {
 		pg.impl.SetResource(&w.resourceLoader)
 		pg.impl.StartSequence()
 	}
+	w.ready = true
+	w.handlePendingStatus()
 	rootPg.impl.DeliverUnit(nil)
 
 	// Wait until all plugins stop
 	for w.isRunning != 0 {
 	}
+}
+
+func (w *Worker) handlePendingStatus() {
+	for _, unit := range w.statusList {
+		w.postStatus(unit)
+	}
+	w.statusList = make([]common.CmUnit, 0)
 }
 
 // Depth-first search
@@ -86,7 +97,11 @@ func (w *Worker) handleRequests(name string, reqType common.WORKER_REQUEST, obj 
 		}
 	} else if reqType == common.STATUS_REQUEST {
 		if unit, isValid := obj.(*common.CmStatusUnit); isValid {
-			w.postStatus(unit)
+			if w.ready {
+				w.postStatus(unit)
+			} else {
+				w.statusList = append(w.statusList, unit)
+			}
 		} else {
 			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: %v", obj)
 		}
@@ -179,6 +194,13 @@ func (w *Worker) setCallbackForNodes(curNode *graphNode) {
 }
 
 func getWorker() Worker {
-	w := Worker{isRunning: 0, resourceLoader: common.CreateResourceLoader(), logger: logs.CreateLogger("Worker"), statusStore: make(map[int][]string, 0)}
+	w := Worker{
+		isRunning: 0,
+		ready: false,
+		resourceLoader: common.CreateResourceLoader(),
+		logger: logs.CreateLogger("Worker"),
+		statusStore: make(map[int][]string, 0),
+		statusList: make([]common.CmUnit, 0),
+	}
 	return w
 }
