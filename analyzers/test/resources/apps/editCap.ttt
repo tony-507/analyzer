@@ -1,20 +1,20 @@
-import ioUtils;
+input = #InputReader_1;
 
-input = #ioUtils.InputReader;
+alias(file, f);
+alias(output, o);
 
-if ($IN_FILE) {
+if $f;
     input.Source = _SOURCE_FILE;
-    input.FileInput.Fname = $IN_FILE;
-}
+    input.FileInput.Fname = $f;
+end;
 
-input.SkipCnt = $SKIP_CNT;
-input.MaxInCnt = $MAX_IN_CNT;
+input.SkipCnt = $skipCnt | 0;
+input.MaxInCnt = $maxInCnt | 0;
+input.DumpRawInput = true;
 
-output = #ioUtils.OutputWriter;
+output = #OutputWriter_1;
 
-if ($OUT_FOLDER) {
-    output.OutputType = OUTPUT_FILE;
-    output.FileOutput.OutFolder = $OUT_FOLDER;
-}
+output.OutputType = _OUTPUT_FILE;
+output.FileOutput.OutFolder = $o | output/;
 
 link(input, output);

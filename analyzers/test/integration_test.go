@@ -17,31 +17,32 @@ import (
 
 func TestIntegration(t *testing.T) {
 	specs := []string{
-		"resources/testCases/tsa_ASCENT.json",
+		"resources/testCases/ASCENT.json",
 	}
 
 	for _, spec := range specs {
-		testName := strings.Split(filepath.Base(spec), ".")[0]
+		caseName := strings.Split(filepath.Base(spec), ".")[0]
+		var tc schema.TestCase
 
-		t.Run(testName, func(t *testing.T) {
-			var tc schema.TestCase
+		// Preparation
+		fmt.Println("Initializing test for", caseName)
+		jsonString, err := ioutil.ReadFile(spec)
+		if err != nil {
+			panic(err)
+		}
 
-			// Preparation
-			fmt.Println("Initializing test")
-			jsonString, err := ioutil.ReadFile(spec)
-			if err != nil {
-				panic(err)
-			}
+		err = json.Unmarshal([]byte(jsonString), &tc)
+		if err != nil {
+			panic(err)
+		}
 
-			err = json.Unmarshal([]byte(jsonString), &tc)
-			if err != nil {
-				panic(err)
-			}
+		inFile := "resources/assets/" + tc.Source
+		outFolder := "output/" + caseName + "/"
 
-			inFile := "resources/assets/" + tc.Source
-			outFolder := "output/" + testName + "/"
-
-			for _, app := range tc.App {
+		for _, app := range tc.App {
+			testName := caseName + "_" + app
+			t.Run(testName, func(t *testing.T) {
+				fmt.Println("Test:", testName)
 				var args []string
 
 				switch app {
@@ -49,6 +50,12 @@ func TestIntegration(t *testing.T) {
 					args = []string{
 						"-f", inFile,
 						"-o", outFolder,
+					}
+				case "editCap":
+					args = []string{
+						"-f", inFile,
+						"-o", outFolder,
+						"--maxInCnt", "50",
 					}
 				default:
 					panic(fmt.Sprintf("Unknown app: %s", app))
@@ -60,11 +67,11 @@ func TestIntegration(t *testing.T) {
 
 				// Perform validations
 				fmt.Println("Performing validations")
-				err := validator.PerformValidation(outFolder, tc.Expected)
+				err := validator.PerformValidation(app, outFolder, tc.Expected)
 				if err != nil {
 					panic(err)
 				}
-			}
-		})
+			})
+		}
 	}
 }

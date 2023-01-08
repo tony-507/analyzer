@@ -9,12 +9,22 @@ import (
 	"github.com/tony-507/analyzers/test/schema"
 )
 
-func PerformValidation(outFolder string, expectedProp *schema.ExpectedProp) error {
+func PerformValidation(app string, outFolder string, expectedProp *schema.ExpectedProp) error {
 	if expectedProp != nil {
-		if expectedProp.Tsa != nil {
-			err := validateTsa(outFolder, expectedProp.Tsa)
-			if err != nil {
-				return err
+		switch app {
+		case "tsa":
+			if expectedProp.Tsa != nil {
+				err := validateTsa(outFolder, expectedProp.Tsa)
+				if err != nil {
+					return err
+				}
+			}
+		case "editCap":
+			if expectedProp.EditCap != nil {
+				err := validateEditCap(outFolder, expectedProp.EditCap)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -24,29 +34,54 @@ func PerformValidation(outFolder string, expectedProp *schema.ExpectedProp) erro
 func validateTsa(outFolder string, expectedTsaProp *schema.TsaExpectedProp) error {
 	fileInfo, err := ioutil.ReadDir(outFolder)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, fname := range expectedTsaProp.CsvList {
-		if !hasNonEmptyFileInList(fname + ".csv", fileInfo) {
-			return errors.New(fmt.Sprintf("%s.csv not found in output folder", fname))
+		if err = hasNonEmptyFileInList(fname + ".csv", -1, fileInfo); err != nil {
+			return err
 		}
 	}
 
 	for _, fname := range expectedTsaProp.JsonList {
-		if !hasNonEmptyFileInList(fname + ".json", fileInfo) {
-			return errors.New(fmt.Sprintf("%s.json not found in output folder", fname))
+		if err = hasNonEmptyFileInList(fname + ".json", -1, fileInfo); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func hasNonEmptyFileInList(fname string, fileInfo []fs.FileInfo) bool {
+func validateEditCap(outFolder string, expectedEditCapProp *schema.EditCapExpectedProp) error {
+	fileInfo, err := ioutil.ReadDir(outFolder)
+	if err != nil {
+		return err
+	}
+
+	if err = hasNonEmptyFileInList(expectedEditCapProp.Fname, expectedEditCapProp.Size, fileInfo); err != nil {
+		return err
+	}
+	return nil
+}
+
+func hasNonEmptyFileInList(fname string, size int, fileInfo []fs.FileInfo) error {
+	errMsg := fmt.Sprintf("%s not found in output folder", fname)
 	for _, file := range fileInfo {
-		if file.Name() == fname && file.Size() != 0 {
-			return true
+		if file.Name() == fname{
+			if size != -1 {
+				if file.Size() == int64(size) {
+					return nil
+				} else {
+					errMsg = fmt.Sprintf("File size of %s is not %d but %d", fname, size, file.Size())
+				}
+			} else {
+				if file.Size() > 0 {
+					return nil
+				} else {
+					errMsg = fmt.Sprintf("%s if empty", fname)
+				}
+			}
 		}
 	}
-	return false
+	return errors.New(errMsg)
 }

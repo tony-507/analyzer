@@ -1,10 +1,14 @@
 {
 	"source": "ASCENT.TS",
-	"app": ["tsa"],
+	"app": ["tsa", "editCap"],
 	"expected": {
 		"tsa": {
 			"json": ["0", "258"],
 			"csv": ["32", "33"]
+		},
+		"editCap": {
+			"fname": "out.ts",
+			"size": 9400
 		}
 	}
 }
