@@ -69,6 +69,7 @@ func (fr *fileReader) dataAvailable(unit *common.IOUnit) bool {
 		return false
 	}
 	unit.IoType = 3
+	unit.Id = -1
 	unit.Buf = buf
 	return true
 }

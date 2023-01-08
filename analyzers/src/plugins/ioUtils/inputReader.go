@@ -71,6 +71,15 @@ func (ir *InputReader) setParameter(m_parameter string) {
 		ir.maxInCnt = -1
 	}
 
+	if param.DumpRawInput {
+		buf := common.MakeSimpleBuf([]byte{})
+		buf.SetField("pid", -1, false)
+		buf.SetField("addPid", true, false)
+		buf.SetField("type", 3, false)
+		unit := common.MakeStatusUnit(0x10, buf)
+		common.Post_status(ir.callback, ir.name, unit)
+	}
+
 	ir.outCnt = 0
 
 	switch param.Source {

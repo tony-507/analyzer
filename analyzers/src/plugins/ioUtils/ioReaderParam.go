@@ -16,8 +16,9 @@ const (
 type ioReaderParam struct {
 	Source    _SOURCE_TYPE
 	FileInput fileInputParam
-	SkipCnt   int // Number of packets to skip at start
-	MaxInCnt  int // Number of packets to be parsed
+	SkipCnt   int     // Number of packets to skip at start
+	MaxInCnt  int     // Number of packets to be parsed
+	DumpRawInput bool // Dump input data
 }
 
 type fileInputParam struct {
