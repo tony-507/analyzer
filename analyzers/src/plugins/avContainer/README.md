@@ -19,10 +19,9 @@ This directory contains I/O utilities to convert between bitstreams and readable
 
 ### tsdemux
 
-The demuxer is composed of several components: tsDemuxPipe, demuxMonitor, demuxController. They can communicate with each other internally. This implementation allows separation of concerns and makes debugging and development easier.
+The demuxer is composed of two components: tsDemuxPipe and demuxController. They can communicate with each other internally. This implementation allows separation of concerns and makes debugging and development easier.
 
 1. tsDemuxPipe: This is where demultiplexing is done. It receives packet data from demuxer and parse the information.
-2. demuxMonitor: This module is a goroutine that monitors demuxer's work. It detects and monitors states of the demuxer, e.g. it can detect if the demuxer gets stuck and prints useful debugging information.
 3. demuxController: This is an internal controller that handles internal requests, e.g. raising error and signalling an alarm.
 
 ### FAQs

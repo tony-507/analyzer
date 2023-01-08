@@ -1,29 +1,32 @@
-# TS analyzer
+# Analyzer
 
 An MPEG toy program written in Go. The program can be built with Go >= 1.13.
 
 ## Quick start
 
-To execute a CI/CD build flow, run
-```$> sh build.sh```
-at project root. The build output can be found at `build/`.
+Fetch common build scripts
+```
+$> git clone git@github.com:tony-507/build-tools.git
+$> ln -sf build-tools/build-tools/build-local.sh build-local.sh
+```
 
-The analyzer can be used to demux TS:
-```tsa <input.ts>```
-The output can be found in the output directory. It consists of PSI information and packet timing information.
-## Overall architecture
+Run build flow
+```
+$> ./build-local.sh
+```
 
-This architecture is adapted from Harmonic inc's RMP. The implementation behind is as follows:
-1. User configures preferences on user interface
-2. The preferences are parsed as different sets of parameters
-3. A worker is initialized with the given parameters
-4. The worker constructs a operation graph of plugins based on the parameters
-5. The worker runs the graph
+Built output can be found at `analyzers/build/`. Integration test output can be found at `analyzers/test/output`.
 
-We can see that there are 4 main components of this architecture:
-1. UI
-2. Preferences parser (controller)
-3. Worker
-4. Plugins
+## Architecture
 
-This allows separation of concerns and makes debugging and development easier.
+This project uses plugin-worker architecture. A plugin performs a particular job and a worker coordinates between different plugins. In this project, tttKernel is the package containing the worker. It exports a simple API
+```
+tttKernel.StartApp(script string, input []string)
+```
+for one to run the application. The script parameter is a `.ttt` file with specified syntax that describes the plugins. It allows one to configure plugins' parameters and construct a workflow among plugins. The input parameter is the list of input arguments that provide further flexibility on using a script.
+
+For detail on syntax of the script, refer to documentation in tttKernel.
+
+## Testing
+
+This projects contains codes for unit tests and integration tests using Go's native testing package. One can check the coverage of the tests with the output html file.
