@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/tony-507/analyzers/src/tttKernel"
+	"github.com/tony-507/analyzers/test/schema"
+	"github.com/tony-507/analyzers/test/validator"
 )
 
 func TestIntegration(t *testing.T) {
@@ -22,7 +24,10 @@ func TestIntegration(t *testing.T) {
 		testName := strings.Split(filepath.Base(spec), ".")[0]
 
 		t.Run(testName, func(t *testing.T) {
-			var tc testCase
+			var tc schema.TestCase
+
+			// Preparation
+			fmt.Println("Initializing test")
 			jsonString, err := ioutil.ReadFile(spec)
 			if err != nil {
 				panic(err)
@@ -33,20 +38,32 @@ func TestIntegration(t *testing.T) {
 				panic(err)
 			}
 
+			inFile := "resources/assets/" + tc.Source
+			outFolder := "output/" + testName + "/"
+
 			for _, app := range tc.App {
 				var args []string
 
 				switch app {
 				case "tsa":
 					args = []string{
-						"-f", "resources/assets/" + tc.Source,
-						"-o", "output/" + testName + "/",
+						"-f", inFile,
+						"-o", outFolder,
 					}
 				default:
 					panic(fmt.Sprintf("Unknown app: %s", app))
 				}
 
+				// Run app
+				fmt.Println("Running app")
 				tttKernel.StartApp("./resources/apps/", app, args)
+
+				// Perform validations
+				fmt.Println("Performing validations")
+				err := validator.PerformValidation(outFolder, tc.Expected)
+				if err != nil {
+					panic(err)
+				}
 			}
 		})
 	}
