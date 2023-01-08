@@ -16,7 +16,7 @@ func TestPluginInterfaces(t *testing.T) {
 
 	})
 
-	inUnit := common.IOUnit{Buf: 2, IoType: 0, Id: 0}
+	inUnit := common.MakeIOUnit(2, 0, 0)
 	pg.impl.DeliverUnit(inUnit)
 
 	unit := pg.impl.FetchUnit()

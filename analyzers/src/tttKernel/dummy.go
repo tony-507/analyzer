@@ -69,7 +69,7 @@ func (dp *DummyPlugin) deliverStatus(unit common.CmUnit) {
 
 func (dp *DummyPlugin) fetchUnit() common.CmUnit {
 	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] fetchUnit called", dp.name))
-	rv := common.IOUnit{Buf: dp.inCnt*10 + dp.fetchCnt, IoType: 0, Id: -1}
+	rv := common.MakeIOUnit(dp.inCnt*10 + dp.fetchCnt, 0, -1)
 	dp.fetchCnt += 1
 	return rv
 }

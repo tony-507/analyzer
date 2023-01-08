@@ -12,6 +12,7 @@ import (
  */
 
 type CmBuf interface {
+	GetBuf() []byte
 	ToString() string                                         // Return data as byte string
 	GetFieldAsString() string                                 // Return name of the fields as byte string
 	SetField(name string, datum interface{}, jsonIgnore bool) // Set datum to buffer. If jsonIgnore is true, the field would not appear in toString
@@ -23,6 +24,10 @@ type simpleBuf struct {
 	dataVal    []interface{}
 	jsonIgnore []bool
 	buf        []byte
+}
+
+func (b *simpleBuf) GetBuf() []byte {
+	return b.buf
 }
 
 func (b *simpleBuf) ToString() string {
@@ -70,6 +75,7 @@ func (b *simpleBuf) GetField(name string) (interface{}, bool) {
 	return nil, false
 }
 
-func MakeSimpleBuf(inBuf []byte) simpleBuf {
-	return simpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
+func MakeSimpleBuf(inBuf []byte) *simpleBuf {
+	rv := simpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
+	return &rv
 }

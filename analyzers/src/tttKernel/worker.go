@@ -85,7 +85,7 @@ func (w *Worker) handleRequests(name string, reqType common.WORKER_REQUEST, obj 
 			panic(fmt.Sprintf("Attempt to listen to a status message with invalid ID: %v", obj))
 		}
 	} else if reqType == common.STATUS_REQUEST {
-		if unit, isValid := obj.(common.CmStatusUnit); isValid {
+		if unit, isValid := obj.(*common.CmStatusUnit); isValid {
 			w.postStatus(unit)
 		} else {
 			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: %v", obj)

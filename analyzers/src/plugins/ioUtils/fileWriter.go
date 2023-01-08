@@ -90,24 +90,28 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
-		_, isStatus := unit.(common.CmStatusUnit)
+		_, isStatus := unit.(*common.CmStatusUnit)
 
 		if isStatus {
 			break
 		}
 
-		buf, _ := unit.GetBuf().([]byte)
+		if cmBuf, isCmBuf := unit.GetBuf().(common.CmBuf); isCmBuf {
+			buf := cmBuf.GetBuf()
 
-		if len(buf) == 1 {
-			break
-		} else if isInit {
-			f.Write([]byte(","))
+			if len(buf) == 1 {
+				break
+			} else if isInit {
+				f.Write([]byte(","))
+			} else {
+				f.Write([]byte("\t"))
+			}
+
+			_, err := f.Write(buf)
+			check(err)
 		} else {
-			f.Write([]byte("\t"))
+			panic(fmt.Sprintf("What is this? %T | %v", unit.GetBuf(), unit.GetBuf()))
 		}
-
-		_, err := f.Write(buf)
-		check(err)
 	}
 
 	f.Write([]byte("\n]"))
@@ -137,7 +141,7 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
-		_, isStatus := unit.(common.CmStatusUnit)
+		_, isStatus := unit.(*common.CmStatusUnit)
 
 		if isStatus {
 			break
@@ -175,7 +179,7 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
-		_, isStatus := unit.(common.CmStatusUnit)
+		_, isStatus := unit.(*common.CmStatusUnit)
 
 		if isStatus {
 			break

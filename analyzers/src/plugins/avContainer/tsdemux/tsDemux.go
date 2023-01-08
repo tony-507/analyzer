@@ -15,7 +15,7 @@ type IDemuxPipe interface {
 	getDuration() int
 	getProgramNumber(int) int
 	readyForFetch() bool
-	getOutputUnit() common.IOUnit
+	getOutputUnit() common.CmUnit
 }
 
 type PKT_TYPE int
@@ -124,32 +124,39 @@ func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	errMsg := ""
 
-	if cmBuf, isCmBuf := rv.Buf.(common.CmBuf); isCmBuf {
-		if field, hasField := cmBuf.GetField("progNum"); hasField {
-			progNum, _ := field.(int)
-			// Stamp PCR here
-			clk := m_pMux.control.updateSrcClk(progNum)
+	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
+		id, _ := rv.GetField("id").(int)
+		// Skip the following for PSI
+		if id == 1 {
+			if field, hasField := cmBuf.GetField("progNum"); hasField {
+				progNum, _ := field.(int)
+				// Stamp PCR here
+				clk := m_pMux.control.updateSrcClk(progNum)
 
-			if field, hasField = cmBuf.GetField("pktCnt"); hasField {
-				curCnt, _ := field.(int)
-				pcr, _ := clk.requestPcr(rv.Id, curCnt)
-				cmBuf.SetField("PCR", pcr, false)
-				if field, hasField = cmBuf.GetField("DTS"); hasField {
-					dts, _ := field.(int)
-					cmBuf.SetField("Delay", dts-pcr/300, false)
+				if field, hasField = cmBuf.GetField("pktCnt"); hasField {
+					curCnt, _ := field.(int)
+					id, isInt := rv.GetField("id").(int)
+					if !isInt {
+						errMsg = fmt.Sprintf("Invalid id in data unit: %v", rv)
+					} else {
+						pcr, _ := clk.requestPcr(id, curCnt)
+						cmBuf.SetField("PCR", pcr, false)
+						if field, hasField = cmBuf.GetField("DTS"); hasField {
+							dts, _ := field.(int)
+							cmBuf.SetField("Delay", dts-pcr/300, false)
+						}
+					}
+				} else {
+					errMsg = "Unable to get pktCnt"
 				}
-
-				rv.Buf = cmBuf
 			} else {
-				errMsg = "Unable to get pktCnt"
+				errMsg = "Unable to get progNum"
 			}
-		} else {
-			errMsg = "Unable to get progNum"
 		}
 	}
 
 	if errMsg != "" {
-		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxer::FetchUnit] %s", errMsg)))
+		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxer::FetchUnit] %s.", errMsg)))
 	}
 
 	m_pMux.control.outputUnitFetched()
@@ -170,7 +177,7 @@ func (m_pMux *TsDemuxer) deliverUnit(inUnit common.CmUnit) {
 	for _, status := range m_pMux.control.StatusList {
 		common.Post_status(m_pMux.callback, m_pMux.name, status)
 	}
-	m_pMux.control.StatusList = make([]common.CmStatusUnit, 0)
+	m_pMux.control.StatusList = make([]common.CmUnit, 0)
 
 	// Start fetching after clock is ready
 	if m_pMux.impl.readyForFetch() {

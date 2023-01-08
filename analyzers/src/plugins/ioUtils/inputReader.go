@@ -99,7 +99,7 @@ func (ir *InputReader) start() {
 	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
 		ir.outCnt += 1
 		ir.maxInCnt -= 1
-		ir.outputQueue = append(ir.outputQueue, newUnit)
+		ir.outputQueue = append(ir.outputQueue, &newUnit)
 		reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 		common.Post_request(ir.callback, ir.name, reqUnit)
 	} else {
@@ -120,7 +120,7 @@ func (ir *InputReader) fetchUnit() common.CmUnit {
 
 	ir.skipCnt -= 1
 
-	rv := common.IOUnit{IoType: 0, Buf: nil}
+	rv := common.MakeIOUnit(nil, 0, -1)
 	return rv
 }
 

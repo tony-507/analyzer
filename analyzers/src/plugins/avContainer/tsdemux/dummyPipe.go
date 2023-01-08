@@ -6,7 +6,7 @@ import (
 
 type dummyPipe struct {
 	callback    *TsDemuxer
-	outputQueue []common.IOUnit
+	outputQueue []common.CmUnit
 	ready       bool
 	inCnt       int
 }
@@ -17,7 +17,7 @@ func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) {
 	if dp.inCnt > 1 {
 		dp.ready = true
 	}
-	dummy := common.IOUnit{Buf: buf, IoType: 3, Id: -1}
+	dummy := common.MakeIOUnit(buf, 3, -1)
 	if dp.ready {
 		dp.outputQueue = append(dp.outputQueue, dummy)
 	}
@@ -35,13 +35,13 @@ func (dp *dummyPipe) readyForFetch() bool {
 	return dp.ready
 }
 
-func (dp *dummyPipe) getOutputUnit() common.IOUnit {
+func (dp *dummyPipe) getOutputUnit() common.CmUnit {
 	if len(dp.outputQueue) == 0 {
 		panic("[DummyPipe] Fatal error: Fetching from an empty output queue")
 	}
 	outUnit := dp.outputQueue[0]
 	if len(dp.outputQueue) == 1 {
-		dp.outputQueue = make([]common.IOUnit, 0)
+		dp.outputQueue = make([]common.CmUnit, 0)
 	} else {
 		dp.outputQueue = dp.outputQueue[1:]
 	}

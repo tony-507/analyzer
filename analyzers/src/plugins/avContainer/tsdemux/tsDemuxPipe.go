@@ -15,7 +15,7 @@ type tsDemuxPipe struct {
 	control        *demuxController // Controller from demuxer
 	demuxedBuffers map[int][]byte   // A map mapping pid to bitstreams
 	demuxStartCnt  map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
-	outputQueue    []common.IOUnit  // Outputs to other plugins
+	outputQueue    []common.CmUnit  // Outputs to other plugins
 	content        model.PAT
 	programs       map[int]model.PMT // A map from program number to PMT
 	isRunning      bool
@@ -170,7 +170,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	pktType := m_pMux._getPktType(pid)
 
 	// Output unit related
-	var outBuf []byte
+	var jsonBytes []byte
 
 	switch pktType {
 	case "PAT":
@@ -202,7 +202,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 			}
 		}
 		m_pMux.content = content
-		outBuf, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
+		jsonBytes, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
 		m_pMux.logger.Log(logs.INFO, "PAT parsed: %s", content.ToString())
 	case "PMT":
 		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
@@ -238,10 +238,10 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 		}
 
 		m_pMux.programs[pmt.ProgNum] = pmt
-		outBuf, _ = json.MarshalIndent(pmt, "\t", "\t")
+		jsonBytes, _ = json.MarshalIndent(pmt, "\t", "\t")
 	case "SCTE-35 DPI data":
 		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
-		outBuf, _ = json.MarshalIndent(section, "\t", "\t")
+		jsonBytes, _ = json.MarshalIndent(section, "\t", "\t")
 	default:
 		panic("Unknown pid")
 	}
@@ -249,7 +249,9 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	// Clear old buf
 	m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 
-	outUnit := common.IOUnit{Buf: outBuf, IoType: 2, Id: pid}
+	outBuf := common.MakeSimpleBuf(jsonBytes)
+
+	outUnit := common.MakeIOUnit(outBuf, 2, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
@@ -280,7 +282,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outBuf.SetField("size", pesHeader.GetSectionLength(), false)
 			outBuf.SetField("PTS", pesHeader.GetPts(), false)
 			outBuf.SetField("DTS", pesHeader.GetDts(), false)
-			outUnit := common.IOUnit{Buf: outBuf, IoType: 1, Id: pid}
+			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
@@ -337,10 +339,10 @@ func (m_pMux *tsDemuxPipe) readyForFetch() bool {
 	return len(m_pMux.programs) > 0 && len(m_pMux.outputQueue) > 0
 }
 
-func (m_pMux *tsDemuxPipe) getOutputUnit() common.IOUnit {
+func (m_pMux *tsDemuxPipe) getOutputUnit() common.CmUnit {
 	outUnit := m_pMux.outputQueue[0]
 	if len(m_pMux.outputQueue) == 1 {
-		m_pMux.outputQueue = make([]common.IOUnit, 0)
+		m_pMux.outputQueue = make([]common.CmUnit, 0)
 	} else {
 		m_pMux.outputQueue = m_pMux.outputQueue[1:]
 	}

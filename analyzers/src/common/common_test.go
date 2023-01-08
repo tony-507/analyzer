@@ -1,38 +1,45 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSimpleBuf(t *testing.T) {
+func TestIOUnitWithSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
 	buffer := MakeSimpleBuf(buf)
-
-	// Test if simpleBuf implements CmBuf
-	var _ CmBuf = (*simpleBuf)(&buffer)
 
 	buffer.SetField("dummy", 100, false)
 	buffer.SetField("dummy2", 50, true)
 
-	if field, hasField := buffer.GetField("dummy"); hasField {
+	unit := MakeIOUnit(buffer, -1, -1)
+
+	// Test if *IOUnit implements CmUnit
+	var _ CmUnit = (*IOUnit)(unit)
+
+	extractedBuffer, isCmBuf := unit.GetBuf().(CmBuf);
+	if !isCmBuf {
+		panic(fmt.Sprintf("Unit buffer not CmBuf but %T", unit.GetBuf()))
+	}
+
+	if field, hasField := extractedBuffer.GetField("dummy"); hasField {
 		if v, isInt := field.(int); isInt {
 			assert.Equal(t, v, 100, "dummy field should be 100")
 		} else {
-			panic("Data not int")
+			panic(fmt.Sprintf("Data not int but %T", field))
 		}
 	} else {
 		panic("No data found")
 	}
 
-	assert.Equal(t, 2, len(buffer.dataKey), "buf should have two keys")
-	assert.Equal(t, buf, buffer.buf, "buf should be [1, 2, 3]")
-	assert.Equal(t, "dummy\n", buffer.GetFieldAsString(), "buf field should be dummy")
-	assert.Equal(t, "100\n", buffer.ToString(), "buf string should be 100")
+	assert.Equal(t, buf, extractedBuffer.GetBuf(), "buf should be [1, 2, 3]")
+	assert.Equal(t, "dummy\n", extractedBuffer.GetFieldAsString(), "buf field should be dummy")
+	assert.Equal(t, "100\n", extractedBuffer.ToString(), "buf string should be 100")
 
-	_, hasField := buffer.GetField("hi")
-	assert.Equal(t, false, hasField, "buf does not has field hi")
+	_, hasField := extractedBuffer.GetField("hi")
+	assert.Equal(t, false, hasField, "buf does not have field hi")
 }
 
 func TestReadHex(t *testing.T) {

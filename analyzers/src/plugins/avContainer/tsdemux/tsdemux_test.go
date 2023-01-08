@@ -19,7 +19,7 @@ func TestDemuxDeliverUnit(t *testing.T) {
 	})
 
 	for i := 0; i < 2; i++ {
-		dummy := common.IOUnit{Buf: i, IoType: 1, Id: 0}
+		dummy := common.MakeIOUnit(i, 1, 0)
 		m_pMux.deliverUnit(dummy)
 	}
 }
@@ -72,7 +72,7 @@ func tsDemuxPidStatusTest(t *testing.T) {
 
 	impl.processUnit(dummyPAT, 0)
 	assert.Equal(t, 2, len(impl.control.StatusList), "Expect 2 status units: PAT and PMT")
-	control.StatusList = make([]common.CmStatusUnit, 0)
+	control.StatusList = make([]common.CmUnit, 0)
 
 	dummyPMT := []byte{0x47, 0x41, 0x02, 0x14, 0x00, 0x02, 0xb0, 0x1d, 0x00, 0x0a, 0xc1,
 		0x00, 0x00, 0xe0, 0x20, 0xf0, 0x00, 0x02, 0xe0, 0x20,

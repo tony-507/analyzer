@@ -30,16 +30,17 @@ type CmStatusUnit struct {
 	id   int
 }
 
-func MakeStatusUnit(id int, body CmBuf) CmStatusUnit {
-	return CmStatusUnit{id: id, body: body}
+func MakeStatusUnit(id int, body CmBuf) *CmStatusUnit {
+	rv := CmStatusUnit{id: id, body: body}
+	return &rv
 }
 
 // Unused
-func (unit CmStatusUnit) GetBuf() interface{} {
+func (unit *CmStatusUnit) GetBuf() interface{} {
 	return unit.body
 }
 
-func (unit CmStatusUnit) GetField(name string) interface{} {
+func (unit *CmStatusUnit) GetField(name string) interface{} {
 	switch name {
 	case "id":
 		return unit.id
@@ -55,11 +56,16 @@ type IOUnit struct {
 	Id     int // Specify a receiver. If not -1, this is the name of receiver, else hardcoded for now
 }
 
-func (unit IOUnit) GetBuf() interface{} {
+func MakeIOUnit(buf interface{}, ioType int, id int) *IOUnit {
+	rv := IOUnit{Buf: buf, IoType: ioType, Id: id}
+	return &rv
+}
+
+func (unit *IOUnit) GetBuf() interface{} {
 	return unit.Buf
 }
 
-func (unit IOUnit) GetField(name string) interface{} {
+func (unit *IOUnit) GetField(name string) interface{} {
 	switch name {
 	case "type":
 		return unit.IoType
@@ -89,11 +95,11 @@ type reqUnit struct {
 	reqType WORKER_REQUEST
 }
 
-func (unit reqUnit) GetBuf() interface{} {
+func (unit *reqUnit) GetBuf() interface{} {
 	return unit.buf
 }
 
-func (unit reqUnit) GetField(name string) interface{} {
+func (unit *reqUnit) GetField(name string) interface{} {
 	switch name {
 	case "reqType":
 		return unit.reqType
@@ -102,6 +108,7 @@ func (unit reqUnit) GetField(name string) interface{} {
 	}
 }
 
-func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) reqUnit {
-	return reqUnit{buf: buf, reqType: reqType}
+func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) *reqUnit {
+	rv := reqUnit{buf: buf, reqType: reqType}
+	return &rv
 }
