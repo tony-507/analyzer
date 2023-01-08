@@ -14,10 +14,13 @@ input.MaxInCnt = $maxInCnt | 0;
 demuxer = #TsDemuxer_1;
 demuxer.Mode = $demuxMode | _DEMUX_FULL;
 
+dh = #DataHandler_1;
+
 output = #OutputWriter_1;
 
 output.OutputType = _OUTPUT_FILE;
 output.FileOutput.OutFolder = $o | output/;
 
 link(input, demuxer);
-link(demuxer, output);
+link(demuxer, dh);
+link(dh, output);

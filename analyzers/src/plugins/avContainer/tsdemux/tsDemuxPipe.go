@@ -250,6 +250,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 
 	outBuf := common.MakeSimpleBuf(jsonBytes)
+	outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
 
 	outUnit := common.MakeIOUnit(outBuf, 2, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
@@ -282,6 +283,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outBuf.SetField("size", pesHeader.GetSectionLength(), false)
 			outBuf.SetField("PTS", pesHeader.GetPts(), false)
 			outBuf.SetField("DTS", pesHeader.GetDts(), false)
+			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
