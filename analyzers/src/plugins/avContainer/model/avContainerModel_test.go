@@ -49,8 +49,13 @@ func TestReadPMT(t *testing.T) {
 }
 
 func TestAdaptationFieldIO(t *testing.T) {
+	caseName := []string{
+		"EmptyAdaptationField",
+		"AdapationFieldWithPCR",
+		"AdapationFieldWithEverything",
+	}
 	byteSpecs := [][]byte{
-		[]byte{0x00}, // Empty
+		[]byte{0x00},
 		[]byte{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3},                                                                               // With PCR
 		[]byte{0x14, 0x5e, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x01, 0x03, 0x45, 0x4e, 0x47, 0xff, 0xff}, // With everything
 	}
@@ -61,20 +66,28 @@ func TestAdaptationFieldIO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		parsed := ParseAdaptationField(byteSpecs[idx])
-		assert.Equal(t, structSpecs[idx], parsed, "Adaptation field struct not match")
+		t.Run(caseName[idx], func (t *testing.T) {
+			parsed := ParseAdaptationField(byteSpecs[idx])
+			assert.Equal(t, structSpecs[idx], parsed, "Adaptation field struct not match")
 
-		buf := structSpecs[idx].Serialize()
-		assert.Equal(t, byteSpecs[idx], buf, "Adaptation field bytes not match")
+			buf := structSpecs[idx].Serialize()
+			assert.Equal(t, byteSpecs[idx], buf, "Adaptation field bytes not match")
+		})
 	}
 }
 
 func TestPesHeaderIO(t *testing.T) {
+	caseName := []string{
+		"PesHeaderWithNoTimestamp",
+		"PesHeaderWithEqualTimestamp",
+		"PesHeaderWithDiffTimestamp",
+		"PesHeaderWithZeroLength",
+	}
 	byteSpecs := [][]byte{
-		[]byte{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x00, 0x00},                                                             // No timestamp
-		[]byte{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x80, 0x05, 0x21, 0x00, 0x2b, 0x4d, 0xbb},                               // PTS = DTS
-		[]byte{0x00, 0x00, 0x01, 0xea, 0x7d, 0xb2, 0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb, 0x11, 0x00, 0x2b, 0x31, 0x9b}, // PTS differs from DTS
-		[]byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05},                               // PES length zero
+		[]byte{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x00, 0x00},
+		[]byte{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x80, 0x05, 0x21, 0x00, 0x2b, 0x4d, 0xbb},
+		[]byte{0x00, 0x00, 0x01, 0xea, 0x7d, 0xb2, 0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb, 0x11, 0x00, 0x2b, 0x31, 0x9b},
+		[]byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
 	}
 	structSpecs := []PESHeader{
 		CreatePESHeader(234, 6063, CreateOptionalPESHeader(3, -1, -1)),
@@ -84,16 +97,22 @@ func TestPesHeaderIO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		parsed, err := ParsePESHeader(byteSpecs[idx])
-		if err != nil {
-			panic(err)
-		}
+		t.Run(caseName[idx], func (t *testing.T) {
+			parsed, err := ParsePESHeader(byteSpecs[idx])
+			if err != nil {
+				panic(err)
+			}
 
-		assert.Equal(t, structSpecs[idx], parsed, "PES header not match")
+			assert.Equal(t, structSpecs[idx], parsed, "PES header not match")
+		})
 	}
 }
 
 func TestSCTE35IO(t *testing.T) {
+	caseName := []string{
+		"SpliceNull",
+		"SpliceInsert",
+	}
 	byteSpecs := [][]byte{
 		[]byte{0x00, 0xfc, 0x30, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xf0, 0x00, 0x00, 0x00, 0x00}, // Splice null
 		[]byte{0x00, 0xfc, 0x30, 0x25, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -117,9 +136,11 @@ func TestSCTE35IO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		parsed := ReadSCTE35Section(byteSpecs[idx], 1)
+		t.Run(caseName[idx], func (t *testing.T) {
+			parsed := ReadSCTE35Section(byteSpecs[idx], 1)
 
-		assert.Equal(t, structSpecs[idx], parsed, "SCTE-35 section not match")
+			assert.Equal(t, structSpecs[idx], parsed, "SCTE-35 section not match")
+		})
 	}
 }
 

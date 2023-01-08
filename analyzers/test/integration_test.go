@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"path/filepath"
 
@@ -17,45 +18,36 @@ func TestIntegration(t *testing.T) {
 		"resources/testCases/tsa_ASCENT.json",
 	}
 
-	// Debugging variables
-	var curTest string
-	var errMsg  string
-
 	for _, spec := range specs {
-		curTest = filepath.Base(spec)
+		testName := strings.Split(filepath.Base(spec), ".")[0]
 
-		var tc testCase
-		jsonString, err := ioutil.ReadFile(spec)
-		if err != nil {
-			errMsg = err.Error()
-			break
-		}
-
-		err = json.Unmarshal([]byte(jsonString), &tc)
-		if err != nil {
-			errMsg = err.Error()
-			break
-		}
-
-		for _, app := range tc.App {
-			var args []string
-
-			switch app {
-			case "tsa":
-				args = []string{
-					"-f", "resources/assets/" + tc.Source,
-					"-o", "output/" + filepath.Dir(tc.Source),
-				}
-			default:
-				errMsg = fmt.Sprintf("Unknown app: %s", app)
-				break
+		t.Run(testName, func(t *testing.T) {
+			var tc testCase
+			jsonString, err := ioutil.ReadFile(spec)
+			if err != nil {
+				panic(err)
 			}
 
-			tttKernel.StartApp("./resources/apps/", app, args)
-		}
-	}
+			err = json.Unmarshal([]byte(jsonString), &tc)
+			if err != nil {
+				panic(err)
+			}
 
-	if errMsg != "" {
-		panic(fmt.Sprintf("[%s] Test fails due to %s", curTest, errMsg))
+			for _, app := range tc.App {
+				var args []string
+
+				switch app {
+				case "tsa":
+					args = []string{
+						"-f", "resources/assets/" + tc.Source,
+						"-o", "output/" + testName + "/",
+					}
+				default:
+					panic(fmt.Sprintf("Unknown app: %s", app))
+				}
+
+				tttKernel.StartApp("./resources/apps/", app, args)
+			}
+		})
 	}
 }
