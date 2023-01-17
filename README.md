@@ -19,7 +19,11 @@ Built output can be found at `analyzers/build/`. Integration test output can be 
 
 ## Architecture
 
-This project uses plugin-worker architecture. A plugin performs a particular job and a worker coordinates between different plugins. In this project, tttKernel is the package containing the worker. It exports a simple API
+This project uses plugin-worker architecture.
+
+A plugin is specified for a type of job, e.g. ioReader plugin is responsible for reading input. It exports interfaces for interactions.
+
+A worker coordinates work between plugins by systematically calling their interfaces. In this project, tttKernel is the package containing the worker. It exports a simple API
 ```
 tttKernel.StartApp(script string, input []string)
 ```

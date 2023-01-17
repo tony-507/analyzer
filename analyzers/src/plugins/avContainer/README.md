@@ -8,6 +8,7 @@ This module performs:
 
 * Demultiplexing of TS to get the data type of each elementary stream
 * PCR interpolation on TS packets
+* Validations based on TS header and PES header
 
 ## Technical Detail
 
@@ -15,7 +16,7 @@ This module consists of three parts: tsdemux, tsmux and model.
 
 ### model
 
-This directory contains I/O utilities to convert between bitstreams and readable data.
+This directory contains utilities to convert between bitstreams and readable data.
 
 ### tsdemux
 

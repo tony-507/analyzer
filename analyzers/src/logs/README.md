@@ -23,5 +23,3 @@ logger.Log(logs.LEVEL, "message")
 ## Architecture
 
 The logs module stores configuration globally. The identifier identifies where the log comes from as a parameter in display form.
-
-The logger logs messages in asynchronous manner to improve performance.
