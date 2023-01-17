@@ -40,6 +40,8 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		return
 	}
 
+	inputMon.checkTsHeader(head, pktCnt)
+
 	dataProcessed := true // controller use
 
 	// Determine the type of the unit
