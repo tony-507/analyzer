@@ -125,7 +125,7 @@ func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
 	errMsg := ""
 
 	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
-		id, _ := rv.GetField("id").(int)
+		id, _ := rv.GetField("type").(int)
 		// Skip the following for PSI
 		if id == 1 {
 			if field, hasField := cmBuf.GetField("progNum"); hasField {

@@ -290,10 +290,9 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
-		} else {
-			m_pMux.demuxedBuffers[pid] = buf
-			m_pMux.demuxStartCnt[pid] = pktCnt
 		}
+		m_pMux.demuxedBuffers[pid] = buf
+		m_pMux.demuxStartCnt[pid] = pktCnt
 	} else if len(m_pMux.demuxedBuffers[pid]) != 0 {
 		m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
 	}

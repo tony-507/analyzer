@@ -11,7 +11,6 @@ func TestIOUnitWithSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
 	buffer := MakeSimpleBuf(buf)
 
-	buffer.SetField("dummy", 100, false)
 	buffer.SetField("dummy2", 50, true)
 
 	unit := MakeIOUnit(buffer, -1, -1)
@@ -19,10 +18,12 @@ func TestIOUnitWithSimpleBuf(t *testing.T) {
 	// Test if *IOUnit implements CmUnit
 	var _ CmUnit = (*IOUnit)(unit)
 
-	extractedBuffer, isCmBuf := unit.GetBuf().(CmBuf);
+	extractedBuffer, isCmBuf := unit.GetBuf().(CmBuf)
 	if !isCmBuf {
 		panic(fmt.Sprintf("Unit buffer not CmBuf but %T", unit.GetBuf()))
 	}
+
+	extractedBuffer.SetField("dummy", 100, false)
 
 	if field, hasField := extractedBuffer.GetField("dummy"); hasField {
 		if v, isInt := field.(int); isInt {

@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
-	"path/filepath"
 
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/test/schema"
