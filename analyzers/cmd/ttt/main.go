@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
-func setupLogging() {
+func setupLogging(appDir string) {
 	logs.SetProperty("level", "trace")
 	logs.SetProperty("prefix", "[%l]")
+	logs.SetProperty("logDir", appDir+"/ttt"+"_"+strconv.Itoa(int(time.Now().Unix())))
 }
 
 func showHelp() {
@@ -19,9 +22,9 @@ func showHelp() {
 }
 
 func main() {
-	setupLogging()
 	ex, _ := os.Executable()
-	resourceDir := filepath.Dir(ex) + "/.resources/"
+	appDir := filepath.Dir(ex)
+	setupLogging(appDir)
 
 	if len(os.Args) < 2 {
 		showHelp()
@@ -36,6 +39,6 @@ func main() {
 		if len(os.Args) > 2 {
 			params = os.Args[2:]
 		}
-		tttKernel.StartApp(resourceDir, os.Args[1], params)
+		tttKernel.StartApp(appDir+"/.resources/", os.Args[1], params)
 	}
 }

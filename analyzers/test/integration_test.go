@@ -10,10 +10,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/test/schema"
 	"github.com/tony-507/analyzers/test/validator"
 )
+
+func setupLogging(appDir string) {
+	logs.SetProperty("level", "trace")
+	logs.SetProperty("prefix", "[%l]")
+	logs.SetProperty("logDir", appDir+"logs")
+}
 
 func TestIntegration(t *testing.T) {
 	specs := []string{
@@ -42,6 +49,8 @@ func TestIntegration(t *testing.T) {
 		for _, app := range tc.App {
 			testName := caseName + "_" + app
 			t.Run(testName, func(t *testing.T) {
+				setupLogging(outFolder)
+
 				fmt.Println("Test:", testName)
 				var args []string
 

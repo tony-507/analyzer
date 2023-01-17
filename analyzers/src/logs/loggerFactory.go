@@ -1,5 +1,10 @@
 package logs
 
+import (
+	"log"
+	"os"
+)
+
 const (
 	DISABLED int = 0
 	TRACE    int = 1
@@ -14,6 +19,7 @@ const (
 type globalLoggerConfig struct {
 	logLevel  int
 	msgPrefix string
+	logFile   *os.File
 }
 
 var globalConfig globalLoggerConfig
@@ -40,7 +46,21 @@ func SetProperty(key string, val string) {
 		}
 	case "prefix":
 		globalConfig.msgPrefix = val
+	case "logDir":
+		os.MkdirAll(val, os.ModePerm)
+		f, err := os.Create(val + "/app.log")
+		if err != nil {
+			panic(err)
+		}
+		globalConfig.logFile = f
+		log.SetOutput(f)
 	default:
 		panic("Unknown property for Logger")
+	}
+}
+
+func CleanUp() {
+	if globalConfig.logFile != nil {
+		globalConfig.logFile.Close()
 	}
 }
