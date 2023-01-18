@@ -1,3 +1,5 @@
+// Perform basic stream analysis
+
 input = #InputReader_1;
 
 alias(file, f);

@@ -148,7 +148,7 @@ func TestDeclareVarInScript(t *testing.T) {
 		aliasMap:  map[string]string{},
 	}
 
-	ctrl.buildParams(script, input)
+	ctrl.buildParams(script, input, -1)
 
 	assert.Equal(t, "x", ctrl.variables[0].name, "Name of x is not x")
 	assert.Equal(t, "hi", ctrl.variables[0].value, "Value of x is not hi")
@@ -166,7 +166,7 @@ func TestSetAlias(t *testing.T) {
 		aliasMap:  map[string]string{},
 	}
 
-	ctrl.buildParams(script, input)
+	ctrl.buildParams(script, input, -1)
 
 	assert.Equal(t, "hi", ctrl.variables[0].value, "Value of x is not hi")
 }
@@ -181,7 +181,7 @@ func TestRunNestedConditional(t *testing.T) {
 		aliasMap:  map[string]string{},
 	}
 
-	ctrl.buildParams(script, input)
+	ctrl.buildParams(script, input, -1)
 
 	assert.Equal(t, "bye", ctrl.variables[0].value, "Nested conditional fails")
 }
@@ -196,7 +196,7 @@ func TestRunPartialNestedConditional(t *testing.T) {
 		aliasMap:  map[string]string{},
 	}
 
-	ctrl.buildParams(script, input)
+	ctrl.buildParams(script, input, -1)
 
 	assert.Equal(t, "hi", ctrl.variables[0].value, "Nested conditional fails")
 }

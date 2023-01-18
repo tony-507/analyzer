@@ -24,6 +24,7 @@ func showHelp() {
 func main() {
 	ex, _ := os.Executable()
 	appDir := filepath.Dir(ex)
+	resourceDir := appDir + "/.resources/"
 	setupLogging(appDir)
 
 	if len(os.Args) < 2 {
@@ -34,11 +35,15 @@ func main() {
 	switch os.Args[1] {
 	case "help":
 		showHelp()
-	default:
+	case "ls":
+		tttKernel.ListApp(resourceDir)
+	case "app":
 		params := make([]string, 0)
-		if len(os.Args) > 2 {
-			params = os.Args[2:]
+		if len(os.Args) > 3 {
+			params = os.Args[3:]
 		}
-		tttKernel.StartApp(appDir+"/.resources/", os.Args[1], params)
+		tttKernel.StartApp(resourceDir, os.Args[2], params)
+	default:
+		showHelp()
 	}
 }

@@ -1,3 +1,5 @@
+// Trim input file
+
 input = #InputReader_1;
 
 alias(file, f);

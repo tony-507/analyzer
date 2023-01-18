@@ -30,6 +30,10 @@ userBuild () {
 	init
 
 	build_app
+
+	# Copy demo apps
+	mkdir $buildDir/.resources
+	cp $MODULE_DIR/test/resources/apps/* $buildDir/.resources/.
 }
 
 userTest() {

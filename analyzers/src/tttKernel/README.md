@@ -36,9 +36,14 @@ This section describes syntax for ttt script.
 
 tttKernel reads the script line by line. Each line is separated by a semi-colon.
 
+### Description
+
+One can add a one-line comment on the first line of the script as a description. Comment can be inserted with the syntax
+```
+// Comment here
+```
+
 ### Variable Assignment
-
-
 ```
 x = #Dummy_1;
 ```

@@ -45,22 +45,30 @@ func (v *scriptVar) getAttributeStr() string {
 
 // Migration in progress
 type tttKernel struct {
-	logger    logs.Log
-	aliasMap  map[string]string
-	edgeMap   map[string][]string
-	statusMap map[string][]string
-	variables []*scriptVar
+	logger      logs.Log
+	aliasMap    map[string]string
+	edgeMap     map[string][]string
+	variables   []*scriptVar
+	description string
+}
+
+func ListApp(resourceDir string) {
+	fileInfo, err := ioutil.ReadDir(resourceDir)
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range fileInfo {
+		ctrl := getKernel()
+		appName := strings.Split(file.Name(), ".")[0]
+		ctrl.buildParams(getApp(resourceDir, appName), []string{}, 1)
+		fmt.Println(fmt.Sprintf("%10s%10s%50s", appName, " ", ctrl.description))
+	}
 }
 
 func StartApp(resourceDir string, appName string, input []string) {
-	ctrl := tttKernel{
-		logger:    logs.CreateLogger("Controller"),
-		variables: []*scriptVar{},
-		edgeMap:   map[string][]string{},
-		aliasMap:  map[string]string{},
-	}
+	ctrl := getKernel()
 
-	ctrl.buildParams(getApp(resourceDir, appName), input)
+	ctrl.buildParams(getApp(resourceDir, appName), input, -1)
 
 	provider := getWorker()
 
@@ -72,6 +80,15 @@ func StartApp(resourceDir string, appName string, input []string) {
 	}
 
 	provider.startService(pluginParams)
+}
+
+func getKernel() tttKernel {
+	return tttKernel{
+		logger:    logs.CreateLogger("Controller"),
+		aliasMap:  map[string]string{},
+		edgeMap:   map[string][]string{},
+		variables: []*scriptVar{},
+	}
 }
 
 func getApp(resourceDir string, appName string) string {
@@ -96,12 +113,18 @@ func getApp(resourceDir string, appName string) string {
 }
 
 // Read from script and input to prepare plugins and the respective parameters
-func (ctrl *tttKernel) buildParams(script string, input []string) {
+func (ctrl *tttKernel) buildParams(script string, input []string, lim int) {
+	if lim < 0 {
+		lim = 99999
+	}
 	lines := strings.FieldsFunc(script, func(r rune) bool { return r == ';' || r == '\n' })
 	syntaxErrLine := 0
 	msg := ""
 	conditionalStack := make([]bool, 0)
-	for _, line := range lines {
+	for lNum, line := range lines {
+		if lNum >= lim {
+			break
+		}
 		line = strings.TrimSpace(line)
 		// Skip empty line
 		if len(line) == 0 {
@@ -163,6 +186,8 @@ func (ctrl *tttKernel) buildParams(script string, input []string) {
 			} else {
 				conditionalStack = make([]bool, 0)
 			}
+		case "//":
+			ctrl.description = strings.Join(tokens[1:], " ")
 		// Declarations
 		default:
 			if runLine {
@@ -228,7 +253,6 @@ func (ctrl *tttKernel) buildParams(script string, input []string) {
 
 func (ctrl *tttKernel) handleAliasing(alias string, orig string) {
 	ctrl.aliasMap[alias] = orig
-	ctrl.logger.Log(logs.INFO, "Alias mapping: %s -> %s", alias, orig)
 }
 
 func (ctrl *tttKernel) getVariable(components []string, createIfNeeded bool) *scriptVar {

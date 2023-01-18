@@ -22,7 +22,12 @@ func setupLogging(appDir string) {
 	logs.SetProperty("logDir", appDir+"logs")
 }
 
-func TestIntegration(t *testing.T) {
+// TODO How to validate?
+func TestListApp(t *testing.T) {
+	tttKernel.ListApp("./resources/apps/")
+}
+
+func TestStartApp(t *testing.T) {
 	specs := []string{
 		"resources/testCases/ASCENT.json",
 	}
