@@ -66,7 +66,7 @@ func TestAdaptationFieldIO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		t.Run(caseName[idx], func (t *testing.T) {
+		t.Run(caseName[idx], func(t *testing.T) {
 			parsed := ParseAdaptationField(byteSpecs[idx])
 			assert.Equal(t, structSpecs[idx], parsed, "Adaptation field struct not match")
 
@@ -97,8 +97,8 @@ func TestPesHeaderIO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		t.Run(caseName[idx], func (t *testing.T) {
-			parsed, err := ParsePESHeader(byteSpecs[idx])
+		t.Run(caseName[idx], func(t *testing.T) {
+			parsed, _, err := ParsePESHeader(byteSpecs[idx])
 			if err != nil {
 				panic(err)
 			}
@@ -136,7 +136,7 @@ func TestSCTE35IO(t *testing.T) {
 	}
 
 	for idx := range byteSpecs {
-		t.Run(caseName[idx], func (t *testing.T) {
+		t.Run(caseName[idx], func(t *testing.T) {
 			parsed := ReadSCTE35Section(byteSpecs[idx], 1)
 
 			assert.Equal(t, structSpecs[idx], parsed, "SCTE-35 section not match")

@@ -119,18 +119,21 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 	return OptionalHeader{scrambled: scrambled, dataAligned: dataAligned, length: headerLen + 3, pts: pts, dts: dts}, nil
 }
 
-func ParsePESHeader(buf []byte) (PESHeader, error) {
+func ParsePESHeader(buf []byte) (PESHeader, int, error) {
 	logger := logs.CreateLogger("PesParser")
 
 	r := common.GetBufferReader(buf)
+	headerLen := 0
 
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
 		logger.Log(logs.ERROR, "%v", r)
-		return PESHeader{}, err
+		return PESHeader{}, 0, err
 	}
 	streamId := r.ReadBits(8)
 	pesLen := r.ReadBits(16)
+
+	headerLen += 6
 
 	// TODO: May not have optional header
 	optionalHeader, err := ParseOptionalHeader(r.GetRemainedBuffer())
@@ -138,8 +141,9 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 		logger.Log(logs.ERROR, "%v", r)
 		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
 		err = errors.New(errMsg)
-		return PESHeader{}, err
+		return PESHeader{}, 0, err
 	}
+	headerLen += optionalHeader.length
 
 	if pesLen != 0 {
 		pesLen -= optionalHeader.length
@@ -147,7 +151,7 @@ func ParsePESHeader(buf []byte) (PESHeader, error) {
 		pesLen = len(r.GetRemainedBuffer()) - optionalHeader.length
 	}
 
-	return PESHeader{streamId, pesLen, optionalHeader}, nil
+	return PESHeader{streamId, pesLen, optionalHeader}, headerLen, nil
 }
 
 func CreatePESHeader(streamId int, pesLen int, optionalHeader OptionalHeader) PESHeader {
