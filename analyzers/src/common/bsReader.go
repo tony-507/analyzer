@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strconv"
 )
 
@@ -73,6 +74,14 @@ func (br *BsReader) ReadBits(n int) int {
 		br.offset -= n
 	}
 	return rv
+}
+
+func (br *BsReader) ReadAndAssertBits(n int, expected int, msg string) {
+	read := br.ReadBits(n)
+	if read != expected {
+		errMsg := fmt.Sprintf("%s. Expected %d got %d", msg, expected, read)
+		panic(errMsg)
+	}
 }
 
 func getMask(n int) int {

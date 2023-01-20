@@ -3,16 +3,14 @@ package dataHandler
 import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 )
-
-type DataHandler interface {
-	Feed(buf []byte) // Accept input buffer and begin parsing
-}
 
 type DataHandlerFactory struct {
 	logger     logs.Log
 	callback   common.RequestHandler
-	handlers   map[int]int
+	handlers   map[int]utils.DataHandler
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
@@ -30,8 +28,8 @@ func (df *DataHandlerFactory) setResource(loader *common.ResourceLoader) {}
 
 func (df *DataHandlerFactory) _setup() {
 	df.logger = logs.CreateLogger("DataHandlerFactory")
-	df.handlers = make(map[int]int, 0)
-	df.outputUnit = make([]common.CmUnit, 0)
+	df.handlers = map[int]utils.DataHandler{}
+	df.outputUnit = []common.CmUnit{}
 	df.isRunning = true
 }
 
@@ -51,7 +49,7 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 	}
 
 	// Extract buffer from input unit
-	_, isCmBuf := unit.GetBuf().(common.CmBuf)
+	cmBuf, isCmBuf := unit.GetBuf().(common.CmBuf)
 	if isCmBuf {
 		pid, isPidInt := unit.GetField("id").(int)
 		if !isPidInt {
@@ -59,9 +57,18 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 		}
 
 		_, hasPid := df.handlers[pid]
+		dType, hasField := cmBuf.GetField("dataType")
+		if !hasField {
+			return
+		}
 		if !hasPid {
 			df.logger.Log(logs.INFO, "Receive pid %d at dataHandlerFactory", pid)
-			df.handlers[pid] = 1
+			if dType == "MPEG 2 video" {
+				df.handlers[pid] = video.MPEG2VideoHandler()
+			}
+		}
+		if dType == "MPEG 2 video" {
+			df.handlers[pid].Feed(unit)
 		}
 	}
 
