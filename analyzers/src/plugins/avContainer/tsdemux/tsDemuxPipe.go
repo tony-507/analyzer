@@ -115,7 +115,8 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 			switch dType {
 			case "PAT":
 				if m_pMux.content.Version == -1 {
-					m_pMux.demuxedBuffers[0] = buf
+					m_pMux.demuxedBuffers[pid] = buf
+					m_pMux.demuxStartCnt[pid] = pktCnt
 					if model.PATReadyForParse(buf) {
 						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
 					}
@@ -270,38 +271,29 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 		buf = buf[(af.AfLen + 1):]
 	}
 
-	lastPktCnt := 0
-	lastSectionLen := 0
-	lastPts := 0
-	lastDts := 0
-
 	// Payload
 	if pusi {
-		pesHeader, headerLen, err := model.ParsePESHeader(buf)
-		if err != nil {
-			m_pMux.control.throwError(pid, pktCnt, err.Error())
-		}
-
+		// Initialization issue
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
+			pesHeader, headerLen, err := model.ParsePESHeader(m_pMux.demuxedBuffers[pid])
+			if err != nil {
+				m_pMux.control.throwError(pid, pktCnt, err.Error())
+			}
 
-			outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid])
-			outBuf.SetField("pktCnt", lastPktCnt, false)
+			outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])
+			outBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid], false)
 			outBuf.SetField("progNum", progNum, true)
 			outBuf.SetField("streamType", streamType, true)
-			outBuf.SetField("size", lastSectionLen, false)
-			outBuf.SetField("PTS", lastPts, false)
-			outBuf.SetField("DTS", lastDts, false)
+			outBuf.SetField("size", pesHeader.GetSectionLength(), false)
+			outBuf.SetField("PTS", pesHeader.GetPts(), false)
+			outBuf.SetField("DTS", pesHeader.GetDts(), false)
 			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 		}
-		lastPktCnt = pktCnt
-		lastSectionLen = pesHeader.GetSectionLength()
-		lastPts = pesHeader.GetPts()
-		lastDts = pesHeader.GetDts()
-		m_pMux.demuxedBuffers[pid] = buf[headerLen:]
+		m_pMux.demuxedBuffers[pid] = buf
 		m_pMux.demuxStartCnt[pid] = pktCnt
 	} else if len(m_pMux.demuxedBuffers[pid]) != 0 {
 		m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
