@@ -20,17 +20,19 @@ An object to write buffer into a file
 */
 
 type FileWriter struct {
-	logger    logs.Log
-	writerMap []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
-	idMapping []int                // This maps id to channel index
-	outFolder string
-	wg        sync.WaitGroup
+	logger     logs.Log
+	writerMap  []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
+	rawByteExt string
+	idMapping  []int // This maps id to channel index
+	outFolder  string
+	wg         sync.WaitGroup
 }
 
 func (m_writer *FileWriter) setup(writerParam ioWriterParam) {
 	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
+	m_writer.rawByteExt = writerParam.FileOutput.RawByteExtension
 	for i := range m_writer.writerMap {
 		m_writer.writerMap[i] = make(chan common.CmUnit)
 	}
@@ -123,21 +125,27 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d starts", pid)
 
 	fname := ""
+	rawFileName := ""
 	if pid != -1 {
 		fname = fmt.Sprintf("%s%d.csv", m_writer.outFolder, pid)
+		rawFileName = fmt.Sprintf("%sraw_%d.%s", m_writer.outFolder, pid, m_writer.rawByteExt)
 	} else {
 		fname = fmt.Sprintf("%s%s.csv", m_writer.outFolder, "packets")
+		rawFileName = fmt.Sprintf("%sraw_%s.%s", m_writer.outFolder, "packets", m_writer.rawByteExt)
 	}
 
 	b_HasHeader := false // Header has been written
 	header := ""
 	body := ""
 
-	f, err := os.Create(fname)
-	w := bufio.NewWriter(f)
+	csvFile, err := os.Create(fname)
+	csvWriter := bufio.NewWriter(csvFile)
 	check(err)
 
-	defer f.Close()
+	rawFile, err := os.Create(rawFileName)
+	check(err)
+
+	defer csvFile.Close()
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
@@ -150,17 +158,19 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 		if cmBuf, isCmBuf := unit.GetBuf().(common.CmBuf); isCmBuf {
 			header = cmBuf.GetFieldAsString()
 			body = cmBuf.ToString()
+			data := cmBuf.GetBuf()
+			rawFile.Write(data)
 		}
 
 		if !b_HasHeader {
-			w.WriteString(header)
+			csvWriter.WriteString(header)
 			b_HasHeader = true
 		}
 
-		_, err := w.WriteString(body)
+		_, err := csvWriter.WriteString(body)
 		check(err)
 
-		w.Flush()
+		csvWriter.Flush()
 	}
 	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d stops", pid)
 }

@@ -22,6 +22,7 @@ output = #OutputWriter_1;
 
 output.OutputType = _OUTPUT_FILE;
 output.FileOutput.OutFolder = $o | output/;
+output.FileOutput.RawByteExtension = $rawExt | pes;
 
 link(input, demuxer);
 link(demuxer, dh);

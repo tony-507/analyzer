@@ -18,7 +18,8 @@ type ioWriterParam struct {
 }
 
 type fileOutputParam struct {
-	OutFolder string // Folder to store output
+	OutFolder        string // Folder to store output
+	RawByteExtension string // Extension for raw_id in data buffer
 }
 
 func (ot *_OUTPUT_TYPE) UnmarshalJSON(b []byte) error {
