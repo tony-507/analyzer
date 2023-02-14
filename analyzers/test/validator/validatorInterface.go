@@ -1,10 +1,10 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"errors"
 
 	"github.com/tony-507/analyzers/test/schema"
 )
@@ -26,6 +26,8 @@ func PerformValidation(app string, outFolder string, expectedProp *schema.Expect
 					return err
 				}
 			}
+		default:
+			return errors.New(fmt.Sprintf("Unknown app %s", app))
 		}
 	}
 	return nil
@@ -38,13 +40,13 @@ func validateTsa(outFolder string, expectedTsaProp *schema.TsaExpectedProp) erro
 	}
 
 	for _, fname := range expectedTsaProp.CsvList {
-		if err = hasNonEmptyFileInList(fname + ".csv", -1, fileInfo); err != nil {
+		if err = hasNonEmptyFileInList(fname+".csv", -1, fileInfo); err != nil {
 			return err
 		}
 	}
 
 	for _, fname := range expectedTsaProp.JsonList {
-		if err = hasNonEmptyFileInList(fname + ".json", -1, fileInfo); err != nil {
+		if err = hasNonEmptyFileInList(fname+".json", -1, fileInfo); err != nil {
 			return err
 		}
 	}
@@ -67,7 +69,7 @@ func validateEditCap(outFolder string, expectedEditCapProp *schema.EditCapExpect
 func hasNonEmptyFileInList(fname string, size int, fileInfo []fs.FileInfo) error {
 	errMsg := fmt.Sprintf("%s not found in output folder", fname)
 	for _, file := range fileInfo {
-		if file.Name() == fname{
+		if file.Name() == fname {
 			if size != -1 {
 				if file.Size() == int64(size) {
 					return nil

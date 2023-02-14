@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 /*
@@ -20,7 +19,7 @@ An object to write buffer into a file
 */
 
 type FileWriter struct {
-	logger     logs.Log
+	logger     common.Log
 	writerMap  []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
 	rawByteExt string
 	idMapping  []int // This maps id to channel index
@@ -29,7 +28,6 @@ type FileWriter struct {
 }
 
 func (m_writer *FileWriter) setup(writerParam ioWriterParam) {
-	m_writer.logger = logs.CreateLogger("FileWriter")
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
 	m_writer.rawByteExt = writerParam.FileOutput.RawByteExtension
@@ -69,7 +67,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	}
 
 	if idIdx == -1 {
-		m_writer.logger.Log(logs.CRITICAL, "Handler not found for unit: %v", unit)
+		m_writer.logger.Error("Handler not found for unit: %v", unit)
 	}
 
 	m_writer.writerMap[idIdx] <- unit
@@ -77,7 +75,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 
 func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "JSON handler for pid %d starts", pid)
+	m_writer.logger.Trace("JSON handler for pid %d starts", pid)
 
 	isInit := false
 
@@ -117,12 +115,12 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	}
 
 	f.Write([]byte("\n]"))
-	m_writer.logger.Log(logs.TRACE, "JSON handler for pid %d stops", pid)
+	m_writer.logger.Trace("JSON handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d starts", pid)
+	m_writer.logger.Trace("CSV handler for pid %d starts", pid)
 
 	fname := ""
 	rawFileName := ""
@@ -172,12 +170,12 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 
 		csvWriter.Flush()
 	}
-	m_writer.logger.Log(logs.TRACE, "CSV handler for pid %d stops", pid)
+	m_writer.logger.Trace("CSV handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Log(logs.TRACE, "Raw handler for pid %d starts", pid)
+	m_writer.logger.Trace("Raw handler for pid %d starts", pid)
 
 	suffix := ""
 	if pid != -1 {
@@ -200,7 +198,7 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 		_, err := f.Write(buf)
 		check(err)
 	}
-	m_writer.logger.Log(logs.TRACE, "Raw handler for pid %d stops", pid)
+	m_writer.logger.Trace("Raw handler for pid %d stops", pid)
 }
 
 func (m_writer *FileWriter) processControl(unit common.CmUnit) {
@@ -250,14 +248,14 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 				m_writer.wg.Add(1)
 				go m_writer._processRawOutput(outId, idIdx)
 			default:
-				m_writer.logger.Log(logs.ERROR, "unknown output type %d for id %d", outType, idIdx)
+				m_writer.logger.Error("Unknown output type %d for id %d", outType, idIdx)
 				panic("Unknown output type")
 			}
 		}
 	}
 }
 
-func getFileWriter() *FileWriter {
-	rv := FileWriter{logger: logs.CreateLogger("fileWriter")}
+func getFileWriter(name string) *FileWriter {
+	rv := FileWriter{logger: common.CreateLogger(name)}
 	return &rv
 }

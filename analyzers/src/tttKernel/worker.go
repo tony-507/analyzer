@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 // A worker runs a graph to provide a service
 // Assumption: The graph does not contain any cyclic subgraph
 type Worker struct {
-	logger         logs.Log
+	logger         common.Log
 	nodes          []*graphNode
 	resourceLoader common.ResourceLoader
 	isRunning      int
@@ -103,11 +102,11 @@ func (w *Worker) handleRequests(name string, reqType common.WORKER_REQUEST, obj 
 				w.statusList = append(w.statusList, unit)
 			}
 		} else {
-			w.logger.Log(logs.ERROR, "Worker error: Receive a status request with invalid unit: %v", obj)
+			w.logger.Error("Worker error: Receive a status request with invalid unit: %v", obj)
 		}
 	} else if reqType == common.ERROR_REQUEST {
 		err, _ := obj.(error)
-		w.logger.Log(logs.ERROR, name, "throws an error")
+		w.logger.Error(name, "throws an error")
 		panic(err)
 	}
 }
@@ -136,7 +135,7 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 		node.impl.DeliverUnit(outputUnit)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
-		w.logger.Log(logs.TRACE, "Worker receives EOS from %s", node.impl.Name())
+		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())
 		// Trigger EndSequence of children nodes
 		for _, child := range node.children {
 			child.impl.EndSequence()
@@ -195,12 +194,12 @@ func (w *Worker) setCallbackForNodes(curNode *graphNode) {
 
 func getWorker() Worker {
 	w := Worker{
-		isRunning: 0,
-		ready: false,
+		isRunning:      0,
+		ready:          false,
 		resourceLoader: common.CreateResourceLoader(),
-		logger: logs.CreateLogger("Worker"),
-		statusStore: make(map[int][]string, 0),
-		statusList: make([]common.CmUnit, 0),
+		logger:         common.CreateLogger("Worker"),
+		statusStore:    make(map[int][]string, 0),
+		statusList:     make([]common.CmUnit, 0),
 	}
 	return w
 }

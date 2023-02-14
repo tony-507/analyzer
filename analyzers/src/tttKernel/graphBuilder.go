@@ -3,7 +3,7 @@ package tttKernel
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type OverallParams struct {
@@ -30,7 +30,7 @@ func (w *Worker) startService(params []OverallParams) {
 
 // Construct graph from parameters and run the graph
 func buildGraph(params []OverallParams) []*graphNode {
-	logger := logs.CreateLogger("GraphBuilder")
+	logger := common.CreateLogger("Worker")
 	nodeList := []*graphNode{}
 
 	createdPlugin := make([]*graphNode, 0)
@@ -39,7 +39,6 @@ func buildGraph(params []OverallParams) []*graphNode {
 	for _, param := range params {
 		paramStr += param.toString()
 	}
-	logger.Log(logs.TRACE, "Start building graph with parameters %s", paramStr)
 
 	/*
 		Note that, unlike in C, it's perfectly OK to return the address of a local variable;
@@ -86,14 +85,14 @@ func buildGraph(params []OverallParams) []*graphNode {
 		}
 	}
 
-	statMsg := fmt.Sprintf("Start running graph(%d):", len(nodeList))
+	statMsg := fmt.Sprintf("Start running graph:\n")
 	for _, node := range nodeList {
 		statMsg += "\n\tName: " + node.impl.Name()
 		statMsg += fmt.Sprintf("\n\tParameters: %v", node.m_parameter)
 		statMsg += fmt.Sprintf("\n\tOutput: %v", node.children)
 		statMsg += "\n"
 	}
-	logger.Log(logs.TRACE, statMsg)
+	logger.Trace(statMsg)
 
 	return nodeList
 }

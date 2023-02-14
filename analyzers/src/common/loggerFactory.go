@@ -1,4 +1,4 @@
-package logs
+package common
 
 import (
 	"log"
@@ -6,41 +6,41 @@ import (
 )
 
 const (
-	DISABLED int = 0
-	TRACE    int = 1
-	INFO     int = 2
-	WARN     int = 3
-	ERROR    int = 4
-	CRITICAL int = 5
-	FATAL    int = 6
+	_LOG_DISABLED int = 0
+	_LOG_TRACE    int = 1
+	_LOG_INFO     int = 2
+	_LOG_WARN     int = 3
+	_LOG_ERROR    int = 4
+	_LOG_CRITICAL int = 5
+	_LOG_FATAL    int = 6
 )
 
 // Global configuration for logger
-type globalLoggerConfig struct {
+type loggerConfig struct {
 	logLevel  int
 	msgPrefix string
 	logFile   *os.File
 }
 
-var globalConfig globalLoggerConfig
+var globalConfig loggerConfig
 
 // Setting a property for the global logger
-func SetProperty(key string, val string) {
+func SetLoggingProperty(key string, val string) {
 	switch key {
 	case "level":
 		switch val {
 		case "disabled":
-			globalConfig.logLevel = DISABLED
+			globalConfig.logLevel = _LOG_DISABLED
 		case "trace":
-			globalConfig.logLevel = TRACE
+			globalConfig.logLevel = _LOG_TRACE
 		case "info":
-			globalConfig.logLevel = INFO
+			globalConfig.logLevel = _LOG_INFO
 		case "warn":
-			globalConfig.logLevel = WARN
+			globalConfig.logLevel = _LOG_WARN
 		case "critical":
-			globalConfig.logLevel = CRITICAL
+			globalConfig.logLevel = _LOG_CRITICAL
 		case "fatal":
-			globalConfig.logLevel = FATAL
+			globalConfig.logLevel = _LOG_FATAL
 		default:
 			panic("Error in setting logger level")
 		}

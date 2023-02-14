@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 type IDemuxPipe interface {
@@ -49,7 +48,7 @@ const (
 )
 
 type TsDemuxer struct {
-	logger    logs.Log
+	logger    common.Log
 	callback  common.RequestHandler
 	impl      IDemuxPipe       // Actual demuxing operation
 	control   *demuxController // Controller to handle demuxer internal state
@@ -70,14 +69,18 @@ func (m_pMux *TsDemuxer) setParameter(m_parameter string) {
 	}
 	// Do this here to prevent seg fault
 	m_pMux.control = getControl()
+	pipeType := "unknown"
 	switch demuxParam.Mode {
 	case _DEMUX_DUMMY:
+		pipeType = "Dummy"
 		impl := getDummyPipe(m_pMux)
 		m_pMux.impl = &impl
 	case _DEMUX_FULL:
-		impl := getDemuxPipe(m_pMux.control)
+		pipeType = "Demux"
+		impl := getDemuxPipe(m_pMux.control, m_pMux.name)
 		m_pMux.impl = &impl
 	}
+	m_pMux.logger.Info("%s pipe is started", pipeType)
 	m_pMux._setup()
 }
 
@@ -86,7 +89,7 @@ func (m_pMux *TsDemuxer) setResource(resourceLoader *common.ResourceLoader) {
 }
 
 func (m_pMux *TsDemuxer) _setup() {
-	m_pMux.logger = logs.CreateLogger("TsDemuxer")
+	m_pMux.logger = common.CreateLogger(m_pMux.name)
 	m_pMux.pktCnt = 1
 	m_pMux.isRunning = 0
 
@@ -101,9 +104,7 @@ func (m_pMux *TsDemuxer) _setupMonitor() {
 	m_pMux.control.monitor()
 }
 
-func (m_pMux *TsDemuxer) startSequence() {
-	m_pMux.logger.Log(logs.INFO, "TSDemuxer has started")
-}
+func (m_pMux *TsDemuxer) startSequence() {}
 
 func (m_pMux *TsDemuxer) endSequence() {
 	// Fetch all remaining units
@@ -112,7 +113,7 @@ func (m_pMux *TsDemuxer) endSequence() {
 		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
 	}
-	m_pMux.logger.Log(logs.INFO, "Shutting down handlers")
+	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 	m_pMux.wg.Wait()

@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
-var logger logs.Log
+var logger common.Log
 
 // SCTE-35 2019a section 9.9
 type Splice_info_section struct {
@@ -92,7 +91,7 @@ func SCTE35ReadyForParse(buf []byte, afc int) bool {
 }
 
 func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
-	logger = logs.CreateLogger("SCTE35Parser")
+	logger = common.CreateLogger("SCTE35Parser")
 
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
@@ -126,30 +125,30 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 	switch spliceCmdType {
 	case 0x00:
 		// Splice null, do nothing
-		logger.Log(logs.TRACE, "Splice null received")
+		logger.Trace("Splice null received")
 		spliceCmd = Splice_null{}
 	case 0x04:
 		// Splice schedule
-		logger.Log(logs.TRACE, "Splice schedule received")
+		logger.Trace("Splice schedule received")
 		spliceCmd = readSpliceSchedule(&r)
 	case 0x05:
 		// Splice insert
-		logger.Log(logs.TRACE, "Splice insert received")
+		logger.Trace("Splice insert received")
 		spliceCmd = readSpliceEvent(&r, true)
 	case 0x06:
 		// Time signal
-		logger.Log(logs.TRACE, "Time signal received")
+		logger.Trace("Time signal received")
 		spliceCmd = readTimeSignal(&r)
 	case 0x07:
 		// Bandwidth reservation
-		logger.Log(logs.TRACE, "Bandwidth reservation received")
+		logger.Trace("Bandwidth reservation received")
 	case 0xff:
 		// Private command
-		logger.Log(logs.TRACE, "Private command received")
+		logger.Trace("Private command received")
 		spliceCmd = readPrivateCommand(&r)
 	default:
 		msg := fmt.Sprint("Unknown splice command type ", spliceCmdType)
-		logger.Log(logs.ERROR, msg)
+		logger.Error(msg)
 		panic(msg)
 	}
 

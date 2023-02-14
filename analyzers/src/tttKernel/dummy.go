@@ -1,16 +1,14 @@
 package tttKernel
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 // This file stores some dummy struct for testing
 type DummyPlugin struct {
-	logger   logs.Log
+	logger   common.Log
 	inCnt    int
 	fetchCnt int
 	callback common.RequestHandler
@@ -19,25 +17,25 @@ type DummyPlugin struct {
 }
 
 func (dp *DummyPlugin) setParameter(m_parameter string) {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setParameter called", dp.name))
+	dp.logger.Info("setParameter called")
 }
 
 func (dp *DummyPlugin) setResource(resourceLoader *common.ResourceLoader) {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setResource called", dp.name))
+	dp.logger.Info("setResource called")
 }
 
 func (dp *DummyPlugin) startSequence() {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] startSequence called", dp.name))
+	dp.logger.Info("startSequence called")
 }
 
 func (dp *DummyPlugin) endSequence() {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] endSequence called", dp.name))
+	dp.logger.Info("endSequence called")
 	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
 	common.Post_request(dp.callback, dp.name, eosUnit)
 }
 
 func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] deliverUnit called with unit %v", dp.name, unit))
+	dp.logger.Info("deliverUnit called with unit %v", unit)
 	// Ensure correct order of calling by suspending worker thread
 	if dp.role == 0 {
 		time.Sleep(time.Second)
@@ -64,23 +62,23 @@ func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
 }
 
 func (dp *DummyPlugin) deliverStatus(unit common.CmUnit) {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] deliverStatus called with status %v", dp.name, unit))
+	dp.logger.Info("deliverStatus called with status %v", unit)
 }
 
 func (dp *DummyPlugin) fetchUnit() common.CmUnit {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] fetchUnit called", dp.name))
-	rv := common.MakeIOUnit(dp.inCnt*10 + dp.fetchCnt, 0, -1)
+	dp.logger.Info("fetchUnit called")
+	rv := common.MakeIOUnit(dp.inCnt*10+dp.fetchCnt, 0, -1)
 	dp.fetchCnt += 1
 	return rv
 }
 
 func (dp *DummyPlugin) setCallback(callback common.RequestHandler) {
-	dp.logger.Log(logs.INFO, fmt.Sprintf("[%s] setCallback called", dp.name))
+	dp.logger.Info("setCallback called")
 	dp.callback = callback
 }
 
 func getDummyPlugin(name string, isRoot int) common.Plugin {
-	rv := DummyPlugin{name: name, logger: logs.CreateLogger(name), role: isRoot}
+	rv := DummyPlugin{name: name, logger: common.CreateLogger(name), role: isRoot}
 	return common.CreatePlugin(
 		name,
 		isRoot == 0,

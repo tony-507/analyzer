@@ -10,16 +10,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/test/schema"
 	"github.com/tony-507/analyzers/test/validator"
 )
 
 func setupLogging(appDir string) {
-	logs.SetProperty("level", "trace")
-	logs.SetProperty("prefix", "[%l]")
-	logs.SetProperty("logDir", appDir+"logs")
+	common.SetLoggingProperty("level", "trace")
+	common.SetLoggingProperty("prefix", "[%l]")
+	common.SetLoggingProperty("logDir", appDir+"logs")
 }
 
 // TODO How to validate?
@@ -49,9 +49,9 @@ func TestStartApp(t *testing.T) {
 		}
 
 		inFile := "resources/assets/" + tc.Source
-		outFolder := "output/" + caseName + "/"
 
 		for _, app := range tc.App {
+			outFolder := "output/" + caseName + "/" + app + "/"
 			testName := caseName + "_" + app
 			t.Run(testName, func(t *testing.T) {
 				setupLogging(outFolder)

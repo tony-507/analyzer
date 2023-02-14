@@ -29,7 +29,7 @@ func TestDemuxPipeProcessing(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
 
 	control := getControl()
-	impl := getDemuxPipe(control)
+	impl := getDemuxPipe(control, "Dummy")
 
 	impl.processUnit(dummyPAT, 0)
 
@@ -68,7 +68,7 @@ func tsDemuxPidStatusTest(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
 
 	control := getControl()
-	impl := getDemuxPipe(control)
+	impl := getDemuxPipe(control, "Dummy")
 
 	impl.processUnit(dummyPAT, 0)
 	assert.Equal(t, 2, len(impl.control.StatusList), "Expect 2 status units: PAT and PMT")

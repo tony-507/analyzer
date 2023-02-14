@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 func getOutputDir() string {
@@ -31,7 +30,7 @@ func TestReaderSetParameter(t *testing.T) {
 	expectedExt := []INPUT_TYPE{INPUT_TS, INPUT_TS, INPUT_UNKNOWN}
 
 	for idx, param := range specs {
-		fr := InputReader{name: "dummy", logger: logs.CreateLogger("dummy")}
+		fr := InputReader{name: "dummy", logger: common.CreateLogger("dummy")}
 		fr.setParameter(param)
 
 		impl, isFileReader := fr.impl.(*fileReader)
@@ -53,7 +52,7 @@ func TestReaderDeliverUnit(t *testing.T) {
 	expectedDeliverCnt := []int{5, 5, 2}
 
 	for idx, param := range specs {
-		ir := InputReader{name: "dummy", logger: logs.CreateLogger("dummy")}
+		ir := InputReader{name: "dummy", logger: common.CreateLogger("dummy")}
 		ir.setParameter(param)
 
 		ir.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
@@ -74,7 +73,7 @@ func TestReaderDeliverUnit(t *testing.T) {
 }
 
 func TestWriterMultiThread(t *testing.T) {
-	fw := getFileWriter()
+	fw := getFileWriter("Dummy")
 	param := ioWriterParam{FileOutput: fileOutputParam{OutFolder: TEST_OUT_DIR}}
 	fw.setup(param)
 

@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tony-507/analyzers/src/logs"
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 func setupLogging(appDir string) {
-	logs.SetProperty("level", "trace")
-	logs.SetProperty("prefix", "[%l]")
-	logs.SetProperty("logDir", appDir+"/ttt"+"_"+strconv.Itoa(int(time.Now().Unix())))
+	common.SetLoggingProperty("level", "trace")
+	common.SetLoggingProperty("prefix", "[%l]")
+	common.SetLoggingProperty("logDir", appDir+"/ttt"+"_"+strconv.Itoa(int(time.Now().Unix())))
 }
 
 func showHelp() {

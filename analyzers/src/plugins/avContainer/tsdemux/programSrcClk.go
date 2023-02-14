@@ -69,23 +69,3 @@ func (clk *programSrcClk) requestPcr(pid int, curCnt int) (int, int) {
 	clk.eptStart = false
 	return curPcr, 0
 }
-
-func (clk *programSrcClk) _removeOldRecords() {
-	min := int(^int(0) >> 1)
-	idxToKeep := 0
-	for _, cnt := range clk.streamCnt {
-		if cnt < min {
-			min = cnt
-		}
-	}
-	for idx, loc := range clk.pcrLoc {
-		if loc > min {
-			if idx != 0 {
-				idxToKeep = idx - 1
-			}
-			break
-		}
-	}
-	clk.pcr = clk.pcr[idxToKeep:]
-	clk.pcrLoc = clk.pcrLoc[idxToKeep:]
-}

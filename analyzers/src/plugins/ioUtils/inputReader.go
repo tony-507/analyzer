@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 const (
@@ -25,7 +24,7 @@ func check(err error) {
 }
 
 type InputReader struct {
-	logger      logs.Log
+	logger      common.Log
 	callback    common.RequestHandler
 	impl        IReader
 	isRunning   bool
@@ -37,14 +36,13 @@ type InputReader struct {
 }
 
 func (ir *InputReader) startSequence() {
-	ir.logger.Log(logs.INFO, "File reader is started")
 	ir.isRunning = true
 
 	ir.impl.startRecv()
 }
 
 func (ir *InputReader) endSequence() {
-	ir.logger.Log(logs.INFO, "Stopping file reader, fetch count = %d", ir.outCnt)
+	ir.logger.Info("Ending sequence, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
 	ir.impl.stopRecv()
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
@@ -81,13 +79,18 @@ func (ir *InputReader) setParameter(m_parameter string) {
 	}
 
 	ir.outCnt = 0
+	srcType := "unknown"
 
 	switch param.Source {
 	case _SOURCE_DUMMY:
+		srcType = "dummy"
 		ir.impl = &dummyReader{}
 	case _SOURCE_FILE:
+		srcType = "file"
 		ir.impl = &fileReader{fname: param.FileInput.Fname}
 	}
+
+	ir.logger.Info("%s reader created", srcType)
 
 	ir.impl.setup()
 }
@@ -134,7 +137,7 @@ func (ir *InputReader) fetchUnit() common.CmUnit {
 }
 
 func GetInputReader(name string) common.Plugin {
-	rv := InputReader{name: name, logger: logs.CreateLogger(name)}
+	rv := InputReader{name: name, logger: common.CreateLogger(name)}
 	return common.CreatePlugin(
 		name,
 		true,

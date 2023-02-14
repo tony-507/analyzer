@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 type OptionalHeader struct {
@@ -120,14 +119,14 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 }
 
 func ParsePESHeader(buf []byte) (PESHeader, int, error) {
-	logger := logs.CreateLogger("PesParser")
+	logger := common.CreateLogger("PesParser")
 
 	r := common.GetBufferReader(buf)
 	headerLen := 0
 
 	if r.ReadBits(24) != 0x000001 {
 		err := errors.New("PES prefix start code not match")
-		logger.Log(logs.ERROR, "%v", r)
+		logger.Error("%v", r)
 		return PESHeader{}, 0, err
 	}
 	streamId := r.ReadBits(8)
@@ -138,7 +137,7 @@ func ParsePESHeader(buf []byte) (PESHeader, int, error) {
 	// TODO: May not have optional header
 	optionalHeader, err := ParseOptionalHeader(r.GetRemainedBuffer())
 	if err != nil {
-		logger.Log(logs.ERROR, "%v", r)
+		logger.Error("%v", r)
 		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
 		err = errors.New(errMsg)
 		return PESHeader{}, 0, err

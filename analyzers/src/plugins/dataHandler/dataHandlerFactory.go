@@ -2,13 +2,12 @@ package dataHandler
 
 import (
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 )
 
 type DataHandlerFactory struct {
-	logger     logs.Log
+	logger     common.Log
 	callback   common.RequestHandler
 	handlers   map[int]utils.DataHandler
 	outputUnit []common.CmUnit
@@ -27,18 +26,18 @@ func (df *DataHandlerFactory) setParameter(m_parameter string) {
 func (df *DataHandlerFactory) setResource(loader *common.ResourceLoader) {}
 
 func (df *DataHandlerFactory) _setup() {
-	df.logger = logs.CreateLogger("DataHandlerFactory")
+	df.logger = common.CreateLogger("DataHandlerFactory")
 	df.handlers = map[int]utils.DataHandler{}
 	df.outputUnit = []common.CmUnit{}
 	df.isRunning = true
 }
 
 func (df *DataHandlerFactory) startSequence() {
-	df.logger.Log(logs.INFO, "Data handler factory is started")
+	df.logger.Info("Data handler factory is started")
 }
 
 func (df *DataHandlerFactory) endSequence() {
-	df.logger.Log(logs.INFO, "Data handler factory is stopped")
+	df.logger.Info("Data handler factory is stopped")
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
 	common.Post_request(df.callback, df.name, eosUnit)
 }
@@ -62,7 +61,7 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 			return
 		}
 		if !hasPid {
-			df.logger.Log(logs.INFO, "Receive pid %d at dataHandlerFactory", pid)
+			df.logger.Info("Receive pid %d at dataHandlerFactory", pid)
 			if dType == "MPEG 2 video" {
 				df.handlers[pid] = video.MPEG2VideoHandler()
 			}

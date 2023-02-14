@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/logs"
 )
 
 func TestPluginInterfaces(t *testing.T) {
@@ -142,7 +141,7 @@ func TestDeclareVarInScript(t *testing.T) {
 	script := "x = $x; x.a = $yes;"
 	input := []string{"--yes", "bye", "-x", "hi"}
 	ctrl := tttKernel{
-		logger:    logs.CreateLogger("Controller"),
+		logger:    common.CreateLogger("Controller"),
 		variables: []*scriptVar{},
 		edgeMap:   map[string][]string{},
 		aliasMap:  map[string]string{},
@@ -160,7 +159,7 @@ func TestSetAlias(t *testing.T) {
 	script := "alias(test, x); x = $x;"
 	input := []string{"--test", "hi"}
 	ctrl := tttKernel{
-		logger:    logs.CreateLogger("Controller"),
+		logger:    common.CreateLogger("Controller"),
 		variables: []*scriptVar{},
 		edgeMap:   map[string][]string{},
 		aliasMap:  map[string]string{},
@@ -175,7 +174,7 @@ func TestRunNestedConditional(t *testing.T) {
 	script := "if $x; x = $x; if $y; x = $y; end; end;"
 	input := []string{"-x", "hi", "-y", "bye"}
 	ctrl := tttKernel{
-		logger:    logs.CreateLogger("Controller"),
+		logger:    common.CreateLogger("Controller"),
 		variables: []*scriptVar{},
 		edgeMap:   map[string][]string{},
 		aliasMap:  map[string]string{},
@@ -190,7 +189,7 @@ func TestRunPartialNestedConditional(t *testing.T) {
 	script := "if $x; x = $x; if $y; x = $y; end; end;"
 	input := []string{"-x", "hi"}
 	ctrl := tttKernel{
-		logger:    logs.CreateLogger("Controller"),
+		logger:    common.CreateLogger("Controller"),
 		variables: []*scriptVar{},
 		edgeMap:   map[string][]string{},
 		aliasMap:  map[string]string{},
