@@ -126,7 +126,10 @@ func ParsePMT(buf []byte, PmtPid int, cnt int) PMT {
 func _readDescriptor(r *common.BsReader, l *int) Descriptor {
 	Tag := (*r).ReadBits(8)
 	descLen := (*r).ReadBits(8)
-	Content := (*r).ReadHex(descLen)
+	Content := ""
+	if descLen > 0 {
+		Content = (*r).ReadHex(descLen)
+	}
 	*l -= descLen + 2
 	return Descriptor{Tag, Content}
 }
