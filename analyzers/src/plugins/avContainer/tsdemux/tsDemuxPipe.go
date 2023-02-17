@@ -50,7 +50,8 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 	} else if pid < 32 {
 		// Special pids
 		dataProcessed = false
-	} else {
+	} else if pid != 8191 {
+		// Skip null packet
 		_, hasKey := m_pMux.content.ProgramMap[pid]
 		if hasKey {
 			// PMT
