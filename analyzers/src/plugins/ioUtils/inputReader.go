@@ -88,6 +88,9 @@ func (ir *InputReader) setParameter(m_parameter string) {
 	case _SOURCE_FILE:
 		srcType = "file"
 		ir.impl = &fileReader{fname: param.FileInput.Fname}
+	case _SOURCE_UDP:
+		srcType = "UDP"
+		ir.impl = initUdpReader(&param.UdpInput, ir.name)
 	}
 
 	ir.logger.Info("%s reader created", srcType)
@@ -109,11 +112,13 @@ func (ir *InputReader) start() {
 	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
 	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
-		ir.outCnt += 1
-		ir.maxInCnt -= 1
-		ir.outputQueue = append(ir.outputQueue, &newUnit)
-		reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-		common.Post_request(ir.callback, ir.name, reqUnit)
+		if newUnit.Buf != nil {
+			ir.outCnt += 1
+			ir.maxInCnt -= 1
+			ir.outputQueue = append(ir.outputQueue, &newUnit)
+			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+			common.Post_request(ir.callback, ir.name, reqUnit)
+		}
 	} else {
 		ir.endSequence()
 	}
