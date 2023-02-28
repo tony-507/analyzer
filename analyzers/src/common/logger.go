@@ -42,7 +42,7 @@ func (l *Log) Fatal(msg string, param ...interface{}) {
 func (l *Log) Log(level int, msg string, param ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
-		globalConfig.logLevel = _LOG_DISABLED
+		globalConfig.logLevel = _LOG_TRACE
 	}
 	if globalConfig.msgPrefix == "" {
 		globalConfig.msgPrefix = "[%l]"

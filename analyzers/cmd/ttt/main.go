@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/tttKernel"
@@ -14,7 +12,8 @@ import (
 func setupLogging(appDir string) {
 	common.SetLoggingProperty("level", "trace")
 	common.SetLoggingProperty("prefix", "[%l]")
-	common.SetLoggingProperty("logDir", appDir+"/ttt"+"_"+strconv.Itoa(int(time.Now().Unix())))
+	// common.SetLoggingProperty("logDir", appDir+"/ttt"+"_"+strconv.Itoa(int(time.Now().Unix())))
+	common.SetLoggingProperty("logDir", appDir+"/logs")
 }
 
 func showHelp() {

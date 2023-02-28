@@ -332,6 +332,7 @@ func (m_pMux *tsDemuxPipe) getDuration() int {
 	clk := m_pMux.control.updateSrcClk(firstProgNum)
 	start, _ := clk.requestPcr(-1, 0)
 	end, _ := clk.requestPcr(-1, m_pMux.control.getInputCount())
+	m_pMux.logger.Info("Time elapsed: %d, %d", start, end)
 	return end - start
 }
 
