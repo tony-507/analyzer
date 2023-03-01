@@ -23,11 +23,12 @@ const (
 )
 
 type mpeg2Handler struct {
-	bInit bool
+	pid    int
+	pesCnt int
+	bInit  bool
 }
 
 func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
-	r.ReadAndAssertBits(32, int(_SEQUENCE_HEADER), "sequence_header_code not match")
 	hSize := r.ReadBits(12)
 	vSize := r.ReadBits(12)
 	aspectRatio := r.ReadBits(4)
@@ -38,15 +39,30 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 }
 
 func (h *mpeg2Handler) Feed(unit common.CmUnit) {
+	h.pesCnt += 1
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
 	buf := cmBuf.GetBuf()
 	r := common.GetBufferReader(buf)
-	fmt.Println(buf[:20])
+	sequenceHeaderFound := false
 
-	h.readSequenceHeader(&r)
-	panic("End here")
+	for {
+		nextBits := r.ReadBits(32)
+		if nextBits == int(_SEQUENCE_HEADER) {
+			sequenceHeaderFound = true
+			break
+		}
+		if len(r.GetRemainedBuffer()) < 4 {
+			break
+		}
+	}
+
+	if sequenceHeaderFound {
+		h.readSequenceHeader(&r)
+	} else {
+		fmt.Println(fmt.Sprintf("[%d] Sequence header not found in PES packet #%d", h.pid, h.pesCnt))
+	}
 }
 
-func MPEG2VideoHandler() utils.DataHandler {
-	return &mpeg2Handler{bInit: false}
+func MPEG2VideoHandler(pid int) utils.DataHandler {
+	return &mpeg2Handler{pid: pid, pesCnt: 0, bInit: false}
 }

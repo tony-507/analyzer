@@ -2,6 +2,7 @@ package dataHandler
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 )
@@ -61,13 +62,14 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 			return
 		}
 		if !hasPid {
-			df.logger.Info("Receive pid %d at dataHandlerFactory", pid)
 			if dType == "MPEG 2 video" {
-				df.handlers[pid] = video.MPEG2VideoHandler()
+				df.handlers[pid] = video.MPEG2VideoHandler(pid)
+			} else if dType == "E-AC-3 audio" {
+				df.handlers[pid] = audio.AC3Handler(pid)
 			}
 		}
-		if dType == "MPEG 2 video" {
-			df.handlers[pid].Feed(unit)
+		if h, hasHandle := df.handlers[pid]; hasHandle {
+			h.Feed(unit)
 		}
 	}
 

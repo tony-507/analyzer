@@ -8,6 +8,10 @@ import (
 
 var logger common.Log
 
+type Splice_command interface {
+	GetSplicePTS() []int
+}
+
 // SCTE-35 2019a section 9.9
 type Splice_info_section struct {
 	TableId          int
@@ -22,17 +26,31 @@ type Splice_info_section struct {
 	Tier             int
 	SpliceCmdLen     int
 	SpliceCmdType    int
-	Splice_command   interface{}
+	SpliceCmdTypeStr string
+	SpliceCmd        Splice_command
 	Crc32            int
 }
 
 // SCTE-35 2019a section 9.7.1
 type Splice_null struct{}
 
+func (cmd Splice_null) GetSplicePTS() []int {
+	return make([]int, 0)
+}
+
 // SCTE-35 2019a section 9.7.2
 type Splice_schedule struct {
 	SpliceCnt    int
 	SpliceEvents []Splice_event
+}
+
+func (cmd Splice_schedule) GetSplicePTS() []int {
+	// TODO: This is UTC splice time
+	rv := []int{}
+	for _, e := range cmd.SpliceEvents {
+		rv = append(rv, e.GetSplicePTS()...)
+	}
+	return rv
 }
 
 type Splice_event struct {
@@ -50,6 +68,18 @@ type Splice_event struct {
 	AvailsExpected      int
 }
 
+func (cmd Splice_event) GetSplicePTS() []int {
+	if cmd.SpliceTime != -1 {
+		return []int{cmd.SpliceTime}
+	} else {
+		rv := []int{}
+		for _, component := range cmd.Components {
+			rv = append(rv, component.SpliceTime)
+		}
+		return rv
+	}
+}
+
 type Splice_component struct {
 	ComponentTag int
 	SpliceTime   int
@@ -60,10 +90,18 @@ type Time_signal struct {
 	SpliceTime int
 }
 
+func (cmd Time_signal) GetSplicePTS() []int {
+	return []int{cmd.SpliceTime}
+}
+
 // SCTE-35 2019a section 9.7.6
 type Private_command struct {
 	Identifier   string
 	PrivateBytes string
+}
+
+func (cmd Private_command) GetSplicePTS() []int {
+	return make([]int, 0)
 }
 
 type Break_duration struct {
@@ -75,7 +113,7 @@ type Break_duration struct {
 func SCTE35ReadyForParse(buf []byte, afc int) bool {
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
-		buf = buf[af.AfLen:]
+		buf = buf[(af.AfLen + 1):]
 	}
 
 	r := common.GetBufferReader(buf)
@@ -95,7 +133,7 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 
 	if afc > 1 {
 		af := ParseAdaptationField(buf)
-		buf = buf[af.AfLen:]
+		buf = buf[(af.AfLen + 1):]
 	}
 
 	r := common.GetBufferReader(buf)
@@ -120,31 +158,32 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 	spliceCmdLen := r.ReadBits(12)
 	spliceCmdType := r.ReadBits(8)
 
-	var spliceCmd interface{}
+	spliceCmdTypeStr := "Unknown"
+	var spliceCmd Splice_command
 
 	switch spliceCmdType {
 	case 0x00:
 		// Splice null, do nothing
-		logger.Trace("Splice null received")
+		spliceCmdTypeStr = "splice_null"
 		spliceCmd = Splice_null{}
 	case 0x04:
 		// Splice schedule
-		logger.Trace("Splice schedule received")
+		spliceCmdTypeStr = "splice_schedule"
 		spliceCmd = readSpliceSchedule(&r)
 	case 0x05:
 		// Splice insert
-		logger.Trace("Splice insert received")
+		spliceCmdTypeStr = "splice_insert"
 		spliceCmd = readSpliceEvent(&r, true)
 	case 0x06:
 		// Time signal
-		logger.Trace("Time signal received")
+		spliceCmdTypeStr = "time_signal"
 		spliceCmd = readTimeSignal(&r)
 	case 0x07:
 		// Bandwidth reservation
-		logger.Trace("Bandwidth reservation received")
+		spliceCmdTypeStr = "bandwidth_reservation"
 	case 0xff:
 		// Private command
-		logger.Trace("Private command received")
+		spliceCmdTypeStr = "private_command"
 		spliceCmd = readPrivateCommand(&r)
 	default:
 		msg := fmt.Sprint("Unknown splice command type ", spliceCmdType)
@@ -154,7 +193,7 @@ func ReadSCTE35Section(buf []byte, afc int) Splice_info_section {
 
 	return Splice_info_section{TableId: tableId, SectionSyntaxIdr: sectionSyntaxIdr, PrivateIdr: privateIdr,
 		SectionLen: sectionLen, ProtocolVersion: protocolVersion, EncryptedPkt: encryptedPkt, EncryptAlgo: encryptedAlgo,
-		PtsAdjustment: ptsAdjustment, CwIdx: cwIdx, Tier: tier, SpliceCmdLen: spliceCmdLen, SpliceCmdType: spliceCmdType, Splice_command: spliceCmd}
+		PtsAdjustment: ptsAdjustment, CwIdx: cwIdx, Tier: tier, SpliceCmdLen: spliceCmdLen, SpliceCmdType: spliceCmdType, SpliceCmdTypeStr: spliceCmdTypeStr, SpliceCmd: spliceCmd}
 }
 
 func readSpliceSchedule(r *common.BsReader) Splice_schedule {

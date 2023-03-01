@@ -10,14 +10,15 @@ import (
 )
 
 type tsDemuxPipe struct {
-	logger         common.Log
-	control        *demuxController // Controller from demuxer
-	demuxedBuffers map[int][]byte   // A map mapping pid to bitstreams
-	demuxStartCnt  map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
-	outputQueue    []common.CmUnit  // Outputs to other plugins
-	content        model.PAT
-	programs       map[int]model.PMT // A map from program number to PMT
-	isRunning      bool
+	logger          common.Log
+	control         *demuxController // Controller from demuxer
+	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
+	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
+	outputQueue     []common.CmUnit  // Outputs to other plugins
+	content         model.PAT
+	programs        map[int]model.PMT // A map from program number to PMT
+	scte35SplicePTS []int             // Store list of splice PTS
+	isRunning       bool
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
@@ -216,6 +217,7 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 			statMsg += fmt.Sprintf(" Stream %d: type %s with pid %d\n", idx, m_pMux.control.queryStreamType(stream.StreamType), stream.StreamPid)
 		}
 		m_pMux.logger.Info(statMsg)
+		fmt.Println(statMsg)
 
 		// Check if PMT pids are updated
 		newPmt := pmt
@@ -233,16 +235,28 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 				}
 			}
 		}
-		for _, stream := range newPmt.Streams {
-			if stream.StreamPid != -1 {
-				m_pMux.control.updatePidStatus(stream.StreamPid, true, 1)
-			}
-		}
 
 		m_pMux.programs[pmt.ProgNum] = pmt
 		jsonBytes, _ = json.MarshalIndent(pmt, "\t", "\t")
+
+		for _, stream := range newPmt.Streams {
+			if stream.StreamPid != -1 {
+				streamType := m_pMux._getPktType(stream.StreamPid)
+				actualTypeSlice := strings.Split(streamType, " ")
+				actualType := actualTypeSlice[len(actualTypeSlice)-1]
+				if actualType == "data" {
+					m_pMux.control.updatePidStatus(stream.StreamPid, true, 2)
+				} else {
+					m_pMux.control.updatePidStatus(stream.StreamPid, true, 1)
+				}
+			}
+		}
 	case "SCTE-35 DPI data":
 		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
+		if section.SpliceCmdType != 0x00 {
+			fmt.Println(fmt.Sprintf("[%d] At pkt#%d, %s received. Splice PTS: %v", pid, pktCnt, section.SpliceCmdTypeStr, section.SpliceCmd.GetSplicePTS()))
+		}
+		m_pMux.scte35SplicePTS = append(m_pMux.scte35SplicePTS, section.SpliceCmd.GetSplicePTS()...)
 		jsonBytes, _ = json.MarshalIndent(section, "\t", "\t")
 	default:
 		panic("Unknown pid")
@@ -268,6 +282,13 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			clk.updatePcrRecord(af.Pcr, pktCnt)
 		}
 		buf = buf[(af.AfLen + 1):]
+		if af.Splice_point != -1 {
+			splice_point := af.Splice_point
+			if splice_point >= 128 {
+				splice_point -= 256
+			}
+			fmt.Println(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
+		}
 	}
 
 	// Payload
@@ -289,6 +310,15 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+
+			if len(m_pMux.scte35SplicePTS) > 0 && pesHeader.GetPts() == m_pMux.scte35SplicePTS[0] {
+				fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], m_pMux.scte35SplicePTS[0]))
+				if len(m_pMux.scte35SplicePTS) == 1 {
+					m_pMux.scte35SplicePTS = make([]int, 0)
+				} else {
+					m_pMux.scte35SplicePTS = m_pMux.scte35SplicePTS[1:]
+				}
+			}
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 		}
