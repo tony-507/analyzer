@@ -37,7 +37,7 @@ func TestReadPMT(t *testing.T) {
 	expectedProgDesc := make([]Descriptor, 0)
 
 	videoStream := DataStream{StreamPid: 32, StreamType: 2, StreamDesc: make([]Descriptor, 0)}
-	audioStream := DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []Descriptor{{Tag: 10, Content: "65 6e 67 0"}}}
+	audioStream := DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []Descriptor{{Tag: 10, Content: "65 6e 67 00"}}}
 	streams := []DataStream{videoStream, audioStream}
 
 	expectedPmt := CreatePMT(258, 2, 10, 0, true, expectedProgDesc, streams, -1)

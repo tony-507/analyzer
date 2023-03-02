@@ -49,7 +49,7 @@ func TestDemuxPipeProcessing(t *testing.T) {
 	expectedProgDesc := make([]model.Descriptor, 0)
 
 	videoStream := model.DataStream{StreamPid: 32, StreamType: 2, StreamDesc: make([]model.Descriptor, 0)}
-	audioStream := model.DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []model.Descriptor{{Tag: 10, Content: "65 6e 67 0"}}}
+	audioStream := model.DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []model.Descriptor{{Tag: 10, Content: "65 6e 67 00"}}}
 	streams := []model.DataStream{videoStream, audioStream}
 
 	expectedPmt := model.CreatePMT(258, 2, 10, 0, true, expectedProgDesc, streams, -1)

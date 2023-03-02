@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type BsReader struct {
@@ -36,11 +37,11 @@ func (br *BsReader) GetOffset() int {
 }
 
 func (br *BsReader) ReadHex(n int) string {
-	rv := ""
+	hexArr := []string{}
 	for i := 0; i < n; i++ {
-		rv += " " + string(strconv.FormatInt(int64(br.ReadBits(8)), 16))
+		hexArr = append(hexArr, fmt.Sprintf("%02x", br.ReadBits(8)))
 	}
-	return rv[1:] // Remove leading space
+	return strings.Join(hexArr, " ")
 }
 
 func (br *BsReader) ReadChar(n int) string {
@@ -53,6 +54,14 @@ func (br *BsReader) ReadChar(n int) string {
 		panic(err)
 	}
 	return string(bs)
+}
+
+func (br *BsReader) ReadLIBytes(n int) int {
+	s := 0
+	for i := 0; i < n; i++ {
+		s += (br.ReadBits(8)) << (i * 8)
+	}
+	return s
 }
 
 func (br *BsReader) ReadBits(n int) int {
