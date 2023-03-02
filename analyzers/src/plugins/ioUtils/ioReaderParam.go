@@ -30,7 +30,7 @@ type fileInputParam struct {
 type udpInputParam struct {
 	Address string
 	Itf     string
-	timeout int
+	Timeout int
 }
 
 func (st *_SOURCE_TYPE) UnmarshalJSON(b []byte) error {
