@@ -170,7 +170,9 @@ func (m_pMux *TsDemuxer) deliverUnit(inUnit common.CmUnit) {
 
 	// Perform demuxing on the received TS packet
 	inBuf, _ := inUnit.GetBuf().([]byte)
-	m_pMux.impl.processUnit(inBuf, m_pMux.pktCnt)
+	buf := make([]byte, 188)
+	copy(buf, inBuf)
+	m_pMux.impl.processUnit(buf, m_pMux.pktCnt)
 
 	m_pMux.pktCnt += 1
 

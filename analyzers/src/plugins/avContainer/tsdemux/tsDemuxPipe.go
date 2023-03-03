@@ -297,7 +297,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 		if len(m_pMux.demuxedBuffers[pid]) != 0 {
 			pesHeader, headerLen, err := model.ParsePESHeader(m_pMux.demuxedBuffers[pid])
 			if err != nil {
-				m_pMux.control.throwError(pid, pktCnt, err.Error())
+				m_pMux.control.throwError(pid, m_pMux.demuxStartCnt[pid], err.Error())
 			}
 
 			outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])

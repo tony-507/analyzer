@@ -162,7 +162,7 @@ func TestReadPcapFile(t *testing.T) {
 	fname := ASSET_DIR + "adSmart.pcap"
 	logger := common.CreateLogger("Dummy")
 	pcap := pcapFile(fname, logger)
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 70; i++ {
 		buf, ok := pcap.getBufferV2()
 		if !ok {
 			logger.Error("Fail to get %d-th buffer", i)

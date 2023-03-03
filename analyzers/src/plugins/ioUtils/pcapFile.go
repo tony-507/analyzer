@@ -220,23 +220,30 @@ func (pcap *pcapFileStruct) getBufferV2() ([]byte, bool) {
 		body, hasData := pcap.advanceCursor(pcapPkt.length)
 		if hasData {
 			pcapPkt.setPayload(body, pcap.logger)
+		} else {
+			return buf, hasData
 		}
+
 		dataLink, ok := pcapPkt.getPayload().(dataPacketStruct)
 		if !ok {
 			panic("Fail to get data link packet")
 		}
+
 		network, ok := dataLink.getPayload().(dataPacketStruct)
 		if !ok {
 			panic("Fail to get network packet")
 		}
+
 		transport, ok := network.getPayload().(dataPacketStruct)
 		if !ok {
 			panic("Fail to get transport packet")
 		}
+
 		buffer, ok := transport.getPayload().([]byte)
 		if !ok {
 			panic("Fail to retrieve application payload")
 		}
+
 		numTsPkt := len(buffer) / TS_PKT_SIZE
 		for i := 0; i < numTsPkt; i++ {
 			pcap.bufferQueue = append(pcap.bufferQueue, buffer[(i*TS_PKT_SIZE):((i+1)*TS_PKT_SIZE)])
@@ -274,11 +281,8 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, bool) {
 	}
 	if !ok {
 		pcap.logger.Error("FAIL to read %d bytes due to %s, shift back %d bytes", n, reason, l)
-		pcap.logger.Info("Read buffer: %v", buf[:l])
 		pcap.fHandle.Seek(int64(-l), 1)
-		newBuf := make([]byte, n)
-		nl, _ := pcap.fHandle.Read(newBuf)
-		pcap.logger.Info("Shifted buffer of size %d: %v", nl, newBuf[:nl])
+		time.Sleep(5 * time.Millisecond)
 	}
 	return buf, ok
 }
