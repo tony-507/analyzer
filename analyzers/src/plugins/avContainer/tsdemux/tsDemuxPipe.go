@@ -31,23 +31,52 @@ func (m_pMux *tsDemuxPipe) _setup() {
 
 // Handle incoming data from demuxer
 func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
-	head := model.ReadTsHeader(buf)
-	buf = buf[4:]
+	pkt, tsErr := model.TsPacket(buf)
 
-	// If scrambled, throw away
-	if head.Tsc != 0 {
-		return
+	if tsErr != nil {
+		panic(tsErr)
+	}
+	buf = pkt.GetPayload()
+
+	tsc, fieldErr := pkt.GetField("tsc")
+	if fieldErr != nil {
+		panic(fieldErr)
 	}
 
-	inputMon.checkTsHeader(head, pktCnt)
+	// If scrambled, throw away
+	if tsc != 0 {
+		return
+	}
 
 	dataProcessed := true // controller use
 
 	// Determine the type of the unit
-	pid := head.Pid
+	pid, fieldErr := pkt.GetField("pid")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+
+	pusiInt, fieldErr := pkt.GetField("pusi")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	pusi := pusiInt != 0
+
+	afc, fieldErr := pkt.GetField("afc")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+
+	cc, fieldErr := pkt.GetField("cc")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+
+	inputMon.checkTsHeader(pid, afc, cc, pktCnt)
+
 	if pid == 0 {
 		// PAT
-		m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
+		m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 	} else if pid < 32 {
 		// Special pids
 		dataProcessed = false
@@ -56,7 +85,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		_, hasKey := m_pMux.content.ProgramMap[pid]
 		if hasKey {
 			// PMT
-			m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
+			m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 		} else {
 			// Others
 			progNum := -1
@@ -79,14 +108,14 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				switch actualType {
 				case "video":
 					m_pMux._handleStreamData(buf, pid,
-						progNum, head.Pusi, head.Afc,
+						progNum, pusi, afc,
 						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
 				case "audio":
 					m_pMux._handleStreamData(buf, pid,
-						progNum, head.Pusi, head.Afc,
+						progNum, pusi, afc,
 						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
 				case "data":
-					m_pMux._handlePsiData(buf, pid, head.Pusi, pktCnt, head.Afc)
+					m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 				default:
 					// Not sure, passthrough first
 					dataProcessed = false

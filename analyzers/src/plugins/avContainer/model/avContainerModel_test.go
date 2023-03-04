@@ -146,8 +146,54 @@ func TestSCTE35IO(t *testing.T) {
 
 func TestTsHeaderIO(t *testing.T) {
 	headerBytes := []byte{0x47, 0x03, 0x8f, 0x1f}
-	headerStruct := TsHeader{Tei: false, Pusi: false, Priority: false, Pid: 911, Tsc: 0, Afc: 1, Cc: 15}
+	rawTsPacket := append(headerBytes, make([]byte, 184)...)
 
-	assert.Equal(t, headerStruct, ReadTsHeader(headerBytes), "TS header struct not match")
-	assert.Equal(t, headerBytes, headerStruct.Serialize(), "TS header bytes not match")
+	pkt, err := TsPacket(rawTsPacket)
+	if err != nil {
+		panic(err)
+	}
+
+	tei, fieldErr := pkt.GetField("tei")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 0, tei, "tei not match")
+
+	pusi, fieldErr := pkt.GetField("pusi")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 0, pusi, "pusi not match")
+
+	priority, fieldErr := pkt.GetField("priority")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 0, priority, "priority not match")
+
+	pid, fieldErr := pkt.GetField("pid")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 911, pid, "pid not match")
+
+	tsc, fieldErr := pkt.GetField("tsc")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 0, tsc, "tsc not match")
+
+	afc, fieldErr := pkt.GetField("afc")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 1, afc, "afc not match")
+
+	cc, fieldErr := pkt.GetField("cc")
+	if fieldErr != nil {
+		panic(fieldErr)
+	}
+	assert.Equal(t, 15, cc, "cc not match")
+
+	// headerStruct := TsHeader{Tei: false, Pusi: false, Priority: false, Pid: 911, Tsc: 0, Afc: 1, Cc: 15}
 }
