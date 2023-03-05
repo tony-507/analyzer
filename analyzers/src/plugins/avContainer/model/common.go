@@ -7,7 +7,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
-type DataStruct interface {
+type baseInterface interface {
 	Append(buf []byte)
 	GetField(string)   (int, error)
 	GetName()          string
@@ -17,7 +17,26 @@ type DataStruct interface {
 	Serialize()        []byte
 }
 
-func resolveHeaderField(d DataStruct, str string) (int, error) {
+type psiInterface interface {
+	ParsePayload() error
+}
+
+type PsiManager interface {
+	AddProgram(int, int, int)
+	GetPATVersion() int
+	PsiUpdateFinished(int, []byte)
+}
+
+type DataStruct interface {
+	baseInterface
+}
+
+type TableStruct interface {
+	baseInterface
+	psiInterface
+}
+
+func resolveHeaderField(d baseInterface, str string) (int, error) {
 	fieldStr, ok := d.getHeader().GetField(str)
 	if !ok {
 		return 0, errors.New(fmt.Sprintf("%s does not exist in %s", str, d.GetName()))

@@ -6,23 +6,51 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type dummyManagerStruct struct {
+	programRecords map[int]int
+	patVersion     int
+	psiJsons       map[int][]byte
+}
+
+func (m *dummyManagerStruct) AddProgram(version int, progNum int, pid int) {
+	m.programRecords[progNum] = pid
+	m.patVersion = version
+}
+
+func (m *dummyManagerStruct) GetPATVersion() int {
+	return m.patVersion
+}
+
+func (m *dummyManagerStruct) PsiUpdateFinished(pid int, jsonBytes []byte) {
+	m.psiJsons[pid] = jsonBytes
+}
+
+func dummyManager() *dummyManagerStruct {
+	return &dummyManagerStruct{programRecords: make(map[int]int, 0), patVersion: -1, psiJsons: make(map[int][]byte, 0)}
+}
+
 func TestReadPAT(t *testing.T) {
 	dummyPAT := []byte{0x00, 0x00, 0xB0, 0x0D, 0x11, 0x11, 0xC1,
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
+	manager := dummyManager()
 
-	assert.Equal(t, true, PATReadyForParse(dummyPAT), "PAT should be ready for parsing")
-
-	PAT, parsingErr := ParsePAT(dummyPAT, 0)
-	if parsingErr != nil {
-		panic(parsingErr)
+	table, err := PsiTable(manager, 0, dummyPAT)
+	if err != nil {
+		panic(err)
 	}
-
-	programMap := make(map[int]int, 0)
-	programMap[258] = 10
-	expected := CreatePAT(0, 4369, 0, true, programMap, 10)
-
-	assert.Equal(t, expected, PAT, "PAT not match")
-	assert.Equal(t, "PktCnt 0 tableId 0 tableIdExt 4369 version 0 curNextIdr true crc 10\npid 258 => progNum 10", PAT.ToString(), "PAT string not match")
+	parseErr := table.ParsePayload()
+	if parseErr != nil {
+		panic(parseErr)
+	}
+	assert.Equal(t, true, table.Ready(), "PAT should be ready for parsing")
+	assert.Equal(t, []byte{0x7b, 0xa, 0x9, 0x9, 0x22, 0x50, 0x6b, 0x74, 0x43,
+		0x6e, 0x74, 0x22, 0x3a, 0x20, 0x30, 0x2c, 0xa, 0x9, 0x9, 0x22, 0x56, 0x65,
+		0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x20, 0x30, 0x2c, 0xa, 0x9, 0x9,
+		0x22, 0x50, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x4d, 0x61, 0x70, 0x22, 0x3a,
+		0x20, 0x7b, 0xa, 0x9, 0x9, 0x9, 0x22, 0x31, 0x30, 0x22, 0x3a, 0x20, 0x32, 0x35,
+		0x38, 0xa, 0x9, 0x9, 0x7d, 0x2c, 0xa, 0x9, 0x9, 0x22, 0x43, 0x72, 0x63, 0x33,
+		0x32, 0x22, 0x3a, 0x20, 0x31, 0x30, 0xa, 0x9, 0x7d},
+		manager.psiJsons[0], "PAT content not match")
 }
 
 func TestReadPMT(t *testing.T) {

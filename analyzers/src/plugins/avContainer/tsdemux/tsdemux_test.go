@@ -34,10 +34,9 @@ func TestDemuxPipeProcessing(t *testing.T) {
 	impl.processUnit(dummyPAT, 0)
 
 	programMap := make(map[int]int, 0)
-	programMap[258] = 10
-	expectedPAT := model.CreatePAT(0, 4369, 0, true, programMap, 10)
+	programMap[10] = 258
 
-	assert.Equal(t, expectedPAT, impl.content, "PAT not match")
+	assert.Equal(t, programMap, impl.programRecords, "PAT not match")
 
 	dummyPMT := []byte{0x47, 0x41, 0x02, 0x14, 0x00, 0x02, 0xb0, 0x1d, 0x00, 0x0a, 0xc1,
 		0x00, 0x00, 0xe0, 0x20, 0xf0, 0x00, 0x02, 0xe0, 0x20,

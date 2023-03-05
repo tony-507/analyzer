@@ -5,99 +5,123 @@ package model
 // * Not support PAT with size > 1 TS packet
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
 )
 
-type PAT struct {
+type patStruct struct {
+	callback   PsiManager
+	header     common.CmBuf
+	payload    []byte
+	schema     *PatSchema
+	sectionLen int
+}
+
+type PatSchema struct {
 	PktCnt     int
-	tableId    int
-	tableIdExt int
 	Version    int
-	curNextIdr bool
 	ProgramMap map[int]int
 	Crc32      int
 }
 
-func (t *PAT) ToString() string {
-	msg := fmt.Sprintf("PktCnt %d tableId %d tableIdExt %d version %d curNextIdr %v crc %d",
-		t.PktCnt, t.tableId, t.tableIdExt, t.Version, t.curNextIdr, t.Crc32)
-	for k, v := range t.ProgramMap {
-		msg += fmt.Sprintf("\npid %d => progNum %d", k, v)
-	}
-	return msg
-}
-
-func PATReadyForParse(buf []byte) bool {
+func (p *patStruct) setBuffer(inBuf []byte) error {
+	buf := inBuf[:2]
 	r := common.GetBufferReader(buf)
-
-	pFieldLen := r.ReadBits(8)
-	r.ReadBits(pFieldLen*8 + 8 + 6)
-
-	pktLen := pFieldLen + 3
-	pktLen += r.ReadBits(10)
-
-	return pktLen <= r.GetSize()
-}
-
-func ParsePAT(buf []byte, cnt int) (PAT, error) {
-	r := common.GetBufferReader(buf)
-	pFieldLen := r.ReadBits(8)
-	r.ReadBits(pFieldLen * 8)
-
-	tableId := r.ReadBits(8)
+	p.header = common.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
-		err := errors.New("Section syntax indicator of PAT is not set to 1")
-		return PAT{}, err
+		return errors.New("Section syntax indicator of PAT is not set to 1")
 	}
 	if r.ReadBits(1) != 0 {
-		err := errors.New("Private bits of PAT is not set to 0")
-		return PAT{}, err
+		return errors.New("Private bits of PAT is not set to 0")
 	}
 	if r.ReadBits(2) != 3 {
-		err := errors.New("Reserved bits of PAT is not set to all 1s")
-		return PAT{}, err
+		return errors.New("Reserved bits of PAT is not set to all 1s")
 	}
 	if r.ReadBits(2) != 0 {
-		err := errors.New("Unused bits of PAT is not set to all 0s")
-		return PAT{}, err
+		return errors.New("Unused bits of PAT is not set to all 0s")
 	}
-	sectionLen := r.ReadBits(10)
+	p.sectionLen = r.ReadBits(10)
+	p.header.SetField("sectionLength", p.sectionLen, true)
 
-	tableIdExt := r.ReadBits(16)
+	p.payload = inBuf[2:]
+	return nil
+}
+
+func (p *patStruct) ParsePayload() error {
+	remainedLen := p.sectionLen
+	r := common.GetBufferReader(p.payload)
+
+	r.ReadBits(16) // Table Id extension
 	if r.ReadBits(2) != 3 {
-		err := errors.New("Reserved bits of PAT is not set to all 1s")
-		return PAT{}, err
+		return errors.New("Reserved bits of PAT is not set to all 1s")
 	}
-	Version := r.ReadBits(5)
-	curNextIdr := r.ReadBits(1)
+	p.schema.Version = r.ReadBits(5)
+	if p.callback.GetPATVersion() == p.schema.Version {
+		return nil
+	}
+	r.ReadBits(1) // current/ next indicator
 	r.ReadBits(16) // section number and last section number
 
-	sectionLen -= 9
-	ProgramMap := make(map[int]int)
+	remainedLen -= 9
 	for {
-		if sectionLen <= 0 {
+		if remainedLen <= 0 {
 			break
 		}
 		progNum := r.ReadBits(16)
 		if r.ReadBits(3) != 7 {
-			err := errors.New("Reserved bits of PAT is not set to all 1s")
-			return PAT{}, err
+			return errors.New("Reserved bits of PAT is not set to all 1s")
 		}
 		pid := r.ReadBits(13)
-		ProgramMap[pid] = progNum
-		sectionLen -= 4
+		p.callback.AddProgram(p.schema.Version, progNum, pid)
+		p.schema.ProgramMap[progNum] = pid
+		remainedLen -= 4
 	}
-	if sectionLen < 0 {
+	if remainedLen < 0 {
 		// Protection
-		panic("Something wrong with section length")
+		return errors.New("Something wrong with section length")
 	}
-	crc32 := r.ReadBits(4)
-	return PAT{PktCnt: cnt, tableId: tableId, tableIdExt: tableIdExt, Version: Version, curNextIdr: curNextIdr != 0, ProgramMap: ProgramMap, Crc32: crc32}, nil
+	p.schema.Crc32 = r.ReadBits(4)
+
+	jsonBytes, _ := json.MarshalIndent(p.schema, "\t", "\t") // Extra tab prefix to support array of Jsons
+	p.callback.PsiUpdateFinished(0, jsonBytes)
+
+	return nil
 }
 
-func CreatePAT(tableId int, tableIdExt int, version int, curNextIdr bool, programMap map[int]int, crc32 int) PAT {
-	return PAT{PktCnt: 0, tableId: tableId, tableIdExt: tableIdExt, Version: version, curNextIdr: curNextIdr, ProgramMap: programMap, Crc32: crc32}
+func (p *patStruct) Append(payload []byte) {
+	p.payload = append(p.payload, payload...)
+}
+
+func (p *patStruct) GetField(str string) (int, error) {
+	return resolveHeaderField(p, str)
+}
+
+func (p *patStruct) GetName() string {
+	return "PAT"
+}
+
+func (p *patStruct) getHeader() common.CmBuf {
+	return p.header
+}
+
+func (p *patStruct) GetPayload() []byte {
+	return p.payload
+}
+
+func (p *patStruct) Ready() bool {
+	return len(p.payload) >= p.sectionLen
+}
+
+func (p *patStruct) Serialize() []byte {
+	// TODO
+	return []byte{}
+}
+
+func PatTable(manager PsiManager, pktCnt int, buf []byte) (TableStruct, error) {
+	rv := &patStruct{callback: manager, payload: make([]byte, 0)}
+	rv.schema = &PatSchema{PktCnt: pktCnt, Version: -1, ProgramMap: make(map[int]int, 0), Crc32: -1}
+	err := rv.setBuffer(buf)
+	return rv, err
 }

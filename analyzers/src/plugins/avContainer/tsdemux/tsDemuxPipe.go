@@ -3,6 +3,7 @@ package tsdemux
 import (
 	"encoding/json"
 	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -12,19 +13,23 @@ import (
 type tsDemuxPipe struct {
 	logger          common.Log
 	control         *demuxController // Controller from demuxer
+	dataStructs     map[int]model.DataStruct
+	programRecords  map[int]int      // PAT
+	patVersion      int
 	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
 	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
 	outputQueue     []common.CmUnit  // Outputs to other plugins
-	content         model.PAT
 	programs        map[int]model.PMT // A map from program number to PMT
 	scte35SplicePTS []int             // Store list of splice PTS
 	isRunning       bool
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
+	m_pMux.programRecords = make(map[int]int, 0)
+	m_pMux.dataStructs = make(map[int]model.DataStruct, 0)
+	m_pMux.patVersion = -1
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
-	m_pMux.content = model.PAT{Version: -1}
 	m_pMux.programs = make(map[int]model.PMT, 0)
 	m_pMux.isRunning = false
 }
@@ -76,13 +81,22 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 
 	if pid == 0 {
 		// PAT
-		m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+		err := m_pMux._handlePsiData2(buf, pid, pusi, pktCnt, afc)
+		if err != nil {
+			panic(err)
+		}
 	} else if pid < 32 {
 		// Special pids
 		dataProcessed = false
 	} else if pid != 8191 {
 		// Skip null packet
-		_, hasKey := m_pMux.content.ProgramMap[pid]
+		hasKey := false
+		for _, pmtPid := range m_pMux.programRecords {
+			if pid == pmtPid {
+				hasKey = true
+				break
+			}
+		}
 		if hasKey {
 			// PMT
 			m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
@@ -131,6 +145,67 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 	}
 }
 
+func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
+	outBuf := common.MakeSimpleBuf(jsonBytes)
+	outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+
+	outUnit := common.MakeIOUnit(outBuf, 2, pid)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+}
+
+func (m_pMux *tsDemuxPipe) GetPATVersion() int {
+	return m_pMux.patVersion
+}
+
+func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
+	if oldPmtPid, hasKey := m_pMux.programRecords[progNum]; hasKey {
+		m_pMux.logger.Info("PAT version updated")
+		if oldPmtPid != pmtPid {
+			m_pMux.control.updatePidStatus(oldPmtPid, false, 2)
+		}
+		// Remove old PMT streams
+	}
+	m_pMux.control.updatePidStatus(pmtPid, true, 2)
+	m_pMux.logger.Info("New program added: %d => %d", progNum, pmtPid)
+	m_pMux.programRecords[progNum] = pmtPid
+
+	if m_pMux.patVersion == -1 {
+		m_pMux.control.updatePidStatus(0, true, 2)
+	}
+	m_pMux.patVersion = version
+}
+
+func (m_pMux *tsDemuxPipe) _handlePsiData2(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
+	if pusi {
+		if m_pMux.dataStructs[pid] != nil {
+			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
+			if !ok {
+				return errors.New(fmt.Sprintf("Not a table at pid %d", pid))
+			}
+			parseErr := table.ParsePayload()
+			return parseErr
+		} else {
+			table, err := model.PsiTable(m_pMux, pktCnt, buf)
+			if err != nil {
+				return err
+			}
+			if table.Ready() {
+				parseErr := table.ParsePayload()
+				if parseErr != nil {
+					return parseErr
+				}
+			} else {
+				m_pMux.dataStructs[pid] = table
+			}
+		}
+	} else if m_pMux.dataStructs[pid] != nil {
+		m_pMux.dataStructs[pid].Append(buf)
+	} else {
+		return errors.New("drop table without preceding section data")
+	}
+	return nil
+}
+
 // Handle PSI data
 // Currently only support PAT, PMT and SCTE-35
 func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) {
@@ -142,16 +217,6 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 			dType := m_pMux._getPktType(pid)
 			newVersion := GetVersion(buf)
 			switch dType {
-			case "PAT":
-				if m_pMux.content.Version == -1 {
-					m_pMux.demuxedBuffers[pid] = buf
-					m_pMux.demuxStartCnt[pid] = pktCnt
-					if model.PATReadyForParse(buf) {
-						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
-					}
-				} else if m_pMux.content.Version != newVersion {
-					m_pMux.logger.Info("PAT version change %d -> %d", m_pMux.content.Version, newVersion)
-				}
 			case "PMT":
 				if len(m_pMux.programs) != 0 {
 					progNum := -1
@@ -205,37 +270,6 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	var jsonBytes []byte
 
 	switch pktType {
-	case "PAT":
-		content, err := model.ParsePAT(m_pMux.demuxedBuffers[pid], pktCnt)
-		if err != nil {
-			m_pMux.control.throwError(pid, pktCnt, err.Error())
-		}
-		if m_pMux.content.Version == -1 {
-			m_pMux.control.updatePidStatus(0, true, 2)
-		}
-		// Check if PMT pids are updated
-		newProgramMap := content.ProgramMap
-		for oldPid := range m_pMux.content.ProgramMap {
-			hasPid := false
-			for newPid := range content.ProgramMap {
-				if oldPid == newPid {
-					hasPid = true
-					newProgramMap[newPid] = -1
-					break
-				}
-			}
-			if !hasPid {
-				m_pMux.control.updatePidStatus(oldPid, false, 2)
-			}
-		}
-		for pid, progNum := range newProgramMap {
-			if progNum > 0 {
-				m_pMux.control.updatePidStatus(pid, true, 2)
-			}
-		}
-		m_pMux.content = content
-		jsonBytes, _ = json.MarshalIndent(m_pMux.content, "\t", "\t") // Extra tab prefix to support array of Jsons
-		m_pMux.logger.Info("PAT parsed: %s", content.ToString())
 	case "PMT":
 		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
 
@@ -364,7 +398,13 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	}
 
 	// Check if PMT pid
-	_, hasKey := m_pMux.content.ProgramMap[pid]
+	hasKey := false
+	for _, pmtPid := range m_pMux.programRecords {
+		if pid == pmtPid {
+			hasKey = true
+			break
+		}
+	}
 	if hasKey {
 		return "PMT"
 	}
