@@ -1,7 +1,6 @@
 package tsdemux
 
 import (
-	"encoding/json"
 	"fmt"
 	"errors"
 	"strings"
@@ -22,7 +21,7 @@ type tsDemuxPipe struct {
 	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
 	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
 	outputQueue     []common.CmUnit  // Outputs to other plugins
-	scte35SplicePTS []int             // Store list of splice PTS
+	scte35SplicePTS map[int][]int   // Program number => Splice PTS
 	isRunning       bool
 }
 
@@ -85,7 +84,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 
 	if pid == 0 {
 		// PAT
-		err := m_pMux._handlePsiData2(buf, pid, pusi, pktCnt, afc)
+		err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 		if err != nil {
 			panic(err)
 		}
@@ -103,7 +102,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		}
 		if hasKey {
 			// PMT
-			err := m_pMux._handlePsiData2(buf, pid, pusi, pktCnt, afc)
+			err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 			if err != nil {
 				panic(err)
 			}
@@ -150,6 +149,20 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
 
 	outUnit := common.MakeIOUnit(outBuf, 2, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+}
+
+func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
+	if spliceCmdTypeStr == "splice_null" {
+		return
+	}
+
+	progNum := m_pMux.streamTree[dpiPid]
+	if _, hasKey := m_pMux.scte35SplicePTS[progNum]; !hasKey {
+		m_pMux.scte35SplicePTS[progNum] = make([]int, 0)
+	}
+	m_pMux.scte35SplicePTS[progNum] = append(m_pMux.scte35SplicePTS[progNum], splicePTS...)
+
+	m_pMux.logger.Info("Received SCTE-35 %s with splice PTS %v", spliceCmdTypeStr, splicePTS)
 }
 
 func (m_pMux *tsDemuxPipe) GetPATVersion() int {
@@ -238,7 +251,7 @@ func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
 	return -1
 }
 
-func (m_pMux *tsDemuxPipe) _handlePsiData2(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
+func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
 	if pusi {
 		if m_pMux.dataStructs[pid] != nil {
 			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
@@ -248,7 +261,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData2(buf []byte, pid int, pusi bool, pktCn
 			parseErr := table.ParsePayload()
 			return parseErr
 		} else {
-			table, err := model.PsiTable(m_pMux, pktCnt, buf)
+			table, err := model.PsiTable(m_pMux, pktCnt, pid, buf)
 			if err != nil {
 				return err
 			}
@@ -267,62 +280,6 @@ func (m_pMux *tsDemuxPipe) _handlePsiData2(buf []byte, pid int, pusi bool, pktCn
 		return errors.New("drop table without preceding section data")
 	}
 	return nil
-}
-
-// Handle PSI data
-// Currently only support PAT, PMT and SCTE-35
-func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) {
-	if pusi {
-		if len(m_pMux.demuxedBuffers[pid]) != 0 {
-			m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
-		} else {
-			// Check if we need to update PSI by checking version
-			dType := m_pMux._getPktType(pid)
-			switch dType {
-			case "SCTE-35 DPI data":
-				m_pMux.demuxedBuffers[pid] = buf
-				m_pMux.demuxStartCnt[pid] = pktCnt
-
-				if model.SCTE35ReadyForParse(buf, afc) {
-					m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
-				}
-			default:
-				m_pMux.logger.Error("Don't know how to handle %s", dType)
-				panic("What?!")
-			}
-		}
-	} else if len(m_pMux.demuxedBuffers[pid]) != 0 {
-		m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
-	}
-}
-
-func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
-	// Parse a given buffer
-	pktType := m_pMux._getPktType(pid)
-
-	// Output unit related
-	var jsonBytes []byte
-
-	switch pktType {
-	case "SCTE-35 DPI data":
-		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
-		if section.SpliceCmdType != 0x00 {
-			fmt.Println(fmt.Sprintf("[%d] At pkt#%d, %s received. Splice PTS: %v", pid, pktCnt, section.SpliceCmdTypeStr, section.SpliceCmd.GetSplicePTS()))
-		}
-		m_pMux.scte35SplicePTS = append(m_pMux.scte35SplicePTS, section.SpliceCmd.GetSplicePTS()...)
-		jsonBytes, _ = json.MarshalIndent(section, "\t", "\t")
-	default:
-		panic("Unknown pid")
-	}
-
-	// Clear old buf
-	m_pMux.demuxedBuffers[pid] = make([]byte, 0)
-
-	outBuf := common.MakeSimpleBuf(jsonBytes)
-	outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
-
-	outUnit := common.MakeIOUnit(outBuf, 2, pid)
-	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
 // Handle stream data
@@ -364,13 +321,15 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
-			if len(m_pMux.scte35SplicePTS) > 0 && pesHeader.GetPts() == m_pMux.scte35SplicePTS[0] {
-				fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], m_pMux.scte35SplicePTS[0]))
-				if len(m_pMux.scte35SplicePTS) == 1 {
-					m_pMux.scte35SplicePTS = make([]int, 0)
+			splicePTSList := m_pMux.scte35SplicePTS[progNum]
+			if len(splicePTSList) > 0 && pesHeader.GetPts() == splicePTSList[0] {
+				fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
+				if len(splicePTSList) == 1 {
+					splicePTSList = make([]int, 0)
 				} else {
-					m_pMux.scte35SplicePTS = m_pMux.scte35SplicePTS[1:]
+					splicePTSList = splicePTSList[1:]
 				}
+				m_pMux.scte35SplicePTS[progNum] = splicePTSList
 			}
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)

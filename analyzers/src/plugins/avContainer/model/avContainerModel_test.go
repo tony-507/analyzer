@@ -7,11 +7,13 @@ import (
 )
 
 type dummyManagerStruct struct {
-	programRecords map[int]int
-	streamRecords  map[int]int
-	patVersion     int
-	pmtVersion     int
-	psiJsons       map[int][]byte
+	programRecords     map[int]int
+	streamRecords      map[int]int
+	patVersion         int
+	pmtVersion         int
+	psiJsons           map[int][]byte
+	scte35SplicePTS    []int
+	receivedSpliceNull bool
 }
 
 func (m *dummyManagerStruct) AddStream(version int, progNum int, streamPid int, streamType int) {
@@ -39,6 +41,14 @@ func (m *dummyManagerStruct) PsiUpdateFinished(pid int, jsonBytes []byte) {
 	m.psiJsons[pid] = jsonBytes
 }
 
+func (m *dummyManagerStruct) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
+	if spliceCmdTypeStr == "splice_null" {
+		m.receivedSpliceNull = true
+	} else {
+		m.scte35SplicePTS = append(m.scte35SplicePTS, splicePTS...)
+	}
+}
+
 func dummyManager() *dummyManagerStruct {
 	rv := &dummyManagerStruct{}
 	rv.programRecords = make(map[int]int, 0)
@@ -46,6 +56,8 @@ func dummyManager() *dummyManagerStruct {
 	rv.patVersion = -1
 	rv.pmtVersion = -1
 	rv.psiJsons = make(map[int][]byte, 0)
+	rv.scte35SplicePTS = make([]int, 0)
+	rv.receivedSpliceNull = false
 
 	return rv
 }
@@ -55,7 +67,7 @@ func TestReadPAT(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
 	manager := dummyManager()
 
-	table, err := PsiTable(manager, 0, dummyPAT)
+	table, err := PsiTable(manager, 0, 0, dummyPAT)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +94,7 @@ func TestReadPMT(t *testing.T) {
 	manager := dummyManager()
 	manager.programRecords[10] = 258
 
-	table, err := PsiTable(manager, 0, dummyPMT)
+	table, err := PsiTable(manager, 0, 258, dummyPMT)
 	if err != nil {
 		panic(err)
 	}
@@ -192,26 +204,25 @@ func TestSCTE35IO(t *testing.T) {
 			0xef, 0xfe, 0x00, 0x2e, 0xb0, 0x30, 0xfe, 0x00, 0x14, 0x99,
 			0x70, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xbb, 0x9e, 0x64, 0x39}, // Splice insert
 	}
-	structSpecs := []Splice_info_section{
-		{TableId: 252, SectionSyntaxIdr: false, PrivateIdr: false,
-			SectionLen: 17, ProtocolVersion: 0, EncryptedPkt: false, EncryptAlgo: 0,
-			PtsAdjustment: 0, CwIdx: 0, Tier: 4095, SpliceCmdLen: 0, SpliceCmdType: 0, SpliceCmdTypeStr: "splice_null",
-			SpliceCmd: Splice_null{},
-		},
-		{TableId: 252, SectionSyntaxIdr: false, PrivateIdr: false,
-			SectionLen: 37, ProtocolVersion: 0, EncryptedPkt: false, EncryptAlgo: 0,
-			PtsAdjustment: 0, CwIdx: 0, Tier: 4095, SpliceCmdLen: 20, SpliceCmdType: 5, SpliceCmdTypeStr: "splice_insert",
-			SpliceCmd: Splice_event{EventId: 2, EventCancelIdr: false, OutOfNetworkIdr: true, ProgramSpliceFlag: true,
-				DurationFlag: true, SpliceImmediateFlag: false, SpliceTime: 3059760, Components: []Splice_component{},
-				BreakDuration: Break_duration{AutoReturn: true, Duration: 1350000}, UniqueProgramId: 1, AvailNum: 0, AvailsExpected: 1},
-		},
-	}
+	manager := dummyManager()
 
 	for idx := range byteSpecs {
 		t.Run(caseName[idx], func(t *testing.T) {
-			parsed := ReadSCTE35Section(byteSpecs[idx], 1)
+			table, err := PsiTable(manager, 0, 35, byteSpecs[idx])
+			if err != nil {
+				panic(err)
+			}
+			parseErr := table.ParsePayload()
+			if parseErr != nil {
+				panic(parseErr)
+			}
 
-			assert.Equal(t, structSpecs[idx], parsed, "SCTE-35 section not match")
+			switch idx {
+			case 0:
+				assert.Equal(t, true, manager.receivedSpliceNull, "Splice null not received")
+			case 1:
+				assert.Equal(t, []int{3059760}, manager.scte35SplicePTS, "SCTE-35 splice PTS list not match")
+			}
 		})
 	}
 }

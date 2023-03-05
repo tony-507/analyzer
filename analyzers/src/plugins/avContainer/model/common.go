@@ -28,6 +28,7 @@ type PsiManager interface {
 	GetPmtVersion(int)      int
 	GetPmtPidByProgNum(int) int
 	PsiUpdateFinished(int, []byte)
+	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int)
 }
 
 type DataStruct interface {
