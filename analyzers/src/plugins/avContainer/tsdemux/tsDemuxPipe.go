@@ -15,22 +15,26 @@ type tsDemuxPipe struct {
 	control         *demuxController // Controller from demuxer
 	dataStructs     map[int]model.DataStruct
 	programRecords  map[int]int      // PAT
+	streamRecords   map[int]int      // Stream pid => stream type
+	streamTree      map[int]int      // Stream pid => program number
 	patVersion      int
+	pmtVersions     map[int]int      // Program number => version
 	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
 	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
 	outputQueue     []common.CmUnit  // Outputs to other plugins
-	programs        map[int]model.PMT // A map from program number to PMT
 	scte35SplicePTS []int             // Store list of splice PTS
 	isRunning       bool
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.programRecords = make(map[int]int, 0)
+	m_pMux.streamRecords = make(map[int]int, 0)
+	m_pMux.streamTree = make(map[int]int, 0)
 	m_pMux.dataStructs = make(map[int]model.DataStruct, 0)
 	m_pMux.patVersion = -1
+	m_pMux.pmtVersions = make(map[int]int, 0)
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
-	m_pMux.programs = make(map[int]model.PMT, 0)
 	m_pMux.isRunning = false
 }
 
@@ -99,22 +103,17 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		}
 		if hasKey {
 			// PMT
-			m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+			err := m_pMux._handlePsiData2(buf, pid, pusi, pktCnt, afc)
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			// Others
-			progNum := -1
-			streamIdx := -1
-			for idx, program := range m_pMux.programs {
-				for sIdx, stream := range program.Streams {
-					if stream.StreamPid == pid {
-						progNum = idx
-						streamIdx = sIdx
-					}
-				}
-			}
+			streamType, isKnownStream := m_pMux.streamRecords[pid]
+			progNum := m_pMux.streamTree[pid]
 
 			// Contained in PMT, continue the parsing
-			if progNum != -1 && streamIdx != -1 {
+			if isKnownStream {
 				pktType := m_pMux._getPktType(pid)
 				// Determine stream type from last word
 				actualTypeSlice := strings.Split(pktType, " ")
@@ -123,11 +122,11 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				case "video":
 					m_pMux._handleStreamData(buf, pid,
 						progNum, pusi, afc,
-						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
+						pktCnt, streamType)
 				case "audio":
 					m_pMux._handleStreamData(buf, pid,
 						progNum, pusi, afc,
-						pktCnt, int(m_pMux.programs[progNum].Streams[streamIdx].StreamType))
+						pktCnt, streamType)
 				case "data":
 					m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 				default:
@@ -157,6 +156,14 @@ func (m_pMux *tsDemuxPipe) GetPATVersion() int {
 	return m_pMux.patVersion
 }
 
+func (m_pMux *tsDemuxPipe) GetPmtVersion(progNum int) int {
+	if version, hasKey := m_pMux.pmtVersions[progNum]; hasKey {
+		return version
+	} else {
+		return -1
+	}
+}
+
 func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
 	if oldPmtPid, hasKey := m_pMux.programRecords[progNum]; hasKey {
 		m_pMux.logger.Info("PAT version updated")
@@ -173,6 +180,62 @@ func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
 		m_pMux.control.updatePidStatus(0, true, 2)
 	}
 	m_pMux.patVersion = version
+}
+
+func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, streamType int) {
+	if oldVersion, hasKey := m_pMux.pmtVersions[progNum]; hasKey && oldVersion != -1 {
+		m_pMux.logger.Info("PMT version for program %d updated", progNum)
+	}
+	m_pMux.pmtVersions[progNum] = version
+
+	updateStreamStatus := true
+
+	// Check if this pid already exists
+	if oldType, hasKey := m_pMux.streamRecords[streamPid]; hasKey {
+		// Check if stream type of the pid changes
+		if oldType != streamType {
+			m_pMux.logger.Info("Stream type of stream with pid %d updated: %d => %d", streamPid, oldType, streamType)
+			actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(oldType), " ")
+			actualType := actualTypeSlice[len(actualTypeSlice)-1]
+			if actualType == "data" {
+				m_pMux.control.updatePidStatus(streamPid, false, 2)
+			} else {
+				m_pMux.control.updatePidStatus(streamPid, false, 1)
+			}
+		} else {
+			updateStreamStatus = true
+		}
+
+		// Check if the stream belongs to another program
+		for oldPid, oldProgNum := range m_pMux.streamTree {
+			if oldPid == streamPid && oldProgNum != progNum {
+				m_pMux.logger.Info("Pid %d parent program updated: %d => %d", streamPid, oldProgNum, progNum)
+				break
+			}
+		}
+	} else {
+		m_pMux.logger.Info("Add stream with pid %d and type %d to program %d", streamPid, streamType, progNum)
+	}
+
+	m_pMux.streamRecords[streamPid] = streamType
+	m_pMux.streamTree[streamPid] = progNum
+
+	if updateStreamStatus {
+		actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(streamType), " ")
+		actualType := actualTypeSlice[len(actualTypeSlice)-1]
+		if actualType == "data" {
+			m_pMux.control.updatePidStatus(streamPid, true, 2)
+		} else {
+			m_pMux.control.updatePidStatus(streamPid, true, 1)
+		}
+	}
+}
+
+func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
+	if pid, hasKey := m_pMux.programRecords[progNum]; hasKey {
+		return pid
+	}
+	return -1
 }
 
 func (m_pMux *tsDemuxPipe) _handlePsiData2(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
@@ -215,36 +278,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 		} else {
 			// Check if we need to update PSI by checking version
 			dType := m_pMux._getPktType(pid)
-			newVersion := GetVersion(buf)
 			switch dType {
-			case "PMT":
-				if len(m_pMux.programs) != 0 {
-					progNum := -1
-					for idx, program := range m_pMux.programs {
-						if program.PmtPid == pid {
-							progNum = idx
-							break
-						}
-					}
-
-					if progNum == -1 {
-						m_pMux.demuxedBuffers[pid] = buf
-						m_pMux.demuxStartCnt[pid] = pktCnt
-
-						if model.PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
-							m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
-						}
-					} else if m_pMux.programs[progNum].Version != newVersion {
-						m_pMux.logger.Info("PMT at pid %d version change %d -> %d", pid, m_pMux.programs[progNum].Version, newVersion)
-					}
-				} else {
-					m_pMux.demuxedBuffers[pid] = buf
-					m_pMux.demuxStartCnt[pid] = pktCnt
-
-					if model.PMTReadyForParse(m_pMux.demuxedBuffers[pid]) {
-						m_pMux._parsePSI(pid, m_pMux.demuxStartCnt[pid], afc)
-					}
-				}
 			case "SCTE-35 DPI data":
 				m_pMux.demuxedBuffers[pid] = buf
 				m_pMux.demuxStartCnt[pid] = pktCnt
@@ -270,50 +304,6 @@ func (m_pMux *tsDemuxPipe) _parsePSI(pid int, pktCnt int, afc int) {
 	var jsonBytes []byte
 
 	switch pktType {
-	case "PMT":
-		pmt := model.ParsePMT(m_pMux.demuxedBuffers[pid], pid, pktCnt)
-
-		// Information about parsed PMT
-		statMsg := fmt.Sprintf("\nAt pkt#%d\n", pktCnt)
-		statMsg += fmt.Sprintf("Program %d\n", pmt.ProgNum)
-		for idx, stream := range pmt.Streams {
-			statMsg += fmt.Sprintf(" Stream %d: type %s with pid %d\n", idx, m_pMux.control.queryStreamType(stream.StreamType), stream.StreamPid)
-		}
-		m_pMux.logger.Info(statMsg)
-		fmt.Println(statMsg)
-
-		// Check if PMT pids are updated
-		newPmt := pmt
-		if oldPmt, hasPmt := m_pMux.programs[pmt.ProgNum]; hasPmt {
-			for _, stream := range oldPmt.Streams {
-				hasPid := false
-				for idx, newStream := range pmt.Streams {
-					if stream.StreamPid == newStream.StreamPid {
-						hasPid = true
-						newPmt.Streams[idx].StreamPid = -1
-					}
-				}
-				if !hasPid {
-					m_pMux.control.updatePidStatus(stream.StreamPid, false, 1)
-				}
-			}
-		}
-
-		m_pMux.programs[pmt.ProgNum] = pmt
-		jsonBytes, _ = json.MarshalIndent(pmt, "\t", "\t")
-
-		for _, stream := range newPmt.Streams {
-			if stream.StreamPid != -1 {
-				streamType := m_pMux._getPktType(stream.StreamPid)
-				actualTypeSlice := strings.Split(streamType, " ")
-				actualType := actualTypeSlice[len(actualTypeSlice)-1]
-				if actualType == "data" {
-					m_pMux.control.updatePidStatus(stream.StreamPid, true, 2)
-				} else {
-					m_pMux.control.updatePidStatus(stream.StreamPid, true, 1)
-				}
-			}
-		}
 	case "SCTE-35 DPI data":
 		section := model.ReadSCTE35Section(m_pMux.demuxedBuffers[pid], afc)
 		if section.SpliceCmdType != 0x00 {
@@ -410,12 +400,9 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 	}
 
 	// Check stream type
-	for _, program := range m_pMux.programs {
-		for _, stream := range program.Streams {
-			if stream.StreamPid == pid {
-				return m_pMux.control.queryStreamType(stream.StreamType)
-			}
-		}
+	streamType, isKnownStream := m_pMux.streamRecords[pid]
+	if isKnownStream {
+		return m_pMux.control.queryStreamType(streamType)
 	}
 
 	return ""
@@ -424,8 +411,8 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 // Duration is independent of program, so just choose one
 func (m_pMux *tsDemuxPipe) getDuration() int {
 	firstProgNum := -1
-	for _, prog := range m_pMux.programs {
-		firstProgNum = prog.ProgNum
+	for progNum, _ := range m_pMux.programRecords {
+		firstProgNum = progNum
 		break
 	}
 	clk := m_pMux.control.updateSrcClk(firstProgNum)
@@ -440,7 +427,7 @@ func (m_pMux *tsDemuxPipe) getProgramNumber(idx int) int {
 }
 
 func (m_pMux *tsDemuxPipe) readyForFetch() bool {
-	return len(m_pMux.programs) > 0 && len(m_pMux.outputQueue) > 0
+	return len(m_pMux.streamRecords) > 0 && len(m_pMux.outputQueue) > 0
 }
 
 func (m_pMux *tsDemuxPipe) getOutputUnit() common.CmUnit {

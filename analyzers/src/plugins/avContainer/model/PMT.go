@@ -1,6 +1,9 @@
 package model
 
 import (
+	"encoding/json"
+	"errors"
+
 	"github.com/tony-507/analyzers/src/common"
 )
 
@@ -15,112 +18,160 @@ type DataStream struct {
 	StreamDesc []Descriptor
 }
 
-type PMT struct {
-	PktCnt     int
-	PmtPid     int
-	tableId    int
-	ProgNum    int
-	Version    int
-	curNextIdr bool
-	ProgDesc   []Descriptor
-	Streams    []DataStream
-	crc32      int
+type PmtSchema struct {
+	PktCnt   int
+	Version  int
+	ProgDesc []Descriptor
+	Streams  []DataStream
+	Crc32    int
 }
 
-func PMTReadyForParse(buf []byte) bool {
-	// Peek the length of the table and compare with current buffer size
-	r := common.GetBufferReader(buf)
-	pFieldLen := r.ReadBits(8)
-	r.ReadBits(pFieldLen*8 + 8 + 6)
-
-	pmtLen := pFieldLen + 3
-	pmtLen += r.ReadBits(10)
-
-	return pmtLen <= r.GetSize()
+type PmtStruct struct {
+	callback   PsiManager
+	header     common.CmBuf
+	payload    []byte
+	schema     *PmtSchema
+	sectionLen int
 }
 
-func ParsePMT(buf []byte, PmtPid int, cnt int) PMT {
+func (p *PmtStruct) Append(buf []byte) {
+	p.payload = append(p.payload, buf...)
+}
+
+func (p *PmtStruct)	GetField(str string) (int, error) {
+	return resolveHeaderField(p, str)
+}
+
+func (p *PmtStruct)	GetName() string {
+	return "PMT"
+}
+
+func (p *PmtStruct)	getHeader() common.CmBuf {
+	return p.header
+}
+
+func (p *PmtStruct)	GetPayload() []byte {
+	return p.payload
+}
+
+func (p *PmtStruct)	Ready() bool {
+	return len(p.payload) >= p.sectionLen
+}
+
+func (p *PmtStruct) Serialize() []byte {
+	// TODO
+	return []byte{}
+}
+
+func (p *PmtStruct) setBuffer(inBuf []byte) error {
+	buf := inBuf[:2]
 	r := common.GetBufferReader(buf)
-
-	pFieldLen := r.ReadBits(8)
-	r.ReadBits(pFieldLen * 8)
-
-	tableId := r.ReadBits(8)
+	p.header = common.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
-		panic("Section syntax indicator of PMT is not set to 1")
+		return errors.New("Section syntax indicator of PMT is not set to 1")
 	}
 	if r.ReadBits(1) != 0 {
-		panic("Private bits of PMT is not set to 0")
+		return errors.New("Private bits of PMT is not set to 0")
 	}
 	if r.ReadBits(2) != 3 {
-		panic("Reserved bits of PMT is not set to all 1s")
+		return errors.New("Reserved bits of PMT is not set to all 1s")
 	}
 	if r.ReadBits(2) != 0 {
-		panic("Unused bits of PMT is not set to all 0s")
+		return errors.New("Unused bits of PMT is not set to all 0s")
 	}
-	sectionLen := r.ReadBits(10)
+	p.sectionLen = r.ReadBits(10)
+	p.header.SetField("sectionLength", p.sectionLen, true)
 
-	ProgNum := r.ReadBits(16)
+	p.payload = inBuf[2:]
+	return nil
+}
+
+func (p *PmtStruct) ParsePayload() error {
+	r := common.GetBufferReader(p.payload)
+	remainedLen := p.sectionLen
+
+	progNum := r.ReadBits(16)
 	if r.ReadBits(2) != 3 {
-		panic("Reserved bits of PMT is not set to all 1s")
+		return errors.New("Reserved bits of PMT is not set to all 1s")
 	}
-	Version := r.ReadBits(5)
-	curNextIdr := r.ReadBits(1)
+	p.schema.Version = r.ReadBits(5)
+	if p.callback.GetPmtVersion(progNum) == p.schema.Version {
+		return nil
+	}
+
+	r.ReadBits(1) // Current/ next indicator
 	r.ReadBits(16) // section number and last section number
 
-	sectionLen -= 9
+	remainedLen -= 9
 	if r.ReadBits(3) != 7 {
-		panic("Reserved bits of PMT is not set to all 1s")
+		return errors.New("Reserved bits of PMT is not set to all 1s")
 	}
-	// pcr_pid := r.ReadBits(13)
-	r.ReadBits(13)
+	r.ReadBits(13) // PCR pid
 	if r.ReadBits(4) != 15 {
-		panic("Reserved bits of PMT is not set to all 1s")
+		return errors.New("Reserved bits of PMT is not set to all 1s")
 	}
 	r.ReadBits(2) // Program info unused bits
-	progInfoLen := r.ReadBits(10)
-	sectionLen -= 4 + progInfoLen
+	programInfoLen := r.ReadBits(10)
+	remainedLen -= 4 + programInfoLen
 
-	ProgDesc := make([]Descriptor, 0)
+	programDescriptors := make([]Descriptor, 0)
 	for {
-		if progInfoLen <= 0 {
+		if programInfoLen <= 0 {
 			break
 		}
-		desc := _readDescriptor(&r, &progInfoLen)
-		ProgDesc = append(ProgDesc, desc)
+		desc := _readDescriptor(&r, &programInfoLen)
+		programDescriptors = append(programDescriptors, desc)
 	}
+	p.schema.ProgDesc = programDescriptors
 
-	Streams := make([]DataStream, 0)
+	streams := make([]DataStream, 0)
 	for {
-		if sectionLen == 0 {
+		if remainedLen == 0 {
 			break
 		}
-		StreamType := r.ReadBits(8)
+		streamType := r.ReadBits(8)
 		if r.ReadBits(3) != 7 {
-			panic("Reserved bits of PMT is not set to all 1s")
+			return errors.New("Reserved bits of PMT is not set to all 1s")
 		}
-		StreamPid := r.ReadBits(13)
+		streamPid := r.ReadBits(13)
 		if r.ReadBits(4) != 15 {
-			panic("Reserved bits of PMT is not set to all 1s")
+			return errors.New("Reserved bits of PMT is not set to all 1s")
 		}
 		if r.ReadBits(2) != 0 {
-			panic("Unused bits of PMT is not set to all 0s")
+			return errors.New("Unused bits of PMT is not set to all 0s")
 		}
 		esInfoLen := r.ReadBits(10)
-		sectionLen -= 5 + esInfoLen
+		remainedLen -= 5 + esInfoLen
 
-		StreamDesc := make([]Descriptor, 0)
+		streamDescriptors := make([]Descriptor, 0)
 		for {
 			if esInfoLen <= 0 {
 				break
 			}
 			desc := _readDescriptor(&r, &esInfoLen)
-			StreamDesc = append(StreamDesc, desc)
+			streamDescriptors = append(streamDescriptors, desc)
 		}
-		Streams = append(Streams, DataStream{StreamPid, StreamType, StreamDesc})
+		p.callback.AddStream(p.schema.Version, progNum, streamPid, streamType)
+		streams = append(streams, DataStream{StreamPid: streamPid, StreamType: streamType,
+			StreamDesc: streamDescriptors})
 	}
+	p.schema.Streams = streams
 
-	return PMT{PktCnt: cnt, PmtPid: PmtPid, tableId: tableId, ProgNum: ProgNum, Version: Version, curNextIdr: curNextIdr != 0, ProgDesc: ProgDesc, Streams: Streams, crc32: -1}
+	p.schema.Crc32 = r.ReadBits(32)
+
+	pmtPid := p.callback.GetPmtPidByProgNum(progNum)
+	jsonBytes, _ := json.MarshalIndent(p.schema, "\t", "\t")
+	p.callback.PsiUpdateFinished(pmtPid, jsonBytes)
+
+	return nil
+}
+
+func PmtTable(manager PsiManager, pktCnt int, buf []byte) (TableStruct, error) {
+	rv := &PmtStruct{callback: manager, payload: make([]byte, 0), sectionLen: -1}
+	rv.schema = &PmtSchema{PktCnt: pktCnt, Version: -1,
+		ProgDesc: make([]Descriptor, 0), Streams: make([]DataStream, 0), Crc32: -1}
+	err := rv.setBuffer(buf)
+	return rv, err
 }
 
 func _readDescriptor(r *common.BsReader, l *int) Descriptor {
@@ -132,8 +183,4 @@ func _readDescriptor(r *common.BsReader, l *int) Descriptor {
 	}
 	*l -= descLen + 2
 	return Descriptor{Tag, Content}
-}
-
-func CreatePMT(PmtPid int, tableId int, progNum int, version int, curNextIdr bool, progDesc []Descriptor, streams []DataStream, crc32 int) PMT {
-	return PMT{PktCnt: 0, PmtPid: PmtPid, tableId: tableId, ProgNum: progNum, Version: version, curNextIdr: curNextIdr, ProgDesc: progDesc, Streams: streams, crc32: -1}
 }

@@ -22,8 +22,11 @@ type psiInterface interface {
 }
 
 type PsiManager interface {
+	AddStream(version int, progNum int, streamPid int, streamType int)
 	AddProgram(int, int, int)
-	GetPATVersion() int
+	GetPATVersion()         int
+	GetPmtVersion(int)      int
+	GetPmtPidByProgNum(int) int
 	PsiUpdateFinished(int, []byte)
 }
 

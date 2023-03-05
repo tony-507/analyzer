@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
 )
 
 func TestDemuxDeliverUnit(t *testing.T) {
@@ -45,15 +44,11 @@ func TestDemuxPipeProcessing(t *testing.T) {
 
 	impl.processUnit(dummyPMT, 0)
 
-	expectedProgDesc := make([]model.Descriptor, 0)
+	streamRecords := make(map[int]int, 0)
+	streamRecords[32] = 2
+	streamRecords[33] = 4
 
-	videoStream := model.DataStream{StreamPid: 32, StreamType: 2, StreamDesc: make([]model.Descriptor, 0)}
-	audioStream := model.DataStream{StreamPid: 33, StreamType: 4, StreamDesc: []model.Descriptor{{Tag: 10, Content: "65 6e 67 00"}}}
-	streams := []model.DataStream{videoStream, audioStream}
-
-	expectedPmt := model.CreatePMT(258, 2, 10, 0, true, expectedProgDesc, streams, -1)
-
-	assert.Equal(t, expectedPmt, impl.programs[10], "PMT not match")
+	assert.Equal(t, streamRecords, impl.streamRecords, "PMT not match")
 
 	unknownPkt := []byte{0x47, 0x40, 0x51, 0x31, 0xff}
 

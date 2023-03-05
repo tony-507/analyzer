@@ -12,6 +12,8 @@ func PsiTable(manager PsiManager, pktCnt int, inBuf []byte) (TableStruct, error)
 	switch tableId {
 	case 0:
 		return PatTable(manager, pktCnt, buf)
+	case 2:
+		return PmtTable(manager, pktCnt, buf)
 	default:
 		return nil, errors.New(fmt.Sprintf("Table with tableId %d is not implemented", tableId))
 	}
