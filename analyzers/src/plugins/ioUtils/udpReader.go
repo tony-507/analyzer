@@ -153,7 +153,7 @@ func (ur *udpReader) dataAvailable(unit *common.IOUnit) bool {
 		ur.udpCount += 1
 
 		nTsPkt := len(udpBuf) / TS_PKT_SIZE
-		ur.logger.Trace("Fetched %d TS packets from %d-th UDP packet", nTsPkt, ur.udpCount)
+		// ur.logger.Trace("Fetched %d TS packets from %d-th UDP packet", nTsPkt, ur.udpCount)
 		for i := 0; i < nTsPkt; i++ {
 			ur.bufferQueue = append(ur.bufferQueue, udpBuf[(i*TS_PKT_SIZE):((i+1)*TS_PKT_SIZE)])
 		}

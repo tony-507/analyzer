@@ -17,7 +17,6 @@ type scte35Struct struct {
 	sectionLen int
 }
 
-
 type Scte35Schema struct {
 	PktCnt           int
 	PtsAdjustment    int
@@ -49,7 +48,7 @@ func (s *scte35Struct) GetPayload() []byte {
 }
 
 func (s *scte35Struct) Ready() bool {
-	return len(s.payload) >= s.sectionLen
+	return true
 }
 
 func (s *scte35Struct) Serialize() []byte {
@@ -127,7 +126,7 @@ func (s *scte35Struct) ParsePayload() error {
 		panic(msg)
 	}
 
-	s.callback.SpliceEventReceived(s.pid, spliceCmdTypeStr, spliceCmd.GetSplicePTS())
+	s.callback.SpliceEventReceived(s.pid, spliceCmdTypeStr, spliceCmd.GetSplicePTS(), s.schema.PktCnt)
 
 	schema.SpliceCmdTypeStr = spliceCmdTypeStr
 	schema.SpliceCmd = spliceCmd

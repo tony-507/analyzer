@@ -34,6 +34,7 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.pmtVersions = make(map[int]int, 0)
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
+	m_pMux.scte35SplicePTS = make(map[int][]int, 0)
 	m_pMux.isRunning = false
 }
 
@@ -151,7 +152,7 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
-func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
+func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int, pktCnt int) {
 	if spliceCmdTypeStr == "splice_null" {
 		return
 	}
@@ -163,6 +164,14 @@ func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr stri
 	m_pMux.scte35SplicePTS[progNum] = append(m_pMux.scte35SplicePTS[progNum], splicePTS...)
 
 	m_pMux.logger.Info("Received SCTE-35 %s with splice PTS %v", spliceCmdTypeStr, splicePTS)
+
+	outBuf := common.MakeSimpleBuf([]byte{})
+	outBuf.SetField("pktCnt", pktCnt, true)
+	outBuf.SetField("PTS", splicePTS[0], false)
+	outBuf.SetField("dataType", m_pMux._getPktType(35), true)
+
+	outUnit := common.MakeIOUnit(outBuf, 2, 35)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
 func (m_pMux *tsDemuxPipe) GetPATVersion() int {
@@ -179,7 +188,7 @@ func (m_pMux *tsDemuxPipe) GetPmtVersion(progNum int) int {
 
 func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
 	if oldPmtPid, hasKey := m_pMux.programRecords[progNum]; hasKey {
-		m_pMux.logger.Info("PAT version updated")
+		m_pMux.logger.Info("PAT version updated: %d -> %d", m_pMux.patVersion, version)
 		if oldPmtPid != pmtPid {
 			m_pMux.control.updatePidStatus(oldPmtPid, false, 2)
 		}
@@ -197,7 +206,7 @@ func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
 
 func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, streamType int) {
 	if oldVersion, hasKey := m_pMux.pmtVersions[progNum]; hasKey && oldVersion != -1 {
-		m_pMux.logger.Info("PMT version for program %d updated", progNum)
+		m_pMux.logger.Info("PMT version for program %d updated: %d -> %d", progNum, oldVersion, version)
 	}
 	m_pMux.pmtVersions[progNum] = version
 
@@ -252,6 +261,11 @@ func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
 }
 
 func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
+	if afc > 1 {
+		af := model.ParseAdaptationField(buf)
+		buf = buf[(af.AfLen + 1):]
+	}
+
 	if pusi {
 		if m_pMux.dataStructs[pid] != nil {
 			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
@@ -285,7 +299,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 // Handle stream data
 func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int, streamType int) {
 	clk := m_pMux.control.updateSrcClk(progNum)
-	spliceCountdown := -1
+	spliceCountdown := 100
 
 	if afc > 1 {
 		af := model.ParseAdaptationField(buf)
@@ -320,13 +334,10 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outBuf.SetField("PTS", pesHeader.GetPts(), false)
 			outBuf.SetField("DTS", pesHeader.GetDts(), false)
 			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
-			outBuf.SetField("spliceCountdown", spliceCountdown, true)
-			outUnit := common.MakeIOUnit(outBuf, 1, pid)
-			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			splicePTSList := m_pMux.scte35SplicePTS[progNum]
-			if len(splicePTSList) > 0 && pesHeader.GetPts() == splicePTSList[0] {
-				// fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
+			if len(splicePTSList) > 0 && pesHeader.GetPts() >= splicePTSList[0] {
+				m_pMux.logger.Info(fmt.Sprintf("[%d] At packet #%d, PTS %d matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], pesHeader.GetPts(), splicePTSList[0]))
 				if len(splicePTSList) == 1 {
 					splicePTSList = make([]int, 0)
 				} else {
@@ -334,19 +345,25 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 				}
 				// Send spliceCountdown zero unit
 				newBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])
-				newBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid], false)
+				newBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid]-1, false)
 				newBuf.SetField("progNum", progNum, true)
 				newBuf.SetField("streamType", streamType, true)
-				newBuf.SetField("size", pesHeader.GetSectionLength(), false)
-				newBuf.SetField("PTS", pesHeader.GetPts(), false)
-				newBuf.SetField("DTS", pesHeader.GetDts(), false)
+				newBuf.SetField("PTS", -1, false)
+				newBuf.SetField("DTS", -1, false)
 				newBuf.SetField("dataType", m_pMux._getPktType(pid), true)
-				newBuf.SetField("spliceCountdown", spliceCountdown, true)
-				outUnit := common.MakeIOUnit(newBuf, 1, pid)
-				m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+				newBuf.SetField("spliceCountdown", 0, true)
+				newUnit := common.MakeIOUnit(newBuf, 1, pid)
+				m_pMux.outputQueue = append(m_pMux.outputQueue, newUnit)
 
 				m_pMux.scte35SplicePTS[progNum] = splicePTSList
+				spliceCountdown = -1
+			} else {
+				spliceCountdown = 100
 			}
+
+			outBuf.SetField("spliceCountdown", spliceCountdown, true)
+			outUnit := common.MakeIOUnit(outBuf, 1, pid)
+			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
 		}

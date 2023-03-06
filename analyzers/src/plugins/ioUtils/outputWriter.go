@@ -35,6 +35,9 @@ func (w *OutputWriter) setParameter(m_parameter string) {
 	case _OUTPUT_FILE:
 		outType = "file"
 		w.impl = getFileWriter(w.name)
+	case _OUTPUT_ADSMART:
+		outType = "AdSmart"
+		w.impl = getAdSmartMonitor(w.name)
 	}
 	w.logger.Info("%s writer is started", outType)
 	w.impl.setup(writerParam)
