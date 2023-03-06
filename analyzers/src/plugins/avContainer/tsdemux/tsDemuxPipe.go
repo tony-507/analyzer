@@ -1,8 +1,8 @@
 package tsdemux
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -13,14 +13,14 @@ type tsDemuxPipe struct {
 	logger          common.Log
 	control         *demuxController // Controller from demuxer
 	dataStructs     map[int]model.DataStruct
-	programRecords  map[int]int      // PAT
-	streamRecords   map[int]int      // Stream pid => stream type
-	streamTree      map[int]int      // Stream pid => program number
+	programRecords  map[int]int // PAT
+	streamRecords   map[int]int // Stream pid => stream type
+	streamTree      map[int]int // Stream pid => program number
 	patVersion      int
-	pmtVersions     map[int]int      // Program number => version
-	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
-	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
-	outputQueue     []common.CmUnit  // Outputs to other plugins
+	pmtVersions     map[int]int     // Program number => version
+	demuxedBuffers  map[int][]byte  // A map mapping pid to bitstreams
+	demuxStartCnt   map[int]int     // A map mapping pid to start packet index of demuxedBuffers[pid]
+	outputQueue     []common.CmUnit // Outputs to other plugins
 	scte35SplicePTS map[int][]int   // Program number => Splice PTS
 	isRunning       bool
 }
@@ -34,6 +34,7 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.pmtVersions = make(map[int]int, 0)
 	m_pMux.demuxedBuffers = make(map[int][]byte, 0)
 	m_pMux.demuxStartCnt = make(map[int]int, 0)
+	m_pMux.scte35SplicePTS = make(map[int][]int, 0)
 	m_pMux.isRunning = false
 }
 
