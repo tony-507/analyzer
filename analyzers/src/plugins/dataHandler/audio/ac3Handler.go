@@ -1,8 +1,6 @@
 package audio
 
 import (
-	"fmt"
-
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
@@ -27,9 +25,15 @@ func (h *ac3Handler) Feed(unit common.CmUnit) {
 			h.curPesSize = size
 		}
 		if h.curPesSize != size {
-			fmt.Println(fmt.Sprintf("[%d] At PES packet #%d, PES packet size changes from %d to %d", h.pid, h.pesCnt, h.curPesSize, size))
+			// fmt.Println(fmt.Sprintf("[%d] At PES packet #%d, PES packet size changes from %d to %d", h.pid, h.pesCnt, h.curPesSize, size))
 			h.curPesSize = size
 		}
+	}
+
+	if size != 384 {
+		cmBuf.SetField("auPerPes", 6, true)
+	} else {
+		cmBuf.SetField("auPerPes", 1, true)
 	}
 }
 

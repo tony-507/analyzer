@@ -1,8 +1,8 @@
 package tsdemux
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -13,14 +13,14 @@ type tsDemuxPipe struct {
 	logger          common.Log
 	control         *demuxController // Controller from demuxer
 	dataStructs     map[int]model.DataStruct
-	programRecords  map[int]int      // PAT
-	streamRecords   map[int]int      // Stream pid => stream type
-	streamTree      map[int]int      // Stream pid => program number
+	programRecords  map[int]int // PAT
+	streamRecords   map[int]int // Stream pid => stream type
+	streamTree      map[int]int // Stream pid => program number
 	patVersion      int
-	pmtVersions     map[int]int      // Program number => version
-	demuxedBuffers  map[int][]byte   // A map mapping pid to bitstreams
-	demuxStartCnt   map[int]int      // A map mapping pid to start packet index of demuxedBuffers[pid]
-	outputQueue     []common.CmUnit  // Outputs to other plugins
+	pmtVersions     map[int]int     // Program number => version
+	demuxedBuffers  map[int][]byte  // A map mapping pid to bitstreams
+	demuxStartCnt   map[int]int     // A map mapping pid to start packet index of demuxedBuffers[pid]
+	outputQueue     []common.CmUnit // Outputs to other plugins
 	scte35SplicePTS map[int][]int   // Program number => Splice PTS
 	isRunning       bool
 }
@@ -285,6 +285,7 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 // Handle stream data
 func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int, streamType int) {
 	clk := m_pMux.control.updateSrcClk(progNum)
+	spliceCountdown := -1
 
 	if afc > 1 {
 		af := model.ParseAdaptationField(buf)
@@ -297,7 +298,8 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			if splice_point >= 128 {
 				splice_point -= 256
 			}
-			fmt.Println(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
+			spliceCountdown = splice_point
+			// fmt.Println(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
 		}
 	}
 
@@ -318,17 +320,31 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			outBuf.SetField("PTS", pesHeader.GetPts(), false)
 			outBuf.SetField("DTS", pesHeader.GetDts(), false)
 			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+			outBuf.SetField("spliceCountdown", spliceCountdown, true)
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 
 			splicePTSList := m_pMux.scte35SplicePTS[progNum]
 			if len(splicePTSList) > 0 && pesHeader.GetPts() == splicePTSList[0] {
-				fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
+				// fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
 				if len(splicePTSList) == 1 {
 					splicePTSList = make([]int, 0)
 				} else {
 					splicePTSList = splicePTSList[1:]
 				}
+				// Send spliceCountdown zero unit
+				newBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])
+				newBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid], false)
+				newBuf.SetField("progNum", progNum, true)
+				newBuf.SetField("streamType", streamType, true)
+				newBuf.SetField("size", pesHeader.GetSectionLength(), false)
+				newBuf.SetField("PTS", pesHeader.GetPts(), false)
+				newBuf.SetField("DTS", pesHeader.GetDts(), false)
+				newBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+				newBuf.SetField("spliceCountdown", spliceCountdown, true)
+				outUnit := common.MakeIOUnit(newBuf, 1, pid)
+				m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+
 				m_pMux.scte35SplicePTS[progNum] = splicePTSList
 			}
 

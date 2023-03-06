@@ -32,7 +32,7 @@ func (dc *demuxController) monitor() {
 			statMsg += fmt.Sprintf("\tCurrent count: %d\n", dc.inCnt)
 			statMsg += fmt.Sprintf("\tisRunning: %v\n", dc.isRunning)
 			statMsg += fmt.Sprintf("\tOutput queue size: %d\n", dc.outLen)
-			fmt.Println(statMsg)
+			// fmt.Println(statMsg)
 		}
 		dc.mtx.Unlock()
 	}
@@ -121,7 +121,7 @@ func (dc *demuxController) printSummary(duration int) {
 	statMsg += fmt.Sprintf("|%11s|%11d|%11.2f|%11s|\n", "", sum, rateSum, "")
 	statMsg += "-------------------------------------------------\n"
 
-	fmt.Println(statMsg)
+	// fmt.Println(statMsg)
 }
 
 func (dc *demuxController) updatePidStatus(pid int, addPid bool, outType int) {
