@@ -113,18 +113,13 @@ func socketConnection(logger common.Log, address string, port string, itf string
 	return &sockConn{logger: logger, address: address, port: port, itf: itf, conn: nil}
 }
 
-// Subprocess is used to dump UDP packets instead of gopkts library due to absence of libpcap in my practical use case
-// Currently the command always has a timeout
 type udpReader struct {
 	logger      common.Log
 	address     string
 	port        string
 	itf         string
-	timeout     int
 	conn        *sockConn
-	isRunning   bool
 	bufferQueue [][]byte
-	bufferSize  int
 	udpCount    int
 }
 
@@ -141,19 +136,12 @@ func (ur *udpReader) stopRecv() {
 }
 
 func (ur *udpReader) dataAvailable(unit *common.IOUnit) bool {
-	// Overflow
-	if len(ur.bufferQueue) > ur.bufferSize {
-		ur.logger.Error("Buffer overflow")
-		panic("Overflow")
-		return true
-	}
 	if len(ur.bufferQueue) <= 1 {
 		udpBuf := ur.conn.read()
 
 		ur.udpCount += 1
 
 		nTsPkt := len(udpBuf) / TS_PKT_SIZE
-		ur.logger.Trace("Fetched %d TS packets from %d-th UDP packet", nTsPkt, ur.udpCount)
 		for i := 0; i < nTsPkt; i++ {
 			ur.bufferQueue = append(ur.bufferQueue, udpBuf[(i*TS_PKT_SIZE):((i+1)*TS_PKT_SIZE)])
 		}
@@ -173,17 +161,14 @@ func initUdpReader(param *udpInputParam, name string) *udpReader {
 	rv := udpReader{}
 	rv.conn = nil
 	rv.udpCount = 0
-	rv.bufferSize = 25000 // 5 Mbps stream * 3 sec buffer / (7 * 188) bps UDP packet = 11399
 
 	rv.logger = common.CreateLogger(name)
-	rv.isRunning = false
 	rv.bufferQueue = make([][]byte, 0)
 
 	tmp := strings.Split(param.Address, ":")
 	rv.address = tmp[0]
 	rv.port = tmp[1]
 	rv.itf = param.Itf
-	rv.timeout = param.Timeout
 
 	return &rv
 }
