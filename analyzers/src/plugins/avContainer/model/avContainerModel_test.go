@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,19 +144,35 @@ func TestAdaptationFieldIO(t *testing.T) {
 		{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3}, // With PCR
 		{0x14, 0x5e, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x01, 0x03, 0x45, 0x4e, 0x47, 0xff, 0xff}, // With everything
 	}
-	structSpecs := []AdaptationField{
-		{AfLen: 0},
-		{AfLen: 7, DisCnt_cnt: 0, RandomAccess: 1, EsIdr: 0, Pcr: 189051243, Opcr: -1, Splice_point: -1, Private_data: "", StuffSize: 0},
-		{AfLen: 20, DisCnt_cnt: 0, RandomAccess: 1, EsIdr: 0, Pcr: 189051243, Opcr: 189051243, Splice_point: 1, Private_data: "ENG", StuffSize: 2},
-	}
+	afSize := []int{1, 8, 21}
+	resSpec := make(map[string][]int, 0)
+	resSpec["discontinuityIdr"] = []int{0, 0}
+	resSpec["randomAccessIdr"] = []int{1, 1}
+	resSpec["esPriorityIdr"] = []int{0, 0}
+	resSpec["pcr"] = []int{189051243, 189051243}
+	resSpec["opcr"] = []int{-1, 189051243}
+	resSpec["spliceCountdown"] = []int{-1, 1}
 
 	for idx := range byteSpecs {
 		t.Run(caseName[idx], func(t *testing.T) {
-			parsed := ParseAdaptationField(byteSpecs[idx])
-			assert.Equal(t, structSpecs[idx], parsed, "Adaptation field struct not match")
+			pkt := &tsPacketStruct{hasAdaptationField: false}
+			l, err := pkt.readAdaptationField(byteSpecs[idx])
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(t, afSize[idx], l, "Adaptation field size not equal")
 
-			buf := structSpecs[idx].Serialize()
-			assert.Equal(t, byteSpecs[idx], buf, "Adaptation field bytes not match")
+			if idx == 0 {
+				return
+			}
+
+			for k, v := range resSpec {
+				rv, err := pkt.GetValueFromAdaptationField(k)
+				if err != nil {
+					panic(err)
+				}
+				assert.Equal(t, v[idx-1], rv, fmt.Sprintf("%s not equal", k))
+			}
 		})
 	}
 }

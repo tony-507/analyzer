@@ -83,6 +83,27 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 
 	inputMon.checkTsHeader(pid, afc, cc, pktCnt)
 
+	pcr := -1
+
+	if pkt.HasAdaptationField() {
+		var err error
+		pcr, err = pkt.GetValueFromAdaptationField("pcr")
+		if err != nil {
+			panic(err)
+		}
+
+		spliceCountdown, err := pkt.GetValueFromAdaptationField("spliceCountdown")
+		if err != nil {
+			panic(err)
+		}
+		if spliceCountdown != -1 {
+			if spliceCountdown >= 128 {
+				spliceCountdown -= 256
+			}
+			m_pMux.logger.Info("[%d] At TS packet #%d, spliceCountdown is %d", pid, pktCnt, spliceCountdown)
+		}
+	}
+
 	if pid == 0 {
 		// PAT
 		err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
@@ -121,12 +142,10 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				switch actualType {
 				case "video":
 					m_pMux._handleStreamData(buf, pid,
-						progNum, pusi, afc,
-						pktCnt, streamType)
+						progNum, pusi, pktCnt, streamType, pcr)
 				case "audio":
 					m_pMux._handleStreamData(buf, pid,
-						progNum, pusi, afc,
-						pktCnt, streamType)
+						progNum, pusi, pktCnt, streamType, pcr)
 				case "data":
 					m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
 				default:
@@ -284,22 +303,10 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 }
 
 // Handle stream data
-func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, afc int, pktCnt int, streamType int) {
-	clk := m_pMux.control.updateSrcClk(progNum)
-
-	if afc > 1 {
-		af := model.ParseAdaptationField(buf)
-		if af.Pcr >= 0 {
-			clk.updatePcrRecord(af.Pcr, pktCnt)
-		}
-		buf = buf[(af.AfLen + 1):]
-		if af.Splice_point != -1 {
-			splice_point := af.Splice_point
-			if splice_point >= 128 {
-				splice_point -= 256
-			}
-			fmt.Println(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
-		}
+func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, pktCnt int, streamType int, pcr int) {
+	if pcr >= 0 {
+		clk := m_pMux.control.updateSrcClk(progNum)
+		clk.updatePcrRecord(pcr, pktCnt)
 	}
 
 	// Payload

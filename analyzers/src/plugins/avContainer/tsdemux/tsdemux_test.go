@@ -50,7 +50,7 @@ func TestDemuxPipeProcessing(t *testing.T) {
 
 	assert.Equal(t, streamRecords, impl.streamRecords, "PMT not match")
 
-	unknownPkt := []byte{0x47, 0x40, 0x51, 0x31, 0xff}
+	unknownPkt := []byte{0x47, 0x40, 0x51, 0x11, 0xff}
 
 	impl.processUnit(unknownPkt, 0)
 
