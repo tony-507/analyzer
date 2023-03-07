@@ -23,6 +23,7 @@ const (
 )
 
 type mpeg2Handler struct {
+	logger common.Log
 	pid    int
 	pesCnt int
 	bInit  bool
@@ -35,7 +36,10 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 	frame_rate_code := r.ReadBits(4)
 	bit_rate_value := r.ReadBits(18)
 	r.ReadBits(1)
-	fmt.Println(fmt.Sprintf("Resolution: %d x %d, aspect ratio: %d, frame_rate_code: %d, bit_rate_value: %d", hSize, vSize, aspectRatio, frame_rate_code, bit_rate_value))
+	if !h.bInit {
+		h.logger.Trace(fmt.Sprintf("Resolution: %d x %d, aspect ratio: %d, frame_rate_code: %d, bit_rate_value: %d", hSize, vSize, aspectRatio, frame_rate_code, bit_rate_value))
+		h.bInit = true
+	}
 }
 
 func (h *mpeg2Handler) Feed(unit common.CmUnit) {
@@ -59,10 +63,10 @@ func (h *mpeg2Handler) Feed(unit common.CmUnit) {
 	if sequenceHeaderFound {
 		h.readSequenceHeader(&r)
 	} else {
-		fmt.Println(fmt.Sprintf("[%d] Sequence header not found in PES packet #%d", h.pid, h.pesCnt))
+		return
 	}
 }
 
 func MPEG2VideoHandler(pid int) utils.DataHandler {
-	return &mpeg2Handler{pid: pid, pesCnt: 0, bInit: false}
+	return &mpeg2Handler{logger: common.CreateLogger(fmt.Sprintf("MP2_%d", pid)), pid: pid, pesCnt: 0, bInit: false}
 }
