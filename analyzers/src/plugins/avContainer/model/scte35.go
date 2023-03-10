@@ -17,7 +17,6 @@ type scte35Struct struct {
 	sectionLen int
 }
 
-
 type Scte35Schema struct {
 	PktCnt           int
 	PtsAdjustment    int
@@ -40,7 +39,7 @@ func (s *scte35Struct) GetName() string {
 	return "SCTE-35"
 }
 
-func (s *scte35Struct) getHeader() common.CmBuf {
+func (s *scte35Struct) GetHeader() common.CmBuf {
 	return s.header
 }
 

@@ -121,7 +121,7 @@ func (p *tsPacketStruct) GetField(str string) (int, error) {
 	return resolveHeaderField(p, str)
 }
 
-func (p *tsPacketStruct) getHeader() common.CmBuf {
+func (p *tsPacketStruct) GetHeader() common.CmBuf {
 	return p.header
 }
 

@@ -38,23 +38,23 @@ func (p *PmtStruct) Append(buf []byte) {
 	p.payload = append(p.payload, buf...)
 }
 
-func (p *PmtStruct)	GetField(str string) (int, error) {
+func (p *PmtStruct) GetField(str string) (int, error) {
 	return resolveHeaderField(p, str)
 }
 
-func (p *PmtStruct)	GetName() string {
+func (p *PmtStruct) GetName() string {
 	return "PMT"
 }
 
-func (p *PmtStruct)	getHeader() common.CmBuf {
+func (p *PmtStruct) GetHeader() common.CmBuf {
 	return p.header
 }
 
-func (p *PmtStruct)	GetPayload() []byte {
+func (p *PmtStruct) GetPayload() []byte {
 	return p.payload
 }
 
-func (p *PmtStruct)	Ready() bool {
+func (p *PmtStruct) Ready() bool {
 	return len(p.payload) >= p.sectionLen
 }
 
@@ -99,7 +99,7 @@ func (p *PmtStruct) ParsePayload() error {
 		return nil
 	}
 
-	r.ReadBits(1) // Current/ next indicator
+	r.ReadBits(1)  // Current/ next indicator
 	r.ReadBits(16) // section number and last section number
 
 	remainedLen -= 9

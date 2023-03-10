@@ -1,20 +1,20 @@
 package model
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
 )
 
 type baseInterface interface {
 	Append(buf []byte)
-	GetField(string)   (int, error)
-	GetName()          string
-	getHeader()        common.CmBuf
-	GetPayload()       []byte
-	Ready()            bool
-	Serialize()        []byte
+	GetField(string) (int, error)
+	GetName() string
+	GetHeader() common.CmBuf
+	GetPayload() []byte
+	Ready() bool
+	Serialize() []byte
 }
 
 type psiInterface interface {
@@ -24,8 +24,8 @@ type psiInterface interface {
 type PsiManager interface {
 	AddStream(version int, progNum int, streamPid int, streamType int)
 	AddProgram(int, int, int)
-	GetPATVersion()         int
-	GetPmtVersion(int)      int
+	GetPATVersion() int
+	GetPmtVersion(int) int
 	GetPmtPidByProgNum(int) int
 	PsiUpdateFinished(int, []byte)
 	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int)
@@ -41,7 +41,7 @@ type TableStruct interface {
 }
 
 func resolveHeaderField(d baseInterface, str string) (int, error) {
-	fieldStr, ok := d.getHeader().GetField(str)
+	fieldStr, ok := d.GetHeader().GetField(str)
 	if !ok {
 		return 0, errors.New(fmt.Sprintf("%s does not exist in %s", str, d.GetName()))
 	}

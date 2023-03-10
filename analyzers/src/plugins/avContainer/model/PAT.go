@@ -61,7 +61,7 @@ func (p *patStruct) ParsePayload() error {
 	if p.callback.GetPATVersion() == p.schema.Version {
 		return nil
 	}
-	r.ReadBits(1) // current/ next indicator
+	r.ReadBits(1)  // current/ next indicator
 	r.ReadBits(16) // section number and last section number
 
 	remainedLen -= 9
@@ -102,7 +102,7 @@ func (p *patStruct) GetName() string {
 	return "PAT"
 }
 
-func (p *patStruct) getHeader() common.CmBuf {
+func (p *patStruct) GetHeader() common.CmBuf {
 	return p.header
 }
 
