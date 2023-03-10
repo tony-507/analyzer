@@ -51,7 +51,11 @@ func (q *queue) append(r row, maxSize int, atEnd bool) {
 	if atEnd {
 		q.rows = append(q.rows, r)
 	} else {
-		q.rows = append([]row{r}, q.rows...)
+		if q.reserveBuffer > len(q.rows) {
+			q.rows = append(q.rows, r)
+		} else {
+			q.rows[q.reserveBuffer-1] = r
+		}
 	}
 }
 
@@ -66,7 +70,7 @@ type adSmartMonitor struct {
 }
 
 func (w *adSmartMonitor) setup(param ioWriterParam) {
-	w.bufferSize = 10
+	w.bufferSize = 6
 	w.isRunning = true
 	w.videoQueue = queue{rows: make([]row, 0), pid: 32}
 	w.audioQueue = queue{rows: make([]row, 0), pid: 33}
@@ -240,7 +244,7 @@ func (q *queue) getOutput(bufferSize int, nextSplicePTS int) string {
 
 func (w *adSmartMonitor) monitorStreams() {
 	normalSleepDuration := 3 * time.Second
-	demoSleepDuration := 10 * time.Second
+	demoSleepDuration := 20 * time.Second
 	sepStr := strings.Repeat("-", 89)
 	for w.isRunning {
 		tm.Clear()

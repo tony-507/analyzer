@@ -312,8 +312,7 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 			if splice_point >= 128 {
 				splice_point -= 256
 			}
-			spliceCountdown = splice_point
-			// fmt.Println(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
+			m_pMux.logger.Info(fmt.Sprintf("[%d] At packet #%d with pusi %v, splice_countdown is not empty but %d", pid, pktCnt, pusi, splice_point))
 		}
 	}
 
