@@ -7,69 +7,93 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
-type OptionalHeader struct {
-	scrambled   bool // If true, the remaining would not be parsed
-	dataAligned bool // If false, the remaining would not be parsed
-	length      int  // Length of the piece
-	pts         int  // -1 means not present
-	dts         int  // same as dts
+type pesPacketStruct struct {
+	header            common.CmBuf
+	payload           []byte
+	hasOptionalHeader bool
+	sectionLen        int
 }
 
-type PESHeader struct {
-	streamId       int
-	sectionLen     int
-	optionalHeader OptionalHeader
+func (p *pesPacketStruct) setBuffer(inBuf []byte) error {
+	buf := inBuf[:6]
+	r := common.GetBufferReader(buf)
+	p.header = common.MakeSimpleBuf(buf)
+
+	if r.ReadBits(24) != 0x000001 {
+		return errors.New("PES prefix start code not match")
+	}
+
+	streamId := r.ReadBits(8)
+	p.header.SetField("streamId", streamId, true)
+	sectionLen := r.ReadBits(16) // Can be zero
+	readLen := 6
+	optionalHeaderLength := 0
+
+	if streamId != 0x10111100 && streamId != 0x10111110 && streamId != 0x10111111 &&
+		streamId != 0x11110000 && streamId != 0x11110001 && streamId != 0x11110010 &&
+		streamId != 0x11111000 && streamId != 0x11111111 {
+		var err error
+		p.hasOptionalHeader = true
+		optionalHeaderLength, err = p.readOptionalHeader(inBuf[6:])
+		if err != nil {
+			return err
+		}
+	} else {
+		return errors.New("Special stream type not implemented for PES packet")
+	}
+
+	p.payload = inBuf[(6 + optionalHeaderLength):]
+
+	pesPktLen := 0
+	if sectionLen == 0 {
+		pesPktLen = -1
+		p.sectionLen = -1
+	} else {
+		pesPktLen = readLen + sectionLen
+		p.sectionLen = pesPktLen - 6 - optionalHeaderLength
+	}
+
+	p.header.SetField("size", pesPktLen, false)
+
+	return nil
 }
 
-func (h *PESHeader) GetSectionLength() int {
-	return h.sectionLen
-}
-
-func (h *PESHeader) GetPts() int {
-	return h.optionalHeader.pts
-}
-
-func (h *PESHeader) GetDts() int {
-	return h.optionalHeader.dts
-}
-
-// Parse optional header and return its length
-func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
-	// Initialize optional values here
-	pts := -1
-	dts := -1
+func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 	r := common.GetBufferReader(buf)
 
 	// Begin reading
 	if r.ReadBits(2) != 2 {
-		err := errors.New("optional PES header marker bits not match")
-		return OptionalHeader{}, err
+		return 0, errors.New("optional PES header marker bits not match")
 	}
-	scrambled := r.ReadBits(2) != 0
-	r.ReadBits(1) // Priority
-	dataAligned := r.ReadBits(1) != 0
-	r.ReadBits(1) // Copyright
-	r.ReadBits(1) // Original/ copy
-	pts_dts_flag := r.ReadBits(2)
-	r.ReadBits(1) // ESCR flag
-	r.ReadBits(1) // ES rate flag
-	r.ReadBits(1) // DSM trick mode flag
-	r.ReadBits(1) // Additional copy info flag
-	r.ReadBits(1) // CRC flag
-	r.ReadBits(1) // Extension flag
+	if r.ReadBits(2) != 0 {
+		return 0, errors.New("PES packet is scrambled")
+	}
+	p.header.SetField("priority", r.ReadBits(1), true)
+	r.ReadBits(1) // Data alignment indicator
+	p.header.SetField("copyright", r.ReadBits(1), true)
+	p.header.SetField("original", r.ReadBits(1), true)
+
+	pts := -1
+	dts := -1
+	escr := -1
+	esRate := -1
+
+	ptsDtsIdr := r.ReadBits(2)
+	hasEscr := r.ReadBits(1) != 0
+	hasEsRate := r.ReadBits(1) != 0
+	isDsmTrickMode := r.ReadBits(1) != 0
+	hasAdditionalCopyInfo := r.ReadBits(1) != 0
+	hasCrc := r.ReadBits(1) != 0
+	hasExtension := r.ReadBits(1) != 0
 	headerLen := r.ReadBits(8)
 
-	// Optional fields
 	remained := headerLen
-
-	// PTS DTS handling
-	switch pts_dts_flag {
+	switch ptsDtsIdr {
 	case 3:
 		sync := r.ReadBits(4)
 		if sync != 3 {
-			errMsg := fmt.Sprintf("PTS first four bits not match: sync=%d, flag=%d", sync, pts_dts_flag)
-			err := errors.New(errMsg)
-			return OptionalHeader{}, err
+			errMsg := fmt.Sprintf("PTS first four bits not match: sync=%d, flag=%d", sync, ptsDtsIdr)
+			return 0, errors.New(errMsg)
 		}
 		pts = r.ReadBits(3)
 		r.ReadBits(1)
@@ -80,9 +104,8 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 
 		sync = r.ReadBits(4)
 		if sync != 1 {
-			errMsg := fmt.Sprintf("DTS first four bits not match: sync=%d, flag=%d", sync, pts_dts_flag)
-			err := errors.New(errMsg)
-			return OptionalHeader{}, err
+			errMsg := fmt.Sprintf("DTS first four bits not match: sync=%d, flag=%d", sync, ptsDtsIdr)
+			return 0, errors.New(errMsg)
 		}
 		dts = r.ReadBits(3)
 		r.ReadBits(1)
@@ -94,9 +117,8 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 	case 2:
 		sync := r.ReadBits(4)
 		if sync != 2 {
-			errMsg := fmt.Sprintf("PTS first four bits not match: sync=%d, flag=%d", sync, pts_dts_flag)
-			err := errors.New(errMsg)
-			return OptionalHeader{}, err
+			errMsg := fmt.Sprintf("PTS first four bits not match: sync=%d, flag=%d", sync, ptsDtsIdr)
+			return 0, errors.New(errMsg)
 		}
 		pts = r.ReadBits(3)
 		r.ReadBits(1)
@@ -107,56 +129,123 @@ func ParseOptionalHeader(buf []byte) (OptionalHeader, error) {
 		r.ReadBits(1)
 		remained -= 5
 	case 1:
-		errMsg := fmt.Sprintf("Forbidden timestamp flag: flag=%d", pts_dts_flag)
-		err := errors.New(errMsg)
-		return OptionalHeader{}, err
+		errMsg := fmt.Sprintf("Forbidden timestamp flag: flag=%d", ptsDtsIdr)
+		return 0, errors.New(errMsg)
+	}
+	p.header.SetField("pts", pts, false)
+	p.header.SetField("dts", dts, false)
+
+	if hasEscr {
+		r.ReadBits(2)
+		escr = r.ReadBits(3)
+		r.ReadBits(1)
+		escr = (escr << 15) + r.ReadBits(15)
+		r.ReadBits(1)
+		escr = (escr << 15) + r.ReadBits(15)
+		r.ReadBits(1)
+		escr = escr*300 + r.ReadBits(9)
+		r.ReadBits(1)
+		remained -= 6
+	}
+	p.header.SetField("escr", escr, true)
+
+	if hasEsRate {
+		r.ReadBits(1)
+		esRate = r.ReadBits(22) * 50
+		r.ReadBits(1)
+		remained -= 3
+	}
+	p.header.SetField("esRate", esRate, true)
+
+	if isDsmTrickMode {
+		control := r.ReadBits(3)
+		switch control {
+		case 0b000:
+			// Fast forward
+			r.ReadBits(2) // field_id
+			r.ReadBits(1) // intra_slice_refresh
+			r.ReadBits(2) // frequency_truncation
+		case 0b001:
+			// Slow motion
+			r.ReadBits(5) // rep_cntrl
+		case 0b010:
+			// Freeze frame
+			r.ReadBits(2) // field_id
+			r.ReadBits(3)
+		case 0b011:
+			// Fast reverse
+			r.ReadBits(2) // field_id
+			r.ReadBits(1) // intra_slice_refresh
+			r.ReadBits(2) // frequency_truncation
+		case 0b100:
+			// Slow reverse
+			r.ReadBits(5) // rep_cntrl
+		default:
+			// Reserved
+			r.ReadBits(5)
+		}
+		remained -= 1
 	}
 
+	if hasAdditionalCopyInfo {
+		r.ReadBits(1)
+		r.ReadBits(7) // additional_copy_info
+		remained -= 1
+	}
+
+	if hasCrc {
+		r.ReadBits(16) // previous_PES_packet_CRC
+		remained -= 2
+	}
+
+	if hasExtension {
+		// TODO
+	}
 	r.ReadBits(remained * 8)
-	remained = 0
 
-	return OptionalHeader{scrambled: scrambled, dataAligned: dataAligned, length: headerLen + 3, pts: pts, dts: dts}, nil
+	return headerLen + 3, nil
 }
 
-func ParsePESHeader(buf []byte) (PESHeader, int, error) {
-	logger := common.CreateLogger("PesParser")
+func (p *pesPacketStruct) Append(buf []byte) {
+	p.payload = append(p.payload, buf...)
+}
 
-	r := common.GetBufferReader(buf)
-	headerLen := 0
+func (p *pesPacketStruct) GetField(str string) (int, error) {
+	return resolveHeaderField(p, str)
+}
 
-	if r.ReadBits(24) != 0x000001 {
-		err := errors.New("PES prefix start code not match")
-		logger.Error("%v", r)
-		return PESHeader{}, 0, err
-	}
-	streamId := r.ReadBits(8)
-	pesLen := r.ReadBits(16)
+func (p *pesPacketStruct) GetName() string {
+	return "PES packet"
+}
 
-	headerLen += 6
+func (p *pesPacketStruct) GetHeader() common.CmBuf {
+	return p.header
+}
 
-	// TODO: May not have optional header
-	optionalHeader, err := ParseOptionalHeader(r.GetRemainedBuffer())
-	if err != nil {
-		logger.Error("%v", r)
-		errMsg := fmt.Sprintf("%s\nReader status: (%d, %d)", err.Error(), r.GetPos(), r.GetOffset())
-		err = errors.New(errMsg)
-		return PESHeader{}, 0, err
-	}
-	headerLen += optionalHeader.length
+func (p *pesPacketStruct) GetPayload() []byte {
+	return p.payload
+}
 
-	if pesLen != 0 {
-		pesLen -= optionalHeader.length
+func (p *pesPacketStruct) Ready() bool {
+	if p.sectionLen == -1 {
+		return false
 	} else {
-		pesLen = len(r.GetRemainedBuffer()) - optionalHeader.length
+		return len(p.payload) >= p.sectionLen
 	}
-
-	return PESHeader{streamId, pesLen, optionalHeader}, headerLen, nil
 }
 
-func CreatePESHeader(streamId int, pesLen int, optionalHeader OptionalHeader) PESHeader {
-	return PESHeader{streamId: streamId, sectionLen: pesLen, optionalHeader: optionalHeader}
+func (p *pesPacketStruct) Serialize() []byte {
+	// TODO
+	return []byte{}
 }
 
-func CreateOptionalPESHeader(length int, pts int, dts int) OptionalHeader {
-	return OptionalHeader{scrambled: false, dataAligned: true, length: length, pts: pts, dts: dts}
+func PesPacket(buf []byte, pktCnt int, progNum int, streamType int) (DataStruct, error) {
+	rv := &pesPacketStruct{hasOptionalHeader: false, payload: make([]byte, 0)}
+	err := rv.setBuffer(buf)
+
+	rv.header.SetField("pktCnt", pktCnt, false)
+	rv.header.SetField("progNum", progNum, true)
+	rv.header.SetField("streamType", streamType, true)
+
+	return rv, err
 }

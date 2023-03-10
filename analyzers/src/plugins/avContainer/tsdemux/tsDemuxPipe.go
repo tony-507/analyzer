@@ -141,13 +141,22 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				actualType := actualTypeSlice[len(actualTypeSlice)-1]
 				switch actualType {
 				case "video":
-					m_pMux._handleStreamData(buf, pid,
+					err := m_pMux._handleStreamData(buf, pid,
 						progNum, pusi, pktCnt, streamType, pcr)
+					if err != nil {
+						panic(err)
+					}
 				case "audio":
-					m_pMux._handleStreamData(buf, pid,
+					err := m_pMux._handleStreamData(buf, pid,
 						progNum, pusi, pktCnt, streamType, pcr)
+					if err != nil {
+						panic(err)
+					}
 				case "data":
-					m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+					err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+					if err != nil {
+						panic(err)
+					}
 				default:
 					// Not sure, passthrough first
 					dataProcessed = false
@@ -303,50 +312,77 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 }
 
 // Handle stream data
-func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, pktCnt int, streamType int, pcr int) {
+func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, pktCnt int, streamType int, pcr int) error {
 	if pcr >= 0 {
 		clk := m_pMux.control.updateSrcClk(progNum)
 		clk.updatePcrRecord(pcr, pktCnt)
 	}
 
-	// Payload
 	if pusi {
-		// Initialization issue
-		if len(m_pMux.demuxedBuffers[pid]) != 0 {
-			pesHeader, headerLen, err := model.ParsePESHeader(m_pMux.demuxedBuffers[pid])
-			if err != nil {
-				m_pMux.control.throwError(pid, m_pMux.demuxStartCnt[pid], err.Error())
-			}
-
-			outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])
-			outBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid], false)
-			outBuf.SetField("progNum", progNum, true)
-			outBuf.SetField("streamType", streamType, true)
-			outBuf.SetField("size", pesHeader.GetSectionLength(), false)
-			outBuf.SetField("PTS", pesHeader.GetPts(), false)
-			outBuf.SetField("DTS", pesHeader.GetDts(), false)
-			outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+		if m_pMux.dataStructs[pid] != nil {
+			outBuf := m_pMux.dataStructs[pid].GetHeader()
 			outUnit := common.MakeIOUnit(outBuf, 1, pid)
 			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
-
-			splicePTSList := m_pMux.scte35SplicePTS[progNum]
-			if len(splicePTSList) > 0 && pesHeader.GetPts() == splicePTSList[0] {
-				fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
-				if len(splicePTSList) == 1 {
-					splicePTSList = make([]int, 0)
-				} else {
-					splicePTSList = splicePTSList[1:]
-				}
-				m_pMux.scte35SplicePTS[progNum] = splicePTSList
-			}
-
-			m_pMux.demuxedBuffers[pid] = make([]byte, 0)
+			m_pMux.dataStructs[pid] = nil
 		}
-		m_pMux.demuxedBuffers[pid] = buf
-		m_pMux.demuxStartCnt[pid] = pktCnt
-	} else if len(m_pMux.demuxedBuffers[pid]) != 0 {
-		m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
+
+		pesPkt, err := model.PesPacket(buf, pktCnt, progNum, streamType)
+		if err != nil {
+			return err
+		}
+
+		if pesPkt.Ready() {
+			outBuf := pesPkt.GetHeader()
+			outUnit := common.MakeIOUnit(outBuf, 1, pid)
+			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+		} else {
+			m_pMux.dataStructs[pid] = pesPkt
+		}
+	} else if m_pMux.dataStructs[pid] != nil {
+		m_pMux.dataStructs[pid].Append(buf)
+	} else {
+		m_pMux.logger.Error("[%d] drop TS packet with pid %d without preceding section data", pktCnt, pid)
 	}
+
+	// Payload
+	// if pusi {
+	// 	// Initialization issue
+	// 	if len(m_pMux.demuxedBuffers[pid]) != 0 {
+	// 		pesHeader, headerLen, err := model.ParsePESHeader(m_pMux.demuxedBuffers[pid])
+	// 		if err != nil {
+	// 			m_pMux.control.throwError(pid, m_pMux.demuxStartCnt[pid], err.Error())
+	// 		}
+
+	// 		outBuf := common.MakeSimpleBuf(m_pMux.demuxedBuffers[pid][headerLen:])
+	// 		outBuf.SetField("pktCnt", m_pMux.demuxStartCnt[pid], false)
+	// 		outBuf.SetField("progNum", progNum, true)
+	// 		outBuf.SetField("streamType", streamType, true)
+	// 		outBuf.SetField("size", pesHeader.GetSectionLength(), false)
+	// 		outBuf.SetField("PTS", pesHeader.GetPts(), false)
+	// 		outBuf.SetField("DTS", pesHeader.GetDts(), false)
+	// 		outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+	// 		outUnit := common.MakeIOUnit(outBuf, 1, pid)
+	// 		m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+
+	// 		splicePTSList := m_pMux.scte35SplicePTS[progNum]
+	// 		if len(splicePTSList) > 0 && pesHeader.GetPts() == splicePTSList[0] {
+	// 			fmt.Println(fmt.Sprintf("[%d] At packet #%d, PTS matches for SCTE-35 splice time %d", pid, m_pMux.demuxStartCnt[pid], splicePTSList[0]))
+	// 			if len(splicePTSList) == 1 {
+	// 				splicePTSList = make([]int, 0)
+	// 			} else {
+	// 				splicePTSList = splicePTSList[1:]
+	// 			}
+	// 			m_pMux.scte35SplicePTS[progNum] = splicePTSList
+	// 		}
+
+	// 		m_pMux.demuxedBuffers[pid] = make([]byte, 0)
+	// 	}
+	// 	m_pMux.demuxedBuffers[pid] = buf
+	// 	m_pMux.demuxStartCnt[pid] = pktCnt
+	// } else if len(m_pMux.demuxedBuffers[pid]) != 0 {
+	// 	m_pMux.demuxedBuffers[pid] = append(m_pMux.demuxedBuffers[pid], buf...)
+	// }
+	return nil
 }
 
 func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {

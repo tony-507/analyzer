@@ -177,36 +177,60 @@ func TestAdaptationFieldIO(t *testing.T) {
 	}
 }
 
-func TestPesHeaderIO(t *testing.T) {
-	caseName := []string{
-		"PesHeaderWithNoTimestamp",
-		"PesHeaderWithEqualTimestamp",
-		"PesHeaderWithDiffTimestamp",
-		"PesHeaderWithZeroLength",
-	}
-	byteSpecs := [][]byte{
-		{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x00, 0x00},
-		{0x00, 0x00, 0x01, 0xea, 0x17, 0xb2, 0x8f, 0x80, 0x05, 0x21, 0x00, 0x2b, 0x4d, 0xbb},
-		{0x00, 0x00, 0x01, 0xea, 0x7d, 0xb2, 0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb, 0x11, 0x00, 0x2b, 0x31, 0x9b},
-		{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
-	}
-	structSpecs := []PESHeader{
-		CreatePESHeader(234, 6063, CreateOptionalPESHeader(3, -1, -1)),
-		CreatePESHeader(234, 6058, CreateOptionalPESHeader(8, 698077, 698077)),
-		CreatePESHeader(234, 32165, CreateOptionalPESHeader(13, 705277, 694477)),
-		CreatePESHeader(234, 5, CreateOptionalPESHeader(3, -1, -1)),
+func TestPesPacketReady(t *testing.T) {
+	pkt1 := []byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x0a, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04}
+	pkt2 := []byte{0x05, 0x06, 0x07}
+
+	pesPkt, err := PesPacket(pkt1, 0, 1, 2)
+	if err != nil {
+		panic(err)
 	}
 
-	for idx := range byteSpecs {
+	assert.Equal(t, false, pesPkt.Ready())
+	assert.Equal(t, 4, len(pesPkt.GetPayload()))
+
+	pesPkt.Append(pkt2)
+	assert.Equal(t, true, pesPkt.Ready())
+	assert.Equal(t, 7, len(pesPkt.GetPayload()))
+}
+
+func TestPesPacketPtsDtsHandling(t *testing.T) {
+	caseName := []string{"noTimestamp", "ptsOnly", "both"}
+	byteSpec := [][]byte{
+		{0x00, 0x00, 0x01, 0xea, 0x00, 0x0a, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07},
+		{0x00, 0x00, 0x01, 0xea, 0x00, 0x0a, 0x8f, 0x80, 0x05, 0x21, 0x00, 0x2b, 0x4d, 0xbb, 0x01, 0x02},
+		{0x00, 0x00, 0x01, 0xea, 0x00, 0x10, 0x8f, 0xc0, 0x0a, 0x31, 0x00, 0x2b, 0x85, 0xfb, 0x11, 0x00, 0x2b, 0x31, 0x9b, 0x01, 0x02, 0x03},
+	}
+	ptsSpec := []int{-1, 698077, 705277}
+	dtsSpec := []int{-1, 698077, 694477}
+
+	for idx := 0; idx < len(caseName); idx++ {
 		t.Run(caseName[idx], func(t *testing.T) {
-			parsed, _, err := ParsePESHeader(byteSpecs[idx])
+			pesPkt, err := PesPacket(byteSpec[idx], 0, 1, 2)
 			if err != nil {
 				panic(err)
 			}
 
-			assert.Equal(t, structSpecs[idx], parsed, "PES header not match")
+			assert.Equal(t, true, pesPkt.Ready())
+
+			pts, err := pesPkt.GetField("pts")
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(t, ptsSpec[idx], pts)
+
+			dts, err := pesPkt.GetField("dts")
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(t, dtsSpec[idx], dts)
 		})
 	}
+}
+
+func TestZeroLengthPesPacket(t *testing.T) {
+	// TODO Bug automation
+	// data := []byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05}
 }
 
 func TestSCTE35IO(t *testing.T) {

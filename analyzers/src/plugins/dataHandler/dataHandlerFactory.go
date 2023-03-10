@@ -57,14 +57,14 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 		}
 
 		_, hasPid := df.handlers[pid]
-		dType, hasField := cmBuf.GetField("dataType")
+		dType, hasField := cmBuf.GetField("streamType")
 		if !hasField {
 			return
 		}
 		if !hasPid {
-			if dType == "MPEG 2 video" {
+			if dType == 2 {
 				df.handlers[pid] = video.MPEG2VideoHandler(pid)
-			} else if dType == "E-AC-3 audio" {
+			} else if dType == 129 || dType == 135 {
 				df.handlers[pid] = audio.AC3Handler(pid)
 			}
 		}
