@@ -305,6 +305,17 @@ func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt
 		}
 	} else if m_pMux.dataStructs[pid] != nil {
 		m_pMux.dataStructs[pid].Append(buf)
+		if m_pMux.dataStructs[pid].Ready() {
+			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
+			if !ok {
+				return errors.New(fmt.Sprintf("Not a table at pid %d", pid))
+			}
+			parseErr := table.ParsePayload()
+			if parseErr != nil {
+				return parseErr
+			}
+			m_pMux.dataStructs[pid] = nil
+		}
 	} else {
 		return errors.New("drop table without preceding section data")
 	}
