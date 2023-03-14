@@ -60,10 +60,24 @@ func (b *simpleBuf) GetFieldAsString() string {
 	return rv
 }
 
+// Add a field entry to buffer.
+// Adding an existing field overwrites the value
 func (b *simpleBuf) SetField(name string, datum interface{}, jsonIgnore bool) {
-	b.dataKey = append(b.dataKey, name)
-	b.dataVal = append(b.dataVal, datum)
-	b.jsonIgnore = append(b.jsonIgnore, jsonIgnore)
+	fieldIdx := -1
+	for idx, f := range b.dataKey {
+		if f == name {
+			fieldIdx = idx
+			break
+		}
+	}
+	if fieldIdx == -1 {
+		b.dataKey = append(b.dataKey, name)
+		b.dataVal = append(b.dataVal, datum)
+		b.jsonIgnore = append(b.jsonIgnore, jsonIgnore)
+	} else {
+		b.dataVal[fieldIdx] = datum
+		b.jsonIgnore[fieldIdx] = jsonIgnore
+	}
 }
 
 func (b *simpleBuf) GetField(name string) (interface{}, bool) {

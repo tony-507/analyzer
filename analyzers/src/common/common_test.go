@@ -7,6 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSimpleBufOverwriteField(t *testing.T) {
+	buf := MakeSimpleBuf([]byte{})
+	field := "dummy"
+
+	buf.SetField(field, 0, true)
+
+	v1, ok := buf.GetField(field)
+	if !ok {
+		panic("No such field")
+	}
+	assert.Equal(t, 0, v1, "Field should be 0")
+
+	buf.SetField(field, 10, false)
+
+	v2, ok := buf.GetField(field)
+	if !ok {
+		panic("No such field")
+	}
+	assert.Equal(t, 10, v2, "Field should be 10")
+}
+
 func TestIOUnitWithSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
 	buffer := MakeSimpleBuf(buf)
