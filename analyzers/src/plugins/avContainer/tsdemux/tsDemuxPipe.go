@@ -175,6 +175,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
 	outBuf := common.MakeSimpleBuf(jsonBytes)
 	outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
+	outBuf.SetField("streamType", -1, true)
 
 	outUnit := common.MakeIOUnit(outBuf, 2, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
