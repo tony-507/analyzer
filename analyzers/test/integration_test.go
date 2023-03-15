@@ -30,6 +30,7 @@ func TestListApp(t *testing.T) {
 func TestStartApp(t *testing.T) {
 	specs := []string{
 		"resources/testCases/ASCENT.json",
+		"resources/testCases/AdSmart.json",
 	}
 
 	for _, spec := range specs {

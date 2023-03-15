@@ -1,0 +1,10 @@
+{
+	"source": "adSmart.ts",
+	"app": ["tsa"],
+	"expected": {
+		"tsa": {
+			"json": ["0", "480", "35"],
+			"csv": ["32", "33"]
+		}
+	}
+}
