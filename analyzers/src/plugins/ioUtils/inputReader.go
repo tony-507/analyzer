@@ -125,19 +125,20 @@ func (ir *InputReader) start() {
 }
 
 func (ir *InputReader) fetchUnit() common.CmUnit {
+	var rv common.CmUnit
+
 	if len(ir.outputQueue) != 0 && ir.skipCnt <= 0 {
-		rv := ir.outputQueue[0]
-		if len(ir.outputQueue) == 1 {
-			ir.outputQueue = make([]common.CmUnit, 0)
-		} else {
-			ir.outputQueue = ir.outputQueue[1:]
-		}
-		return rv
+		rv = ir.outputQueue[0]
+	}
+
+	if len(ir.outputQueue) == 1 {
+		ir.outputQueue = make([]common.CmUnit, 0)
+	} else {
+		ir.outputQueue = ir.outputQueue[1:]
 	}
 
 	ir.skipCnt -= 1
 
-	rv := common.MakeIOUnit(nil, 0, -1)
 	return rv
 }
 
