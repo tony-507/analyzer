@@ -14,10 +14,13 @@ type pesPacketStruct struct {
 	sectionLen        int
 }
 
-func (p *pesPacketStruct) setBuffer(inBuf []byte) error {
+func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 	buf := inBuf[:6]
 	r := common.GetBufferReader(buf)
 	p.header = common.MakeSimpleBuf(buf)
+
+	p.header.SetField("pktCnt", pktCnt, false)
+	p.header.SetField("size", -1, false)
 
 	if r.ReadBits(24) != 0x000001 {
 		return errors.New("PES prefix start code not match")
@@ -241,9 +244,8 @@ func (p *pesPacketStruct) Serialize() []byte {
 
 func PesPacket(buf []byte, pktCnt int, progNum int, streamType int) (DataStruct, error) {
 	rv := &pesPacketStruct{hasOptionalHeader: false, payload: make([]byte, 0)}
-	err := rv.setBuffer(buf)
+	err := rv.setBuffer(buf, pktCnt)
 
-	rv.header.SetField("pktCnt", pktCnt, false)
 	rv.header.SetField("progNum", progNum, true)
 	rv.header.SetField("streamType", streamType, true)
 
