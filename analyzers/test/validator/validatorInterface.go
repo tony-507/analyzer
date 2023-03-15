@@ -77,7 +77,7 @@ func hasNonEmptyFileInList(fname string, size int, fileInfo []fs.FileInfo) error
 					errMsg = fmt.Sprintf("File size of %s is not %d but %d", fname, size, file.Size())
 				}
 			} else {
-				if file.Size() > 0 {
+				if file.Size() > 20 {
 					return nil
 				} else {
 					errMsg = fmt.Sprintf("%s is empty", fname)
