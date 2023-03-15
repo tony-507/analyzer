@@ -136,7 +136,7 @@ func (s *scte35Struct) ParsePayload() error {
 	// TODO Continue...
 
 	jsonBytes, _ := json.MarshalIndent(s.schema, "\t", "\t") // Extra tab prefix to support array of Jsons
-	s.callback.PsiUpdateFinished(0, jsonBytes)
+	s.callback.PsiUpdateFinished(s.pid, jsonBytes)
 
 	return nil
 }
