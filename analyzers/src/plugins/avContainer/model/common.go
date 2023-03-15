@@ -7,7 +7,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
-type baseInterface interface {
+type DataStruct interface {
 	Append(buf []byte)
 	GetField(string) (int, error)
 	GetName() string
@@ -15,10 +15,7 @@ type baseInterface interface {
 	GetPayload() []byte
 	Ready() bool
 	Serialize() []byte
-}
-
-type psiInterface interface {
-	ParsePayload() error
+	Process() error
 }
 
 type PsiManager interface {
@@ -31,16 +28,11 @@ type PsiManager interface {
 	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int)
 }
 
-type DataStruct interface {
-	baseInterface
+type pesHandle interface {
+	PesPacketReady(buf common.CmBuf, pid int)
 }
 
-type TableStruct interface {
-	baseInterface
-	psiInterface
-}
-
-func resolveHeaderField(d baseInterface, str string) (int, error) {
+func resolveHeaderField(d DataStruct, str string) (int, error) {
 	fieldStr, ok := d.GetHeader().GetField(str)
 	if !ok {
 		return 0, errors.New(fmt.Sprintf("%s does not exist in %s", str, d.GetName()))

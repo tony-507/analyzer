@@ -8,10 +8,12 @@ import (
 )
 
 type pesPacketStruct struct {
+	pid               int
 	header            common.CmBuf
 	payload           []byte
 	hasOptionalHeader bool
 	sectionLen        int
+	callback          pesHandle
 }
 
 func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
@@ -209,6 +211,11 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 	return headerLen + 3, nil
 }
 
+func (p *pesPacketStruct) Process() error {
+	p.callback.PesPacketReady(p.header, p.pid)
+	return nil
+}
+
 func (p *pesPacketStruct) Append(buf []byte) {
 	p.payload = append(p.payload, buf...)
 }
@@ -242,8 +249,8 @@ func (p *pesPacketStruct) Serialize() []byte {
 	return []byte{}
 }
 
-func PesPacket(buf []byte, pktCnt int, progNum int, streamType int) (DataStruct, error) {
-	rv := &pesPacketStruct{hasOptionalHeader: false, payload: make([]byte, 0)}
+func PesPacket(callback pesHandle, buf []byte, pid int, pktCnt int, progNum int, streamType int) (DataStruct, error) {
+	rv := &pesPacketStruct{pid: pid, hasOptionalHeader: false, payload: make([]byte, 0), callback: callback}
 	err := rv.setBuffer(buf, pktCnt)
 
 	rv.header.SetField("progNum", progNum, true)

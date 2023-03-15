@@ -86,7 +86,7 @@ func (p *PmtStruct) setBuffer(inBuf []byte) error {
 	return nil
 }
 
-func (p *PmtStruct) ParsePayload() error {
+func (p *PmtStruct) Process() error {
 	r := common.GetBufferReader(p.payload)
 	remainedLen := p.sectionLen
 
@@ -166,7 +166,7 @@ func (p *PmtStruct) ParsePayload() error {
 	return nil
 }
 
-func PmtTable(manager PsiManager, pktCnt int, buf []byte) (TableStruct, error) {
+func PmtTable(manager PsiManager, pktCnt int, buf []byte) (DataStruct, error) {
 	rv := &PmtStruct{callback: manager, payload: make([]byte, 0), sectionLen: -1}
 	rv.schema = &PmtSchema{PktCnt: pktCnt, Version: -1,
 		ProgDesc: make([]Descriptor, 0), Streams: make([]DataStream, 0), Crc32: -1}

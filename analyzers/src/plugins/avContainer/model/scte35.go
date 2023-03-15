@@ -74,7 +74,7 @@ func (s *scte35Struct) setBuffer(inBuf []byte) error {
 	return nil
 }
 
-func (s *scte35Struct) ParsePayload() error {
+func (s *scte35Struct) Process() error {
 	schema := &Scte35Schema{}
 	r := common.GetBufferReader(s.payload)
 
@@ -141,7 +141,7 @@ func (s *scte35Struct) ParsePayload() error {
 	return nil
 }
 
-func Scte35Table(manager PsiManager, pktCnt int, pid int, buf []byte) (TableStruct, error) {
+func Scte35Table(manager PsiManager, pktCnt int, pid int, buf []byte) (DataStruct, error) {
 	rv := &scte35Struct{callback: manager, payload: make([]byte, 0), pid: pid}
 	rv.schema = &Scte35Schema{PktCnt: pktCnt, SpliceCmd: nil}
 	err := rv.setBuffer(buf)

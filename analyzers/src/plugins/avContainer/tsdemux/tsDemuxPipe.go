@@ -1,8 +1,6 @@
 package tsdemux
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -102,7 +100,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 
 	if pid == 0 {
 		// PAT
-		err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+		err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 		if err != nil {
 			panic(err)
 		}
@@ -120,7 +118,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		}
 		if hasKey {
 			// PMT
-			err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+			err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 			if err != nil {
 				panic(err)
 			}
@@ -137,19 +135,17 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				actualType := actualTypeSlice[len(actualTypeSlice)-1]
 				switch actualType {
 				case "video":
-					err := m_pMux._handleStreamData(buf, pid,
-						progNum, pusi, pktCnt, streamType, pcr)
+					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
 					if err != nil {
 						panic(err)
 					}
 				case "audio":
-					err := m_pMux._handleStreamData(buf, pid,
-						progNum, pusi, pktCnt, streamType, pcr)
+					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
 					if err != nil {
 						panic(err)
 					}
 				case "data":
-					err := m_pMux._handlePsiData(buf, pid, pusi, pktCnt, afc)
+					err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 					if err != nil {
 						panic(err)
 					}
@@ -270,6 +266,11 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 	}
 }
 
+func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
+	outUnit := common.MakeIOUnit(buf, 1, pid)
+	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+}
+
 func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
 	if pid, hasKey := m_pMux.programRecords[progNum]; hasKey {
 		return pid
@@ -277,50 +278,7 @@ func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
 	return -1
 }
 
-func (m_pMux *tsDemuxPipe) _handlePsiData(buf []byte, pid int, pusi bool, pktCnt int, afc int) error {
-	if pusi {
-		if m_pMux.dataStructs[pid] != nil {
-			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
-			if !ok {
-				return errors.New(fmt.Sprintf("Not a table at pid %d", pid))
-			}
-			parseErr := table.ParsePayload()
-			return parseErr
-		} else {
-			table, err := model.PsiTable(m_pMux, pktCnt, pid, buf)
-			if err != nil {
-				return err
-			}
-			if table.Ready() {
-				parseErr := table.ParsePayload()
-				if parseErr != nil {
-					return parseErr
-				}
-			} else {
-				m_pMux.dataStructs[pid] = table
-			}
-		}
-	} else if m_pMux.dataStructs[pid] != nil {
-		m_pMux.dataStructs[pid].Append(buf)
-		if m_pMux.dataStructs[pid].Ready() {
-			table, ok := m_pMux.dataStructs[pid].(model.TableStruct)
-			if !ok {
-				return errors.New(fmt.Sprintf("Not a table at pid %d", pid))
-			}
-			parseErr := table.ParsePayload()
-			if parseErr != nil {
-				return parseErr
-			}
-			m_pMux.dataStructs[pid] = nil
-		}
-	} else {
-		return errors.New("drop table without preceding section data")
-	}
-	return nil
-}
-
-// Handle stream data
-func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, pusi bool, pktCnt int, streamType int, pcr int) error {
+func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int, progNum int, streamType int, pcr int) error {
 	if pcr >= 0 {
 		clk := m_pMux.control.updateSrcClk(progNum)
 		clk.updatePcrRecord(pcr, pktCnt)
@@ -328,36 +286,44 @@ func (m_pMux *tsDemuxPipe) _handleStreamData(buf []byte, pid int, progNum int, p
 
 	if pusi {
 		if m_pMux.dataStructs[pid] != nil {
-			outBuf := m_pMux.dataStructs[pid].GetHeader()
-			outUnit := common.MakeIOUnit(outBuf, 1, pid)
-			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+			parseErr := m_pMux.dataStructs[pid].Process()
 			m_pMux.dataStructs[pid] = nil
-		}
-
-		pesPkt, err := model.PesPacket(buf, pktCnt, progNum, streamType)
-		if err != nil {
-			return err
-		}
-
-		if pesPkt.Ready() {
-			outBuf := pesPkt.GetHeader()
-			outUnit := common.MakeIOUnit(outBuf, 1, pid)
-			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+			if parseErr != nil {
+				return parseErr
+			}
 		} else {
-			m_pMux.dataStructs[pid] = pesPkt
+			var ds model.DataStruct
+			var err error
+			if streamType == -1 {
+				ds, err = model.PsiTable(m_pMux, pktCnt, pid, buf)
+			} else {
+				ds, err = model.PesPacket(m_pMux, buf, pid, pktCnt, progNum, streamType)
+			}
+			if err != nil {
+				return err
+			}
+			if ds.Ready() {
+				parseErr := ds.Process()
+				if parseErr != nil {
+					return parseErr
+				}
+				m_pMux.dataStructs[pid] = nil
+			} else {
+				m_pMux.dataStructs[pid] = ds
+			}
 		}
 	} else if m_pMux.dataStructs[pid] != nil {
 		m_pMux.dataStructs[pid].Append(buf)
 		if m_pMux.dataStructs[pid].Ready() {
-			outBuf := m_pMux.dataStructs[pid].GetHeader()
-			outUnit := common.MakeIOUnit(outBuf, 1, pid)
-			m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+			parseErr := m_pMux.dataStructs[pid].Process()
 			m_pMux.dataStructs[pid] = nil
+			if parseErr != nil {
+				return parseErr
+			}
 		}
 	} else {
-		m_pMux.logger.Error("[%d] drop TS packet with pid %d without preceding section data", pktCnt, pid)
+		m_pMux.logger.Warn("[%d] drop TS packet with pid %d without preceding section data", pktCnt, pid)
 	}
-
 	return nil
 }
 

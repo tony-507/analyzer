@@ -49,7 +49,7 @@ func (p *patStruct) setBuffer(inBuf []byte) error {
 	return nil
 }
 
-func (p *patStruct) ParsePayload() error {
+func (p *patStruct) Process() error {
 	remainedLen := p.sectionLen
 	r := common.GetBufferReader(p.payload)
 
@@ -119,7 +119,7 @@ func (p *patStruct) Serialize() []byte {
 	return []byte{}
 }
 
-func PatTable(manager PsiManager, pktCnt int, buf []byte) (TableStruct, error) {
+func PatTable(manager PsiManager, pktCnt int, buf []byte) (DataStruct, error) {
 	rv := &patStruct{callback: manager, payload: make([]byte, 0)}
 	rv.schema = &PatSchema{PktCnt: pktCnt, Version: -1, ProgramMap: make(map[int]int, 0), Crc32: -1}
 	err := rv.setBuffer(buf)

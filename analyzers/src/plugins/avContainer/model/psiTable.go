@@ -1,14 +1,14 @@
 package model
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
-func PsiTable(manager PsiManager, pktCnt int, pid int, inBuf []byte) (TableStruct, error) {
+func PsiTable(manager PsiManager, pktCnt int, pid int, inBuf []byte) (DataStruct, error) {
 	pFieldLen := int(inBuf[0])
 	tableId := int(inBuf[pFieldLen+1])
-	buf := inBuf[(pFieldLen+2):]
+	buf := inBuf[(pFieldLen + 2):]
 	switch tableId {
 	case 0:
 		return PatTable(manager, pktCnt, buf)

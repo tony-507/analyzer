@@ -113,6 +113,10 @@ func (p *tsPacketStruct) readAdaptationField(inBuf []byte) (int, error) {
 	return afLen + 1, nil
 }
 
+func (p *tsPacketStruct) Process() error {
+	return nil
+}
+
 func (p *tsPacketStruct) Append(buf []byte) {
 	p.payload = append(p.payload, buf...)
 }

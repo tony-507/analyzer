@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tony-507/analyzers/src/common"
 )
 
 type dummyManagerStruct struct {
@@ -63,6 +64,20 @@ func dummyManager() *dummyManagerStruct {
 	return rv
 }
 
+type dummyPesCallbackStruct struct {
+	outputQueue []common.CmBuf
+}
+
+func (p *dummyPesCallbackStruct) PesPacketReady(buf common.CmBuf, pid int) {
+	p.outputQueue = append(p.outputQueue, buf)
+}
+
+func dummyPesCallback() pesHandle {
+	rv := &dummyPesCallbackStruct{}
+	rv.outputQueue = make([]common.CmBuf, 0)
+	return rv
+}
+
 func TestReadPAT(t *testing.T) {
 	dummyPAT := []byte{0x00, 0x00, 0xB0, 0x0D, 0x11, 0x11, 0xC1,
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
@@ -72,7 +87,7 @@ func TestReadPAT(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	parseErr := table.ParsePayload()
+	parseErr := table.Process()
 	if parseErr != nil {
 		panic(parseErr)
 	}
@@ -101,7 +116,7 @@ func TestReadPMT(t *testing.T) {
 	}
 	assert.Equal(t, true, table.Ready(), "PMT should be ready for parsing")
 
-	parseErr := table.ParsePayload()
+	parseErr := table.Process()
 	if parseErr != nil {
 		panic(parseErr)
 	}
@@ -181,7 +196,8 @@ func TestPesPacketReady(t *testing.T) {
 	pkt1 := []byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x0a, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04}
 	pkt2 := []byte{0x05, 0x06, 0x07}
 
-	pesPkt, err := PesPacket(pkt1, 0, 1, 2)
+	callback := dummyPesCallback()
+	pesPkt, err := PesPacket(callback, pkt1, -1, 0, 1, 2)
 	if err != nil {
 		panic(err)
 	}
@@ -206,7 +222,8 @@ func TestPesPacketPtsDtsHandling(t *testing.T) {
 
 	for idx := 0; idx < len(caseName); idx++ {
 		t.Run(caseName[idx], func(t *testing.T) {
-			pesPkt, err := PesPacket(byteSpec[idx], 0, 1, 2)
+			callback := dummyPesCallback()
+			pesPkt, err := PesPacket(callback, byteSpec[idx], -1, 0, 1, 2)
 			if err != nil {
 				panic(err)
 			}
@@ -253,7 +270,7 @@ func TestSCTE35IO(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			parseErr := table.ParsePayload()
+			parseErr := table.Process()
 			if parseErr != nil {
 				panic(parseErr)
 			}
