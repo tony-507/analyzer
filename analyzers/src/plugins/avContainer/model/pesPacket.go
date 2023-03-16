@@ -49,16 +49,11 @@ func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 
 	p.payload = inBuf[(6 + optionalHeaderLength):]
 
-	pesPktLen := 0
 	if sectionLen == 0 {
-		pesPktLen = -1
 		p.sectionLen = -1
 	} else {
-		pesPktLen = readLen + sectionLen
-		p.sectionLen = pesPktLen - 6 - optionalHeaderLength
+		p.sectionLen = readLen + sectionLen - 6 - optionalHeaderLength
 	}
-
-	p.header.SetField("size", pesPktLen, false)
 
 	return nil
 }
@@ -212,6 +207,7 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 }
 
 func (p *pesPacketStruct) Process() error {
+	p.header.SetField("size", len(p.payload), false)
 	p.callback.PesPacketReady(p.header, p.pid)
 	return nil
 }

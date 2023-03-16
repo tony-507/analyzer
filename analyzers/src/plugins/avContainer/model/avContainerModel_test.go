@@ -246,8 +246,21 @@ func TestPesPacketPtsDtsHandling(t *testing.T) {
 }
 
 func TestZeroLengthPesPacket(t *testing.T) {
-	// TODO Bug automation
-	// data := []byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05}
+	pkt1 := []byte{0x00, 0x00, 0x01, 0xea, 0x00, 0x00, 0x8f, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05}
+	pkt2 := []byte{0x06, 0x07, 0x08}
+	callback := dummyPesCallback()
+	pes, err := PesPacket(callback, pkt1, 0, 0, 0, 0)
+	if err != nil {
+		panic(err)
+	}
+	pes.Append(pkt2)
+	pes.Process()
+
+	size, err := pes.GetField("size")
+	if err != nil {
+		panic(err)
+	}
+	assert.Equal(t, 8, size, "PES packet size not match")
 }
 
 func TestSCTE35IO(t *testing.T) {
