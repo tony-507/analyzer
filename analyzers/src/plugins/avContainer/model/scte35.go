@@ -121,9 +121,8 @@ func (s *scte35Struct) Process() error {
 		spliceCmdTypeStr = "private_command"
 		spliceCmd = readPrivateCommand(&r)
 	default:
-		msg := fmt.Sprintf("Unknown splice command type %d", spliceCmdType)
-		logger.Error(msg)
-		panic(msg)
+		msg := fmt.Sprintf("unknown splice command type %d received", spliceCmdType)
+		return errors.New(msg)
 	}
 
 	s.callback.SpliceEventReceived(s.pid, spliceCmdTypeStr, spliceCmd.GetSplicePTS())

@@ -1,6 +1,7 @@
 package tsdemux
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -33,22 +34,22 @@ func (m_pMux *tsDemuxPipe) _setup() {
 }
 
 // Handle incoming data from demuxer
-func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
+func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 	pkt, tsErr := model.TsPacket(buf)
 
 	if tsErr != nil {
-		panic(tsErr)
+		return tsErr
 	}
 	buf = pkt.GetPayload()
 
 	tsc, fieldErr := pkt.GetField("tsc")
 	if fieldErr != nil {
-		panic(fieldErr)
+		return fieldErr
 	}
 
 	// If scrambled, throw away
 	if tsc != 0 {
-		return
+		return errors.New("the packet is scrambled")
 	}
 
 	dataProcessed := true // controller use
@@ -56,23 +57,23 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 	// Determine the type of the unit
 	pid, fieldErr := pkt.GetField("pid")
 	if fieldErr != nil {
-		panic(fieldErr)
+		return fieldErr
 	}
 
 	pusiInt, fieldErr := pkt.GetField("pusi")
 	if fieldErr != nil {
-		panic(fieldErr)
+		return fieldErr
 	}
 	pusi := pusiInt != 0
 
 	afc, fieldErr := pkt.GetField("afc")
 	if fieldErr != nil {
-		panic(fieldErr)
+		return fieldErr
 	}
 
 	cc, fieldErr := pkt.GetField("cc")
 	if fieldErr != nil {
-		panic(fieldErr)
+		return fieldErr
 	}
 
 	inputMon.checkTsHeader(pid, afc, cc, pktCnt)
@@ -83,12 +84,12 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		var err error
 		pcr, err = pkt.GetValueFromAdaptationField("pcr")
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		spliceCountdown, err := pkt.GetValueFromAdaptationField("spliceCountdown")
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if spliceCountdown != -1 {
 			if spliceCountdown >= 128 {
@@ -102,7 +103,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 		// PAT
 		err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	} else if pid < 32 {
 		// Special pids
@@ -120,7 +121,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 			// PMT
 			err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 			if err != nil {
-				panic(err)
+				return err
 			}
 		} else {
 			// Others
@@ -137,17 +138,17 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 				case "video":
 					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
 					if err != nil {
-						panic(err)
+						return err
 					}
 				case "audio":
 					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
 					if err != nil {
-						panic(err)
+						return err
 					}
 				case "data":
 					err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 					if err != nil {
-						panic(err)
+						return err
 					}
 				default:
 					// Not sure, passthrough first
@@ -162,6 +163,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) {
 	if dataProcessed {
 		m_pMux.control.dataParsed(pid)
 	}
+	return nil
 }
 
 func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {

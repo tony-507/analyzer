@@ -11,7 +11,7 @@ type dummyPipe struct {
 	inCnt       int
 }
 
-func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) {
+func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) error {
 	// Return dummy unit
 	dp.inCnt += 1
 	if dp.inCnt > 1 {
@@ -21,6 +21,7 @@ func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) {
 	if dp.ready {
 		dp.outputQueue = append(dp.outputQueue, dummy)
 	}
+	return nil
 }
 
 func (dp *dummyPipe) getDuration() int {

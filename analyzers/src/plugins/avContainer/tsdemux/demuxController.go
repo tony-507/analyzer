@@ -92,11 +92,6 @@ func (dc *demuxController) outputUnitFetched() {
 	dc.outLen -= 1
 }
 
-func (dc *demuxController) throwError(pid int, curCnt int, msg string) {
-	outMsg := fmt.Sprintf("[%d] At pkt#%d, %s", pid, curCnt, msg)
-	panic(outMsg)
-}
-
 func (dc *demuxController) printSummary(duration int) {
 	sum := 0
 	rateSum := 0.0
