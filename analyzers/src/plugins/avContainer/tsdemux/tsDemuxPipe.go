@@ -291,26 +291,25 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 			if parseErr != nil {
 				return parseErr
 			}
+		}
+		var ds model.DataStruct
+		var err error
+		if streamType == -1 {
+			ds, err = model.PsiTable(m_pMux, pktCnt, pid, buf)
 		} else {
-			var ds model.DataStruct
-			var err error
-			if streamType == -1 {
-				ds, err = model.PsiTable(m_pMux, pktCnt, pid, buf)
-			} else {
-				ds, err = model.PesPacket(m_pMux, buf, pid, pktCnt, progNum, streamType)
+			ds, err = model.PesPacket(m_pMux, buf, pid, pktCnt, progNum, streamType)
+		}
+		if err != nil {
+			return err
+		}
+		if ds.Ready() {
+			parseErr := ds.Process()
+			if parseErr != nil {
+				return parseErr
 			}
-			if err != nil {
-				return err
-			}
-			if ds.Ready() {
-				parseErr := ds.Process()
-				if parseErr != nil {
-					return parseErr
-				}
-				m_pMux.dataStructs[pid] = nil
-			} else {
-				m_pMux.dataStructs[pid] = ds
-			}
+			m_pMux.dataStructs[pid] = nil
+		} else {
+			m_pMux.dataStructs[pid] = ds
 		}
 	} else if m_pMux.dataStructs[pid] != nil {
 		m_pMux.dataStructs[pid].Append(buf)
