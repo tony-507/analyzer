@@ -34,7 +34,7 @@ func TestReaderSetParameter(t *testing.T) {
 		fr := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
 		fr.SetParameter(param)
 
-		impl, isFileReader := fr.impl.(*fileReader)
+		impl, isFileReader := fr.impl.(*fileReaderStruct)
 		if !isFileReader {
 			panic("File reader not created")
 		}
@@ -161,12 +161,14 @@ func TestReadPcapPacket(t *testing.T) {
 func TestReadPcapFile(t *testing.T) {
 	fname := ASSET_DIR + "adSmart.pcap"
 	logger := common.CreateLogger("Dummy")
-	pcap := pcapFile(fname, logger)
+	pcap, err := pcapFile(fname, logger)
+	if err != nil {
+		panic(err)
+	}
 	for i := 0; i < 70; i++ {
-		buf, ok := pcap.getBufferV2()
-		if !ok {
-			logger.Error("Fail to get %d-th buffer", i)
-			panic("Fail to get buffer")
+		buf, err := pcap.getBuffer()
+		if err != nil {
+			panic(err)
 		}
 		assert.Equal(t, uint8(0x47), buf[0], "TS sync byte not match")
 	}

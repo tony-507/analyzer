@@ -27,7 +27,7 @@ type FileWriter struct {
 	wg         sync.WaitGroup
 }
 
-func (m_writer *FileWriter) setup(writerParam ioWriterParam) {
+func (m_writer *FileWriter) setup(writerParam ioWriterParam) error {
 	m_writer.writerMap = make([]chan common.CmUnit, 40)
 	m_writer.outFolder = writerParam.FileOutput.OutFolder
 	m_writer.rawByteExt = writerParam.FileOutput.RawByteExtension
@@ -35,10 +35,7 @@ func (m_writer *FileWriter) setup(writerParam ioWriterParam) {
 		m_writer.writerMap[i] = make(chan common.CmUnit)
 	}
 
-	err := os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary
-	if err != nil {
-		panic(err)
-	}
+	return os.MkdirAll(m_writer.outFolder, os.ModePerm) // Create output folder if necessary
 }
 
 func (m_writer *FileWriter) stop() {
@@ -81,7 +78,9 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 
 	fname := fmt.Sprintf("%s%d.json", m_writer.outFolder, pid)
 	f, err := os.Create(fname)
-	check(err)
+	if err != nil {
+		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
+	}
 
 	defer f.Close()
 
@@ -108,9 +107,11 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 			}
 
 			_, err := f.Write(buf)
-			check(err)
+			if err != nil {
+				m_writer.logger.Error("Error writing data (%v) to %s: %s", buf, fname, err.Error())
+			}
 		} else {
-			panic(fmt.Sprintf("What is this? %T | %v", unit.GetBuf(), unit.GetBuf()))
+			m_writer.logger.Error("Received unknown unit buffer: %v", unit.GetBuf())
 		}
 	}
 
@@ -137,11 +138,15 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 	body := ""
 
 	csvFile, err := os.Create(fname)
+	if err != nil {
+		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
+	}
 	csvWriter := bufio.NewWriter(csvFile)
-	check(err)
 
 	rawFile, err := os.Create(rawFileName)
-	check(err)
+	if err != nil {
+		m_writer.logger.Error("Fail to create and open %s: %s", rawFileName, err.Error())
+	}
 
 	defer csvFile.Close()
 
@@ -166,7 +171,9 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 		}
 
 		_, err := csvWriter.WriteString(body)
-		check(err)
+		if err != nil {
+			m_writer.logger.Error("Error writing data (%s) to %s: %s", body, fname, err.Error())
+		}
 
 		csvWriter.Flush()
 	}
@@ -183,7 +190,9 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 	}
 	fname := fmt.Sprintf("%sout%s.ts", m_writer.outFolder, suffix)
 	f, err := os.Create(fname)
-	check(err)
+	if err != nil {
+		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
+	}
 
 	for {
 		unit := <-m_writer.writerMap[chIdx]
@@ -196,7 +205,9 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 		buf, _ := unit.GetBuf().([]byte)
 
 		_, err := f.Write(buf)
-		check(err)
+		if err != nil {
+			m_writer.logger.Error("Error writing data (%v) to %s: %s", buf, fname, err.Error())
+		}
 	}
 	m_writer.logger.Trace("Raw handler for pid %d stops", pid)
 }
@@ -248,8 +259,7 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 				m_writer.wg.Add(1)
 				go m_writer._processRawOutput(outId, idIdx)
 			default:
-				m_writer.logger.Error("Unknown output type %d for id %d", outType, idIdx)
-				panic("Unknown output type")
+				m_writer.logger.Error("Received unknown output type %d for id %d", outType, idIdx)
 			}
 		}
 	}

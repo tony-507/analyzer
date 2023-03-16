@@ -12,9 +12,13 @@ func (dr *dummyReader) setup() {
 	dr.readCnt = 0
 }
 
-func (dr *dummyReader) startRecv() {}
+func (dr *dummyReader) startRecv() error {
+	return nil
+}
 
-func (dr *dummyReader) stopRecv() {}
+func (dr *dummyReader) stopRecv() error {
+	return nil
+}
 
 func (dr *dummyReader) dataAvailable(unit *common.IOUnit) bool {
 	dr.readCnt += 1

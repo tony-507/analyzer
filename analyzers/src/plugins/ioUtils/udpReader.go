@@ -1,6 +1,7 @@
 package ioUtils
 
 import (
+	"errors"
 	"net"
 	"os"
 	"strconv"
@@ -20,46 +21,40 @@ type sockConn struct {
 	conn    *ipv4.PacketConn
 }
 
-func (s *sockConn) close() {
-	err := s.conn.Close()
-	if err != nil {
-		s.logger.Error("Cannot close socket connection: %s", err.Error())
-	}
+func (s *sockConn) close() error {
+	return s.conn.Close()
 }
 
-func (s *sockConn) init() {
+func (s *sockConn) init() error {
 	port, err := strconv.Atoi(s.port)
 	if err != nil {
 		s.logger.Fatal("Port is not an integer: %s", s.port)
-		panic("Invalid port")
+		return errors.New("Invalid port")
 	}
 
 	a := net.ParseIP(s.address)
 	if a == nil {
 		s.logger.Fatal("Fail to parse IP address %s", s.address)
-		panic("Bad IP address")
+		return errors.New("Bad IP address")
 	}
 
-	s.openMcast(a, port)
+	return s.openMcast(a, port)
 }
 
-func (s *sockConn) openMcast(a net.IP, port int) {
+func (s *sockConn) openMcast(a net.IP, port int) error {
 	sock, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_UDP)
 	if err != nil {
-		s.logger.Fatal("Cannot open socket: %s", err.Error())
-		panic(err)
+		return err
 	}
 
 	err = syscall.SetsockoptInt(sock, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 	if err != nil {
-		s.logger.Fatal("Cannot set socket option: %s", err.Error())
-		panic(err)
+		return err
 	}
 
 	err = syscall.SetsockoptString(sock, syscall.SOL_SOCKET, syscall.SO_BINDTODEVICE, s.itf)
 	if err != nil {
-		s.logger.Fatal("Cannot set socket option: %s", err.Error())
-		panic(err)
+		return err
 	}
 
 	lsa := syscall.SockaddrInet4{Port: port}
@@ -68,52 +63,50 @@ func (s *sockConn) openMcast(a net.IP, port int) {
 	err = syscall.Bind(sock, &lsa)
 	if err != nil {
 		syscall.Close(sock)
-		s.logger.Fatal("Fail to bind to address: %s", err.Error())
-		panic(err)
+		return err
 	}
 	f := os.NewFile(uintptr(sock), "")
 	c, err := net.FilePacketConn(f)
 	f.Close()
 	if err != nil {
-		s.logger.Fatal("Cannot start connection: %s", err.Error())
+		return err
 	}
 	p := ipv4.NewPacketConn(c)
 
 	itfName, err := net.InterfaceByName(s.itf)
 	if err != nil {
-		s.logger.Fatal("Unknown interface name %s", s.itf)
+		return err
 	}
 
 	err = p.JoinGroup(itfName, &net.UDPAddr{IP: a})
 	if err != nil {
-		s.logger.Fatal("Cannot join group %s: %s", a.String(), err.Error())
-		panic(err)
+		return err
 	}
 
 	err = p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|ipv4.FlagInterface, true)
 	if err != nil {
-		s.logger.Fatal("Fail to set socket control message: %s", err.Error())
-		panic(err)
+		return err
 	}
 
 	s.conn = p
+	return nil
 }
 
-func (s *sockConn) read() []byte {
+func (s *sockConn) read() ([]byte, error) {
 	buf := make([]byte, 10000)
 	n, _, _, err := s.conn.ReadFrom(buf)
 	if err != nil {
 		s.logger.Fatal("Cannot read from UDP datagram")
-		panic(err)
+		return buf, err
 	}
-	return buf[:n]
+	return buf[:n], nil
 }
 
 func socketConnection(logger common.Log, address string, port string, itf string) *sockConn {
 	return &sockConn{logger: logger, address: address, port: port, itf: itf, conn: nil}
 }
 
-type udpReader struct {
+type udpReaderStruct struct {
 	logger      common.Log
 	address     string
 	port        string
@@ -123,21 +116,25 @@ type udpReader struct {
 	udpCount    int
 }
 
-func (ur *udpReader) setup() {
+func (ur *udpReaderStruct) setup() {
 	ur.conn = socketConnection(ur.logger, ur.address, ur.port, ur.itf)
 }
 
-func (ur *udpReader) startRecv() {
-	ur.conn.init()
+func (ur *udpReaderStruct) startRecv() error {
+	return ur.conn.init()
 }
 
-func (ur *udpReader) stopRecv() {
-	ur.conn.close()
+func (ur *udpReaderStruct) stopRecv() error {
+	return ur.conn.close()
 }
 
-func (ur *udpReader) dataAvailable(unit *common.IOUnit) bool {
+func (ur *udpReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 	if len(ur.bufferQueue) <= 1 {
-		udpBuf := ur.conn.read()
+		udpBuf, err := ur.conn.read()
+
+		if err != nil {
+			ur.logger.Error("Fail to read buffer: %s", err.Error())
+		}
 
 		ur.udpCount += 1
 
@@ -157,8 +154,8 @@ func (ur *udpReader) dataAvailable(unit *common.IOUnit) bool {
 	return true
 }
 
-func initUdpReader(param *udpInputParam, name string) *udpReader {
-	rv := udpReader{}
+func udpReader(param *udpInputParam, name string) IReader {
+	rv := udpReaderStruct{}
 	rv.conn = nil
 	rv.udpCount = 0
 

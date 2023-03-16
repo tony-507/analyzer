@@ -1,6 +1,7 @@
 package ioUtils
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -171,7 +172,7 @@ func (pcap *pcapFileStruct) close() {
 	pcap.fHandle.Close()
 }
 
-func (pcap *pcapFileStruct) parseHeader() {
+func (pcap *pcapFileStruct) parseHeader() error {
 	buf := make([]byte, 24)
 	pcap.fHandle.Read(buf)
 	r := common.GetBufferReader(buf)
@@ -191,7 +192,7 @@ func (pcap *pcapFileStruct) parseHeader() {
 		pcap.isBigEndian = true
 		pcap.useNanoSec = true
 	default:
-		panic(fmt.Sprintf("Unknown first byte of magic number: %d", firstByte))
+		return errors.New(fmt.Sprintf("Unknown first byte of magic number: %d", firstByte))
 	}
 	r.ReadBits((3 + 2 + 2 + 4 + 4 + 4) * 8)
 	if pcap.isBigEndian {
@@ -199,49 +200,47 @@ func (pcap *pcapFileStruct) parseHeader() {
 	} else {
 		pcap.linkLayerType = r.ReadLIBytes(4)
 	}
+	return nil
 }
 
-func (pcap *pcapFileStruct) getBufferV2() ([]byte, bool) {
+func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 	if !pcap.bInit {
 		time.Sleep(1 * time.Second)
 		// pcap header
-		pcap.parseHeader()
+		err := pcap.parseHeader()
+		if err != nil {
+			return []byte{}, err
+		}
 		pcap.bInit = true
 	}
 
 	if len(pcap.bufferQueue) == 0 {
 		// Check pcap packet header
-		buf, hasData := pcap.advanceCursor(16)
-		if !hasData {
-			return buf, hasData
-		}
+		buf, _ := pcap.advanceCursor(16)
 		pcapPkt := pcapPacket(pcap.isBigEndian)
 		pcapPkt.parseHeader(buf, pcap.logger)
-		body, hasData := pcap.advanceCursor(pcapPkt.length)
-		if hasData {
-			pcapPkt.setPayload(body, pcap.logger)
-		} else {
-			return buf, hasData
-		}
+
+		body, _ := pcap.advanceCursor(pcapPkt.length)
+		pcapPkt.setPayload(body, pcap.logger)
 
 		dataLink, ok := pcapPkt.getPayload().(dataPacketStruct)
 		if !ok {
-			panic("Fail to get data link packet")
+			return buf, errors.New("Fail to get data link packet")
 		}
 
 		network, ok := dataLink.getPayload().(dataPacketStruct)
 		if !ok {
-			panic("Fail to get network packet")
+			return buf, errors.New("Fail to get network packet")
 		}
 
 		transport, ok := network.getPayload().(dataPacketStruct)
 		if !ok {
-			panic("Fail to get transport packet")
+			return buf, errors.New("Fail to get transport packet")
 		}
 
 		buffer, ok := transport.getPayload().([]byte)
 		if !ok {
-			panic("Fail to retrieve application payload")
+			return buf, errors.New("Fail to retrieve application payload")
 		}
 
 		numTsPkt := len(buffer) / TS_PKT_SIZE
@@ -251,7 +250,7 @@ func (pcap *pcapFileStruct) getBufferV2() ([]byte, bool) {
 	}
 
 	if len(pcap.bufferQueue) == 0 {
-		return []byte{}, false
+		return []byte{}, errors.New("no output can be fetched")
 	} else {
 		buf := pcap.bufferQueue[0]
 		if len(pcap.bufferQueue) == 1 {
@@ -259,12 +258,12 @@ func (pcap *pcapFileStruct) getBufferV2() ([]byte, bool) {
 		} else {
 			pcap.bufferQueue = pcap.bufferQueue[1:]
 		}
-		return buf, true
+		return buf, nil
 	}
 }
 
 // Try to read n bytes. If fail, return false
-func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, bool) {
+func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, error) {
 	ok := true
 	reason := "unknown"
 	buf := make([]byte, n)
@@ -273,7 +272,7 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, bool) {
 		reason = "EOF"
 		ok = false
 	} else if err != nil {
-		panic(err)
+		return buf, err
 	}
 	if l < n {
 		reason = "out of buffer"
@@ -284,138 +283,19 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, bool) {
 		pcap.fHandle.Seek(int64(-l), 1)
 		time.Sleep(5 * time.Millisecond)
 	}
-	return buf, ok
+	return buf, nil
 }
 
-func (pcap *pcapFileStruct) handleLinkLayer() (int, bool) {
-	// TODO: Assume Ethernet frame: 6 byte dst + 6 byte src + 2 byte type
-	_, ok := pcap.advanceCursor(14)
-	return -1, ok
-}
-
-func (pcap *pcapFileStruct) handleNetworkLayer() (int, bool) {
-	// TODO: Assume IPv4 for now
-	firstByte, ok := pcap.advanceCursor(1)
-	if !ok {
-		return -1, ok
-	}
-
-	version := (firstByte[0] & 0xf0) / 16
-	if version != 4 {
-		pcap.logger.Error("Internet protocol version is not 4 but %d", version)
-	}
-
-	headerLen := firstByte[0] & 0x0f
-	if headerLen != 0 {
-		_, ok = pcap.advanceCursor(int(headerLen)*4 - 1)
-	}
-	return -1, ok
-}
-
-// Return payload size
-func (pcap *pcapFileStruct) handleTransportLayer() (int, bool) {
-	//TODO: Assume UDP for now: 2 byte src port, 2 byte dst port, 2 byte length, 2 byte checksum
-	_, ok := pcap.advanceCursor(4)
-	if !ok {
-		return -1, ok
-	}
-	lenBuf, ok := pcap.advanceCursor(2)
-	if !ok {
-		return -1, ok
-	}
-	_, ok = pcap.advanceCursor(2)
-	return (int(lenBuf[0])*256 + int(lenBuf[1]) - 8), ok
-}
-
-func (pcap *pcapFileStruct) getBuffer() ([]byte, bool) {
-	if !pcap.bInit {
-		time.Sleep(1 * time.Second)
-		// pcap header
-		pcap.advanceCursor(24)
-		pcap.bInit = true
-	}
-	hasData := true
-	rv := make([]byte, TS_PKT_SIZE)
-	if len(pcap.bufferQueue) == 0 {
-		time.Sleep(5 * time.Millisecond)
-		pcap.pktCnt += 1
-		pcap.logger.Info("Packet #%d", pcap.pktCnt)
-		// Unused packet data
-		_, hasData = pcap.advanceCursor(8)
-
-		if hasData {
-			// Get packet length
-			pcapPktLenBuf, canReadLen := pcap.advanceCursor(4)
-			if canReadLen {
-				_, hasData = pcap.advanceCursor(int(pcapPktLenBuf[0]))
-				if !hasData {
-					return rv, false
-				}
-			} else {
-				hasData = false
-			}
-		}
-
-		if hasData {
-			// Unused packet data
-			_, hasData = pcap.advanceCursor(4)
-
-		}
-
-		// Physical layer is not needed
-		if hasData {
-			_, hasData = pcap.handleLinkLayer()
-		}
-
-		if hasData {
-			_, hasData = pcap.handleNetworkLayer()
-		}
-
-		if hasData {
-			var pktLen int
-			pktLen, hasData = pcap.handleTransportLayer()
-
-			if hasData {
-				// Read packet payload
-				numTsPkt := pktLen / TS_PKT_SIZE
-				for i := 0; i < numTsPkt; i++ {
-					buf := make([]byte, TS_PKT_SIZE)
-					buf, hasData = pcap.advanceCursor(TS_PKT_SIZE)
-					if hasData {
-						pcap.bufferQueue = append(pcap.bufferQueue, buf)
-					} else {
-						break
-					}
-				}
-			}
-		}
-	}
-
-	if hasData {
-		if len(pcap.bufferQueue) == 0 {
-			pcap.logger.Info("Empty buffer queue is unexpected!")
-		}
-		rv = pcap.bufferQueue[0]
-
-		if len(pcap.bufferQueue) == 1 {
-			pcap.bufferQueue = make([][]byte, 0)
-		} else {
-			pcap.bufferQueue = pcap.bufferQueue[1:]
-		}
-	}
-	return rv, hasData
-}
-
-func pcapFile(fname string, logger common.Log) *pcapFileStruct {
+func pcapFile(fname string, logger common.Log) (*pcapFileStruct, error) {
 	rv := pcapFileStruct{}
 	handle, err := os.Open(fname)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	rv.fHandle = handle
 	rv.bufferQueue = make([][]byte, 0)
 	rv.logger = logger
 	rv.bInit = false
 
-	return &rv
+	return &rv, nil
 }

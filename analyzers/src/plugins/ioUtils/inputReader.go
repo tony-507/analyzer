@@ -12,15 +12,9 @@ const (
 
 type IReader interface {
 	setup()                            // Set up reader
-	startRecv()                        // Start receiver
-	stopRecv()                         // Stop receiver
+	startRecv() error                  // Start receiver
+	stopRecv() error                   // Stop receiver
 	dataAvailable(*common.IOUnit) bool // Get next unit of data
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
 
 type inputReaderPlugin struct {
@@ -38,13 +32,19 @@ type inputReaderPlugin struct {
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
 
-	ir.impl.startRecv()
+	err := ir.impl.startRecv()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (ir *inputReaderPlugin) EndSequence() {
 	ir.logger.Info("Ending sequence, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
-	ir.impl.stopRecv()
+	err := ir.impl.stopRecv()
+	if err != nil {
+		panic(err)
+	}
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
 	common.Post_request(ir.callback, ir.name, eosUnit)
 }
@@ -87,10 +87,10 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.impl = &dummyReader{}
 	case _SOURCE_FILE:
 		srcType = "file"
-		ir.impl = &fileReader{fname: param.FileInput.Fname}
+		ir.impl = FileReader(ir.name, param.FileInput.Fname)
 	case _SOURCE_UDP:
 		srcType = "UDP"
-		ir.impl = initUdpReader(&param.UdpInput, ir.name)
+		ir.impl = udpReader(&param.UdpInput, ir.name)
 	}
 
 	ir.logger.Info("%s reader created", srcType)

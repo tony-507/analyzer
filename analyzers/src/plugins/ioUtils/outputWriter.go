@@ -7,7 +7,7 @@ import (
 )
 
 type IWriter interface {
-	setup(ioWriterParam)
+	setup(ioWriterParam) error
 	stop()
 	processUnit(common.CmUnit)
 	processControl(common.CmUnit)
@@ -37,7 +37,10 @@ func (w *outputWriterPlugin) SetParameter(m_parameter string) {
 		w.impl = getFileWriter(w.name)
 	}
 	w.logger.Info("%s writer is started", outType)
-	w.impl.setup(writerParam)
+	err := w.impl.setup(writerParam)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (w *outputWriterPlugin) SetResource(loader *common.ResourceLoader) {}

@@ -1,10 +1,11 @@
 package ioUtils
 
 import (
-	"os"
-	"strings"
-	"path"
+	"errors"
 	"io"
+	"os"
+	"path"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -19,13 +20,14 @@ const (
 	INPUT_M2V     INPUT_TYPE = 0x10
 )
 
-type fileReader struct {
+type fileReaderStruct struct {
+	logger  common.Log
 	fname   string
 	fHandle *os.File
 	ext     INPUT_TYPE
 }
 
-func (fr *fileReader) setup() {
+func (fr *fileReaderStruct) setup() {
 	ext := strings.ToLower(path.Ext(fr.fname)[1:])
 	switch ext {
 	case "ts":
@@ -41,29 +43,35 @@ func (fr *fileReader) setup() {
 	}
 }
 
-func (fr *fileReader) startRecv() {
+func (fr *fileReaderStruct) startRecv() error {
 	// Parse the data to have it in the form of a TS packet
 	if fr.ext != INPUT_TS {
-		panic("Input file type not supported. Please check the extension")
+		return errors.New("Input file type not supported. Please check the extension")
 	}
 
 	// Open the file and start reading
 	fHandle, err := os.Open(fr.fname)
-	check(err)
+	if err != nil {
+		return err
+	}
 	fr.fHandle = fHandle
+
+	return nil
 }
 
-func (fr *fileReader) stopRecv() {
-	fr.fHandle.Close()
+func (fr *fileReaderStruct) stopRecv() error {
+	return fr.fHandle.Close()
 }
 
-func (fr *fileReader) dataAvailable(unit *common.IOUnit) bool {
+func (fr *fileReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 	buf := make([]byte, TS_PKT_SIZE)
 	n, err := fr.fHandle.Read(buf)
 	if err == io.EOF {
 		return false
 	} else {
-		check(err)
+		if err != nil {
+			fr.logger.Error("Fail to read buffer: %s", err.Error())
+		}
 	}
 	if n < TS_PKT_SIZE {
 		return false
@@ -72,4 +80,9 @@ func (fr *fileReader) dataAvailable(unit *common.IOUnit) bool {
 	unit.Id = -1
 	unit.Buf = buf
 	return true
+}
+
+func FileReader(name string, fname string) IReader {
+	rv := &fileReaderStruct{logger: common.CreateLogger(name), fname: fname}
+	return rv
 }
