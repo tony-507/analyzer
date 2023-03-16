@@ -5,7 +5,7 @@ import (
 )
 
 type dummyPipe struct {
-	callback    *TsDemuxer
+	callback    *tsDemuxerPlugin
 	outputQueue []common.CmUnit
 	ready       bool
 	inCnt       int
@@ -48,6 +48,6 @@ func (dp *dummyPipe) getOutputUnit() common.CmUnit {
 	return outUnit
 }
 
-func getDummyPipe(callback *TsDemuxer) dummyPipe {
+func getDummyPipe(callback *tsDemuxerPlugin) dummyPipe {
 	return dummyPipe{callback: callback, ready: false, inCnt: 0}
 }

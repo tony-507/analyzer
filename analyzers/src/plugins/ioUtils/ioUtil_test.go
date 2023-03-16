@@ -31,8 +31,8 @@ func TestReaderSetParameter(t *testing.T) {
 	expectedExt := []INPUT_TYPE{INPUT_TS, INPUT_TS, INPUT_UNKNOWN}
 
 	for idx, param := range specs {
-		fr := InputReader{name: "dummy", logger: common.CreateLogger("dummy")}
-		fr.setParameter(param)
+		fr := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
+		fr.SetParameter(param)
 
 		impl, isFileReader := fr.impl.(*fileReader)
 		if !isFileReader {
@@ -53,10 +53,10 @@ func TestReaderDeliverUnit(t *testing.T) {
 	expectedDeliverCnt := []int{5, 5, 2}
 
 	for idx, param := range specs {
-		ir := InputReader{name: "dummy", logger: common.CreateLogger("dummy")}
-		ir.setParameter(param)
+		ir := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
+		ir.SetParameter(param)
 
-		ir.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			assert.Equal(t, expected, obj, fmt.Sprintf("[%d] Expect a fetch request", idx))
 		})
@@ -65,7 +65,7 @@ func TestReaderDeliverUnit(t *testing.T) {
 			ir.start()
 		}
 
-		ir.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
 			assert.Equal(t, expected, obj, "Expect an EOS request")
 		})

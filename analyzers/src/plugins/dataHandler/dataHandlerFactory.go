@@ -7,7 +7,7 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 )
 
-type DataHandlerFactory struct {
+type DataHandlerFactoryPlugin struct {
 	logger     common.Log
 	callback   common.RequestHandler
 	handlers   map[int]utils.DataHandler
@@ -16,34 +16,34 @@ type DataHandlerFactory struct {
 	name       string
 }
 
-func (df *DataHandlerFactory) setCallback(callback common.RequestHandler) {
+func (df *DataHandlerFactoryPlugin) SetCallback(callback common.RequestHandler) {
 	df.callback = callback
 }
 
-func (df *DataHandlerFactory) setParameter(m_parameter string) {
+func (df *DataHandlerFactoryPlugin) SetParameter(m_parameter string) {
 	df._setup()
 }
 
-func (df *DataHandlerFactory) setResource(loader *common.ResourceLoader) {}
+func (df *DataHandlerFactoryPlugin) SetResource(loader *common.ResourceLoader) {}
 
-func (df *DataHandlerFactory) _setup() {
-	df.logger = common.CreateLogger("DataHandlerFactory")
+func (df *DataHandlerFactoryPlugin) _setup() {
+	df.logger = common.CreateLogger(df.name)
 	df.handlers = map[int]utils.DataHandler{}
 	df.outputUnit = []common.CmUnit{}
 	df.isRunning = true
 }
 
-func (df *DataHandlerFactory) startSequence() {
+func (df *DataHandlerFactoryPlugin) StartSequence() {
 	df.logger.Info("Data handler factory is started")
 }
 
-func (df *DataHandlerFactory) endSequence() {
+func (df *DataHandlerFactoryPlugin) EndSequence() {
 	df.logger.Info("Data handler factory is stopped")
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
 	common.Post_request(df.callback, df.name, eosUnit)
 }
 
-func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
+func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 	if unit == nil {
 		return
 	}
@@ -80,9 +80,9 @@ func (df *DataHandlerFactory) deliverUnit(unit common.CmUnit) {
 	common.Post_request(df.callback, df.name, reqUnit)
 }
 
-func (df *DataHandlerFactory) deliverStatus(unit common.CmUnit) {}
+func (df *DataHandlerFactoryPlugin) DeliverStatus(unit common.CmUnit) {}
 
-func (df *DataHandlerFactory) fetchUnit() common.CmUnit {
+func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
 	if len(df.outputUnit) == 0 {
 		return nil
 	} else if len(df.outputUnit) == 1 {
@@ -96,18 +96,15 @@ func (df *DataHandlerFactory) fetchUnit() common.CmUnit {
 	}
 }
 
-func GetDataHandlerFactory(name string) common.Plugin {
-	rv := DataHandlerFactory{name: name}
-	return common.CreatePlugin(
-		name,
-		false,
-		rv.setCallback,
-		rv.setParameter,
-		rv.setResource,
-		rv.startSequence,
-		rv.deliverUnit,
-		rv.deliverStatus,
-		rv.fetchUnit,
-		rv.endSequence,
-	)
+func (df *DataHandlerFactoryPlugin) IsRoot() bool {
+	return false
+}
+
+func (df *DataHandlerFactoryPlugin) Name() string {
+	return df.name
+}
+
+func DataHandlerFactory(name string) common.IPlugin {
+	rv := DataHandlerFactoryPlugin{name: name}
+	return &rv
 }

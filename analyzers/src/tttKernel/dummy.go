@@ -16,25 +16,25 @@ type DummyPlugin struct {
 	role     int // 0 represents a root, 1 represents non-root
 }
 
-func (dp *DummyPlugin) setParameter(m_parameter string) {
+func (dp *DummyPlugin) SetParameter(m_parameter string) {
 	dp.logger.Info("setParameter called")
 }
 
-func (dp *DummyPlugin) setResource(resourceLoader *common.ResourceLoader) {
+func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {
 	dp.logger.Info("setResource called")
 }
 
-func (dp *DummyPlugin) startSequence() {
+func (dp *DummyPlugin) StartSequence() {
 	dp.logger.Info("startSequence called")
 }
 
-func (dp *DummyPlugin) endSequence() {
+func (dp *DummyPlugin) EndSequence() {
 	dp.logger.Info("endSequence called")
 	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
 	common.Post_request(dp.callback, dp.name, eosUnit)
 }
 
-func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
+func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) {
 	dp.logger.Info("deliverUnit called with unit %v", unit)
 	// Ensure correct order of calling by suspending worker thread
 	if dp.role == 0 {
@@ -61,34 +61,31 @@ func (dp *DummyPlugin) deliverUnit(unit common.CmUnit) {
 	}
 }
 
-func (dp *DummyPlugin) deliverStatus(unit common.CmUnit) {
+func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {
 	dp.logger.Info("deliverStatus called with status %v", unit)
 }
 
-func (dp *DummyPlugin) fetchUnit() common.CmUnit {
+func (dp *DummyPlugin) FetchUnit() common.CmUnit {
 	dp.logger.Info("fetchUnit called")
 	rv := common.MakeIOUnit(dp.inCnt*10+dp.fetchCnt, 0, -1)
 	dp.fetchCnt += 1
 	return rv
 }
 
-func (dp *DummyPlugin) setCallback(callback common.RequestHandler) {
+func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
 	dp.logger.Info("setCallback called")
 	dp.callback = callback
 }
 
-func getDummyPlugin(name string, isRoot int) common.Plugin {
+func (dp *DummyPlugin) IsRoot() bool {
+	return dp.role == 0
+}
+
+func (dp *DummyPlugin) Name() string {
+	return dp.name
+}
+
+func Dummy(name string, isRoot int) common.IPlugin {
 	rv := DummyPlugin{name: name, logger: common.CreateLogger(name), role: isRoot}
-	return common.CreatePlugin(
-		name,
-		isRoot == 0,
-		rv.setCallback,
-		rv.setParameter,
-		rv.setResource,
-		rv.startSequence,
-		rv.deliverUnit,
-		rv.deliverStatus,
-		rv.fetchUnit,
-		rv.endSequence,
-	)
+	return &rv
 }

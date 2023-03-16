@@ -23,7 +23,7 @@ func check(err error) {
 	}
 }
 
-type InputReader struct {
+type inputReaderPlugin struct {
 	logger      common.Log
 	callback    common.RequestHandler
 	impl        IReader
@@ -35,13 +35,13 @@ type InputReader struct {
 	maxInCnt    int
 }
 
-func (ir *InputReader) startSequence() {
+func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
 
 	ir.impl.startRecv()
 }
 
-func (ir *InputReader) endSequence() {
+func (ir *inputReaderPlugin) EndSequence() {
 	ir.logger.Info("Ending sequence, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
 	ir.impl.stopRecv()
@@ -49,11 +49,11 @@ func (ir *InputReader) endSequence() {
 	common.Post_request(ir.callback, ir.name, eosUnit)
 }
 
-func (ir *InputReader) setCallback(callback common.RequestHandler) {
+func (ir *inputReaderPlugin) SetCallback(callback common.RequestHandler) {
 	ir.callback = callback
 }
 
-func (ir *InputReader) setParameter(m_parameter string) {
+func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 	var param ioReaderParam
 	if err := json.Unmarshal([]byte(m_parameter), &param); err != nil {
 		panic(err)
@@ -98,17 +98,17 @@ func (ir *InputReader) setParameter(m_parameter string) {
 	ir.impl.setup()
 }
 
-func (ir *InputReader) setResource(loader *common.ResourceLoader) {}
+func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}
 
-func (ir *InputReader) deliverUnit(unit common.CmUnit) {
+func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit) {
 	for ir.isRunning {
 		ir.start()
 	}
 }
 
-func (ir *InputReader) deliverStatus(unit common.CmUnit) {}
+func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
 
-func (ir *InputReader) start() {
+func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
 	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
@@ -120,11 +120,11 @@ func (ir *InputReader) start() {
 			common.Post_request(ir.callback, ir.name, reqUnit)
 		}
 	} else {
-		ir.endSequence()
+		ir.EndSequence()
 	}
 }
 
-func (ir *InputReader) fetchUnit() common.CmUnit {
+func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 	var rv common.CmUnit
 
 	if len(ir.outputQueue) != 0 && ir.skipCnt <= 0 {
@@ -142,18 +142,15 @@ func (ir *InputReader) fetchUnit() common.CmUnit {
 	return rv
 }
 
-func GetInputReader(name string) common.Plugin {
-	rv := InputReader{name: name, logger: common.CreateLogger(name)}
-	return common.CreatePlugin(
-		name,
-		true,
-		rv.setCallback,
-		rv.setParameter,
-		rv.setResource,
-		rv.startSequence,
-		rv.deliverUnit,
-		rv.deliverStatus,
-		rv.fetchUnit,
-		rv.endSequence,
-	)
+func (ir *inputReaderPlugin) IsRoot() bool {
+	return true
+}
+
+func (ir *inputReaderPlugin) Name() string {
+	return ir.name
+}
+
+func InputReader(name string) common.IPlugin {
+	rv := inputReaderPlugin{name: name, logger: common.CreateLogger(name)}
+	return &rv
 }

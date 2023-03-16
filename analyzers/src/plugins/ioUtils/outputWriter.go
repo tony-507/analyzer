@@ -13,7 +13,7 @@ type IWriter interface {
 	processControl(common.CmUnit)
 }
 
-type OutputWriter struct {
+type outputWriterPlugin struct {
 	logger    common.Log
 	callback  common.RequestHandler
 	impl      IWriter
@@ -21,11 +21,11 @@ type OutputWriter struct {
 	isRunning bool
 }
 
-func (w *OutputWriter) setCallback(callback common.RequestHandler) {
+func (w *outputWriterPlugin) SetCallback(callback common.RequestHandler) {
 	w.callback = callback
 }
 
-func (w *OutputWriter) setParameter(m_parameter string) {
+func (w *outputWriterPlugin) SetParameter(m_parameter string) {
 	var writerParam ioWriterParam
 	if err := json.Unmarshal([]byte(m_parameter), &writerParam); err != nil {
 		panic(err)
@@ -40,15 +40,15 @@ func (w *OutputWriter) setParameter(m_parameter string) {
 	w.impl.setup(writerParam)
 }
 
-func (w *OutputWriter) setResource(loader *common.ResourceLoader) {}
+func (w *outputWriterPlugin) SetResource(loader *common.ResourceLoader) {}
 
-func (w *OutputWriter) startSequence() {
+func (w *outputWriterPlugin) StartSequence() {
 	w.isRunning = true
 
 	common.Listen_msg(w.callback, w.name, 0x10)
 }
 
-func (w *OutputWriter) endSequence() {
+func (w *outputWriterPlugin) EndSequence() {
 	w.logger.Info("Ending sequence")
 	w.isRunning = false
 	w.impl.stop()
@@ -56,30 +56,27 @@ func (w *OutputWriter) endSequence() {
 	common.Post_request(w.callback, w.name, eosUnit)
 }
 
-func (w *OutputWriter) deliverUnit(unit common.CmUnit) {
+func (w *outputWriterPlugin) DeliverUnit(unit common.CmUnit) {
 	w.impl.processUnit(unit)
 }
 
-func (w *OutputWriter) fetchUnit() common.CmUnit {
+func (w *outputWriterPlugin) FetchUnit() common.CmUnit {
 	return nil
 }
 
-func (w *OutputWriter) deliverStatus(unit common.CmUnit) {
+func (w *outputWriterPlugin) DeliverStatus(unit common.CmUnit) {
 	w.impl.processControl(unit)
 }
 
-func GetOutputWriter(name string) common.Plugin {
-	rv := OutputWriter{name: name, isRunning: false, logger: common.CreateLogger(name)}
-	return common.CreatePlugin(
-		name,
-		false,
-		rv.setCallback,
-		rv.setParameter,
-		rv.setResource,
-		rv.startSequence,
-		rv.deliverUnit,
-		rv.deliverStatus,
-		rv.fetchUnit,
-		rv.endSequence,
-	)
+func (w *outputWriterPlugin) IsRoot() bool {
+	return false
+}
+
+func (w *outputWriterPlugin) Name() string {
+	return w.name
+}
+
+func OutputWriter(name string) common.IPlugin {
+	rv := outputWriterPlugin{name: name, isRunning: false, logger: common.CreateLogger(name)}
+	return &rv
 }

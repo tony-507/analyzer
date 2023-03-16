@@ -47,7 +47,7 @@ const (
 	PKT_NULL    PKT_TYPE = 8191
 )
 
-type TsDemuxer struct {
+type tsDemuxerPlugin struct {
 	logger    common.Log
 	callback  common.RequestHandler
 	impl      IDemuxPipe       // Actual demuxing operation
@@ -58,11 +58,11 @@ type TsDemuxer struct {
 	wg        sync.WaitGroup
 }
 
-func (m_pMux *TsDemuxer) setCallback(callback common.RequestHandler) {
+func (m_pMux *tsDemuxerPlugin) SetCallback(callback common.RequestHandler) {
 	m_pMux.callback = callback
 }
 
-func (m_pMux *TsDemuxer) setParameter(m_parameter string) {
+func (m_pMux *tsDemuxerPlugin) SetParameter(m_parameter string) {
 	var demuxParam demuxParams
 	if err := json.Unmarshal([]byte(m_parameter), &demuxParam); err != nil {
 		panic(err)
@@ -84,11 +84,11 @@ func (m_pMux *TsDemuxer) setParameter(m_parameter string) {
 	m_pMux._setup()
 }
 
-func (m_pMux *TsDemuxer) setResource(resourceLoader *common.ResourceLoader) {
+func (m_pMux *tsDemuxerPlugin) SetResource(resourceLoader *common.ResourceLoader) {
 	m_pMux.control.setResource(resourceLoader)
 }
 
-func (m_pMux *TsDemuxer) _setup() {
+func (m_pMux *tsDemuxerPlugin) _setup() {
 	m_pMux.logger = common.CreateLogger(m_pMux.name)
 	m_pMux.pktCnt = 1
 	m_pMux.isRunning = 0
@@ -99,14 +99,14 @@ func (m_pMux *TsDemuxer) _setup() {
 
 // Demuxer monitor, run as a Goroutine to monitor demuxer's status
 // Currently only check if demuxer gets stuck
-func (m_pMux *TsDemuxer) _setupMonitor() {
+func (m_pMux *tsDemuxerPlugin) _setupMonitor() {
 	defer m_pMux.wg.Done()
 	m_pMux.control.monitor()
 }
 
-func (m_pMux *TsDemuxer) startSequence() {}
+func (m_pMux *tsDemuxerPlugin) StartSequence() {}
 
-func (m_pMux *TsDemuxer) endSequence() {
+func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	// Fetch all remaining units
 	for m_pMux.impl.readyForFetch() {
 		m_pMux.control.outputUnitAdded()
@@ -121,7 +121,7 @@ func (m_pMux *TsDemuxer) endSequence() {
 	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
 
-func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
+func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	errMsg := ""
 
@@ -157,7 +157,7 @@ func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
 	}
 
 	if errMsg != "" {
-		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxer::FetchUnit] %s.", errMsg)))
+		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxerPlugin::FetchUnit] %s.", errMsg)))
 	}
 
 	m_pMux.control.outputUnitFetched()
@@ -165,7 +165,7 @@ func (m_pMux *TsDemuxer) fetchUnit() common.CmUnit {
 	return rv
 }
 
-func (m_pMux *TsDemuxer) deliverUnit(inUnit common.CmUnit) {
+func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet
@@ -190,20 +190,17 @@ func (m_pMux *TsDemuxer) deliverUnit(inUnit common.CmUnit) {
 	}
 }
 
-func (m_pMux *TsDemuxer) deliverStatus(unit common.CmUnit) {}
+func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
 
-func GetTsDemuxer(name string) common.Plugin {
-	rv := TsDemuxer{name: name}
-	return common.CreatePlugin(
-		name,
-		false,
-		rv.setCallback,
-		rv.setParameter,
-		rv.setResource,
-		rv.startSequence,
-		rv.deliverUnit,
-		rv.deliverStatus,
-		rv.fetchUnit,
-		rv.endSequence,
-	)
+func (m_pMux *tsDemuxerPlugin) IsRoot() bool {
+	return false
+}
+
+func (m_pMux *tsDemuxerPlugin) Name() string {
+	return m_pMux.name
+}
+
+func TsDemuxer(name string) common.IPlugin {
+	rv := tsDemuxerPlugin{name: name}
+	return &rv
 }

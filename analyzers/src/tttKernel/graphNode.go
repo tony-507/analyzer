@@ -12,7 +12,7 @@ import (
 
 // A plugin serves as a graph node of operation graph
 type graphNode struct {
-	impl        common.Plugin
+	impl        common.IPlugin
 	m_parameter string // Store plugin parameters
 	children    []*graphNode
 	parent      []*graphNode
@@ -29,23 +29,23 @@ func getPluginByName(inputName string) graphNode {
 	// Deduce the type of plugin by name
 	splitName := strings.Split(inputName, "_")
 	rv := graphNode{children: make([]*graphNode, 0), parent: make([]*graphNode, 0)}
-	var impl common.Plugin
+	var impl common.IPlugin
 
 	switch splitName[0] {
 	case "InputReader":
-		impl = ioUtils.GetInputReader(inputName)
+		impl = ioUtils.InputReader(inputName)
 	case "OutputWriter":
-		impl = ioUtils.GetOutputWriter(inputName)
+		impl = ioUtils.OutputWriter(inputName)
 	case "TsDemuxer":
-		impl = tsdemux.GetTsDemuxer(inputName)
+		impl = tsdemux.TsDemuxer(inputName)
 	case "DataHandler":
-		impl = dataHandler.GetDataHandlerFactory(inputName)
+		impl = dataHandler.DataHandlerFactory(inputName)
 	case "Dummy":
 		isRoot := 1
 		if splitName[1] == "root" {
 			isRoot = 0
 		}
-		impl = getDummyPlugin(inputName, isRoot)
+		impl = Dummy(inputName, isRoot)
 	default:
 		msg := fmt.Sprintf("Unknown plugin name: %s", inputName)
 		panic(msg)

@@ -8,18 +8,18 @@ import (
 )
 
 func TestDemuxDeliverUnit(t *testing.T) {
-	m_pMux := TsDemuxer{name: "dummy"}
+	m_pMux := tsDemuxerPlugin{name: "dummy"}
 	m_parameter := "{\"Mode\": \"_DEMUX_DUMMY\"}"
-	m_pMux.setParameter(m_parameter)
+	m_pMux.SetParameter(m_parameter)
 
-	m_pMux.setCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
+	m_pMux.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
 		expected := common.MakeReqUnit("dummy", common.FETCH_REQUEST)
 		assert.Equal(t, expected, obj, "Unit not equal")
 	})
 
 	for i := 0; i < 2; i++ {
 		dummy := common.MakeIOUnit(i, 1, 0)
-		m_pMux.deliverUnit(dummy)
+		m_pMux.DeliverUnit(dummy)
 	}
 }
 
