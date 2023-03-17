@@ -79,13 +79,13 @@ func TestWriterMultiThread(t *testing.T) {
 	fw.setup(param)
 
 	buf1 := common.MakeSimpleBuf([]byte{})
-	buf1.SetField("addPid", true, false)
-	buf1.SetField("pid", 5, false)
+	buf1.SetField("addId", true, false)
+	buf1.SetField("id", "5", false)
 	buf1.SetField("type", 3, false)
 
 	buf2 := common.MakeSimpleBuf([]byte{})
-	buf2.SetField("addPid", true, false)
-	buf2.SetField("pid", 2, false)
+	buf2.SetField("addId", true, false)
+	buf2.SetField("id", "2", false)
 	buf2.SetField("type", 3, false)
 
 	fw.processControl(common.MakeStatusUnit(0x10, buf1))
@@ -102,7 +102,7 @@ func TestWriterMultiThread(t *testing.T) {
 
 	filesArr := []int{2, 5}
 	for _, id := range filesArr {
-		f, _ := os.Open(TEST_OUT_DIR + "out_" + strconv.Itoa(id) + ".ts")
+		f, _ := os.Open(TEST_OUT_DIR + "out" + strconv.Itoa(id) + ".ts")
 		data := make([]byte, 1)
 		f.Read(data)
 		assert.Equal(t, uint8(1), data[0], "Expect 1")

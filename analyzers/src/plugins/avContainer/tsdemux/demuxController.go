@@ -119,10 +119,10 @@ func (dc *demuxController) printSummary(duration int) {
 	fmt.Println(statMsg)
 }
 
-func (dc *demuxController) updatePidStatus(pid int, addPid bool, outType int) {
+func (dc *demuxController) updatePidStatus(id string, addId bool, outType int) {
 	buf := common.MakeSimpleBuf([]byte{})
-	buf.SetField("pid", pid, false)
-	buf.SetField("addPid", addPid, false)
+	buf.SetField("id", id, false)
+	buf.SetField("addId", addId, false)
 	buf.SetField("type", outType, false)
 	unit := common.MakeStatusUnit(0x10, buf)
 	dc.StatusList = append(dc.StatusList, unit)

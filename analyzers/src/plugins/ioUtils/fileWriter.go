@@ -22,7 +22,7 @@ type FileWriter struct {
 	logger     common.Log
 	writerMap  []chan common.CmUnit // Pre-assign a fixed number of channels to prevent race condition during runtime channel creation
 	rawByteExt string
-	idMapping  []int // This maps id to channel index
+	idMapping  []string // This maps id to channel index
 	outFolder  string
 	wg         sync.WaitGroup
 }
@@ -58,7 +58,7 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	}
 	idIdx := -1
 	for idx, id := range m_writer.idMapping {
-		if id == outId {
+		if id == strconv.Itoa(outId) {
 			idIdx = idx
 		}
 	}
@@ -70,13 +70,13 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	m_writer.writerMap[idIdx] <- unit
 }
 
-func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
+func (m_writer *FileWriter) _processJsonOutput(id string, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Trace("JSON handler for pid %d starts", pid)
+	m_writer.logger.Trace("JSON handler with id %s starts", id)
 
 	isInit := false
 
-	fname := fmt.Sprintf("%s%d.json", m_writer.outFolder, pid)
+	fname := fmt.Sprintf("%s%s.json", m_writer.outFolder, id)
 	f, err := os.Create(fname)
 	if err != nil {
 		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
@@ -116,18 +116,18 @@ func (m_writer *FileWriter) _processJsonOutput(pid int, chIdx int) {
 	}
 
 	f.Write([]byte("\n]"))
-	m_writer.logger.Trace("JSON handler for pid %d stops", pid)
+	m_writer.logger.Trace("JSON handler with id %s stops", id)
 }
 
-func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
+func (m_writer *FileWriter) _processCsvOutput(id string, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Trace("CSV handler for pid %d starts", pid)
+	m_writer.logger.Trace("CSV handler with id %s starts", id)
 
 	fname := ""
 	rawFileName := ""
-	if pid != -1 {
-		fname = fmt.Sprintf("%s%d.csv", m_writer.outFolder, pid)
-		rawFileName = fmt.Sprintf("%sraw_%d.%s", m_writer.outFolder, pid, m_writer.rawByteExt)
+	if true {
+		fname = fmt.Sprintf("%s%s.csv", m_writer.outFolder, id)
+		rawFileName = fmt.Sprintf("%sraw_%s.%s", m_writer.outFolder, id, m_writer.rawByteExt)
 	} else {
 		fname = fmt.Sprintf("%s%s.csv", m_writer.outFolder, "packets")
 		rawFileName = fmt.Sprintf("%sraw_%s.%s", m_writer.outFolder, "packets", m_writer.rawByteExt)
@@ -177,18 +177,14 @@ func (m_writer *FileWriter) _processCsvOutput(pid int, chIdx int) {
 
 		csvWriter.Flush()
 	}
-	m_writer.logger.Trace("CSV handler for pid %d stops", pid)
+	m_writer.logger.Trace("CSV handler with id %s stops", id)
 }
 
-func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
+func (m_writer *FileWriter) _processRawOutput(id string, chIdx int) {
 	defer m_writer.wg.Done()
-	m_writer.logger.Trace("Raw handler for pid %d starts", pid)
+	m_writer.logger.Trace("Raw handler with id %s starts", id)
 
-	suffix := ""
-	if pid != -1 {
-		suffix = "_" + strconv.Itoa(pid)
-	}
-	fname := fmt.Sprintf("%sout%s.ts", m_writer.outFolder, suffix)
+	fname := fmt.Sprintf("%sout%s.ts", m_writer.outFolder, id)
 	f, err := os.Create(fname)
 	if err != nil {
 		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
@@ -209,7 +205,7 @@ func (m_writer *FileWriter) _processRawOutput(pid int, chIdx int) {
 			m_writer.logger.Error("Error writing data (%v) to %s: %s", buf, fname, err.Error())
 		}
 	}
-	m_writer.logger.Trace("Raw handler for pid %d stops", pid)
+	m_writer.logger.Trace("Raw handler with id %s stops", id)
 }
 
 func (m_writer *FileWriter) processControl(unit common.CmUnit) {
@@ -222,28 +218,31 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 		return
 	}
 	if id == 0x10 {
-		field, hasField := buf.GetField("addPid")
+		field, hasField := buf.GetField("addId")
 		if !hasField {
 			return
 		}
-		addPid, isBool := field.(bool)
+		addId, isBool := field.(bool)
 		if !isBool {
 			return
 		}
 
-		field, hasField = buf.GetField("pid")
+		field, hasField = buf.GetField("id")
 		if !hasField {
 			return
 		}
-		outId, isInt := field.(int)
-		if !isInt {
+		outId, isString := field.(string)
+		if !isString {
 			return
 		}
 
 		field, hasField = buf.GetField("type")
 		outType, isInt := field.(int)
+		if !isInt {
+			return
+		}
 
-		if addPid {
+		if addId {
 			idIdx := len(m_writer.idMapping)
 			m_writer.idMapping = append(m_writer.idMapping, outId)
 			switch outType {

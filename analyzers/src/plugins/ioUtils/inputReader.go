@@ -71,8 +71,8 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 
 	if param.DumpRawInput {
 		buf := common.MakeSimpleBuf([]byte{})
-		buf.SetField("pid", -1, false)
-		buf.SetField("addPid", true, false)
+		buf.SetField("id", "-1", false)
+		buf.SetField("addId", true, false)
 		buf.SetField("type", 3, false)
 		unit := common.MakeStatusUnit(0x10, buf)
 		common.Post_status(ir.callback, ir.name, unit)

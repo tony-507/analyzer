@@ -2,6 +2,7 @@ package tsdemux
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -205,16 +206,16 @@ func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
 	if oldPmtPid, hasKey := m_pMux.programRecords[progNum]; hasKey {
 		m_pMux.logger.Info("PAT version updated")
 		if oldPmtPid != pmtPid {
-			m_pMux.control.updatePidStatus(oldPmtPid, false, 2)
+			m_pMux.control.updatePidStatus(strconv.Itoa(oldPmtPid), false, 2)
 		}
 		// Remove old PMT streams
 	}
-	m_pMux.control.updatePidStatus(pmtPid, true, 2)
+	m_pMux.control.updatePidStatus(strconv.Itoa(pmtPid), true, 2)
 	m_pMux.logger.Info("New program added: %d => %d", progNum, pmtPid)
 	m_pMux.programRecords[progNum] = pmtPid
 
 	if m_pMux.patVersion == -1 {
-		m_pMux.control.updatePidStatus(0, true, 2)
+		m_pMux.control.updatePidStatus("0", true, 2)
 	}
 	m_pMux.patVersion = version
 }
@@ -235,9 +236,9 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 			actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(oldType), " ")
 			actualType := actualTypeSlice[len(actualTypeSlice)-1]
 			if actualType == "data" {
-				m_pMux.control.updatePidStatus(streamPid, false, 2)
+				m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), false, 2)
 			} else {
-				m_pMux.control.updatePidStatus(streamPid, false, 1)
+				m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), false, 1)
 			}
 		} else {
 			updateStreamStatus = true
@@ -261,9 +262,9 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 		actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(streamType), " ")
 		actualType := actualTypeSlice[len(actualTypeSlice)-1]
 		if actualType == "data" {
-			m_pMux.control.updatePidStatus(streamPid, true, 2)
+			m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), true, 2)
 		} else {
-			m_pMux.control.updatePidStatus(streamPid, true, 1)
+			m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), true, 1)
 		}
 	}
 }
