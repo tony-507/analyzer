@@ -20,20 +20,14 @@ type Worker struct {
 
 // Main function for running a graph
 func (w *Worker) runGraph() {
-	var rootPg *graphNode
-	// Start all plugins with a for loop
-	for _, pg := range w.nodes {
-		// Handle root separately to prevent race condition
-		if pg.impl.IsRoot() {
-			rootPg = pg
-		}
-		pg.impl.SetParameter(pg.m_parameter)
-		pg.impl.SetResource(&w.resourceLoader)
-		pg.impl.StartSequence()
+	for _, node := range w.nodes {
+		node.startPlugin(&w.resourceLoader)
 	}
 	w.ready = true
 	w.handlePendingStatus()
-	rootPg.impl.DeliverUnit(nil)
+	for _, node := range w.nodes {
+		node.runPlugin()
+	}
 
 	// Wait until all plugins stop
 	for w.isRunning != 0 {
@@ -137,9 +131,7 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 		w.isRunning -= 1
 		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())
 		// Trigger EndSequence of children nodes
-		for _, child := range node.children {
-			child.impl.EndSequence()
-		}
+		node.stopPlugin()
 	case common.RESOURCE_REQUEST:
 		query, ok := unit.GetBuf().([]string)
 		if !ok || len(query) != 2 {

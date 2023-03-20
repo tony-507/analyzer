@@ -35,11 +35,11 @@ func TestSimpleGraph(t *testing.T) {
 	dummy2 := getPluginByName("Dummy_2")
 	dummy3 := getPluginByName("Dummy_3")
 
-	nodes := []*graphNode{&dummy1, &dummy2, &dummy3}
+	nodes := []*graphNode{dummy1, dummy2, dummy3}
 
 	// root -> 2 -> 3
-	addPath(&dummy1, []*graphNode{&dummy2})
-	addPath(&dummy2, []*graphNode{&dummy3})
+	addPath(dummy1, []*graphNode{dummy2})
+	addPath(dummy2, []*graphNode{dummy3})
 
 	w := getWorker()
 	w.setGraph(nodes)
@@ -59,14 +59,14 @@ func TestGraphMultipleInput(t *testing.T) {
 	dummy3 := getPluginByName("Dummy_3")
 	dummy4 := getPluginByName("Dummy_4")
 
-	nodes := []*graphNode{&dummy1, &dummy2, &dummy3, &dummy4}
+	nodes := []*graphNode{dummy1, dummy2, dummy3, dummy4}
 	//   -> 2
 	// 1      -> 4
 	//   -> 3
 
-	addPath(&dummy1, []*graphNode{&dummy2, &dummy3})
-	addPath(&dummy2, []*graphNode{&dummy4})
-	addPath(&dummy3, []*graphNode{&dummy4})
+	addPath(dummy1, []*graphNode{dummy2, dummy3})
+	addPath(dummy2, []*graphNode{dummy4})
+	addPath(dummy3, []*graphNode{dummy4})
 
 	w := getWorker()
 	w.setGraph(nodes)
@@ -86,12 +86,12 @@ func TestGraphMultipleOutput(t *testing.T) {
 	dummy3 := getPluginByName("Dummy_3")
 	dummy4 := getPluginByName("Dummy_4")
 
-	nodeList := []*graphNode{&dummy1, &dummy2, &dummy3, &dummy4}
+	nodeList := []*graphNode{dummy1, dummy2, dummy3, dummy4}
 	//        -> 3
 	// 1 -> 2
 	//        -> 4
-	addPath(&dummy1, []*graphNode{&dummy2})
-	addPath(&dummy2, []*graphNode{&dummy3, &dummy4})
+	addPath(dummy1, []*graphNode{dummy2})
+	addPath(dummy2, []*graphNode{dummy3, dummy4})
 
 	w := getWorker()
 	w.setGraph(nodeList)

@@ -18,6 +18,26 @@ type graphNode struct {
 	parent      []*graphNode
 }
 
+// Graph node control flow
+func (node *graphNode) startPlugin(resouceLoader *common.ResourceLoader) {
+	node.impl.SetParameter(node.m_parameter)
+	node.impl.SetResource(resouceLoader)
+	node.impl.StartSequence()
+}
+
+func (node *graphNode) runPlugin() {
+	if node.impl.IsRoot() {
+		node.impl.DeliverUnit(nil)
+	}
+}
+
+func (node *graphNode) stopPlugin() {
+	for _, child := range node.children {
+		child.impl.EndSequence()
+	}
+}
+
+// Graph construction
 func addPath(parent *graphNode, children []*graphNode) {
 	parent.children = append(parent.children, children...)
 	for _, child := range children {
@@ -25,10 +45,10 @@ func addPath(parent *graphNode, children []*graphNode) {
 	}
 }
 
-func getPluginByName(inputName string) graphNode {
+func getPluginByName(inputName string) *graphNode {
 	// Deduce the type of plugin by name
 	splitName := strings.Split(inputName, "_")
-	rv := graphNode{children: make([]*graphNode, 0), parent: make([]*graphNode, 0)}
+	rv := &graphNode{children: make([]*graphNode, 0), parent: make([]*graphNode, 0)}
 	var impl common.IPlugin
 
 	switch splitName[0] {

@@ -56,7 +56,7 @@ func buildGraph(params []OverallParams) []*graphNode {
 		}
 		if !bExist {
 			tmp := getPluginByName(param.pluginName)
-			pg = &tmp
+			pg = tmp
 
 			nodeList = append(nodeList, pg)
 			createdPlugin = append(createdPlugin, pg)
@@ -77,10 +77,9 @@ func buildGraph(params []OverallParams) []*graphNode {
 			}
 			if !bExist {
 				tmp := getPluginByName(childName)
-				pg_new := &tmp
-				createdPlugin = append(createdPlugin, pg_new)
-				nodeList = append(nodeList, pg_new)
-				addPath(pg, []*graphNode{pg_new})
+				createdPlugin = append(createdPlugin, tmp)
+				nodeList = append(nodeList, tmp)
+				addPath(pg, []*graphNode{tmp})
 			}
 		}
 	}
