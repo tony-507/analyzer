@@ -62,7 +62,7 @@ func buildGraph(params []OverallParams) []*graphNode {
 			createdPlugin = append(createdPlugin, pg)
 		}
 
-		pg.setParameterStr(param.pluginParam)
+		pg.m_parameter = param.pluginParam
 
 		// Handle children nodes
 		for _, childName := range param.children {

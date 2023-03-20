@@ -24,7 +24,7 @@ func (w *Worker) runGraph() {
 	// Start all plugins with a for loop
 	for _, pg := range w.nodes {
 		// Handle root separately to prevent race condition
-		if pg.isRoot() {
+		if pg.impl.IsRoot() {
 			rootPg = pg
 		}
 		pg.impl.SetParameter(pg.m_parameter)

@@ -55,13 +55,3 @@ func getPluginByName(inputName string) graphNode {
 
 	return rv
 }
-
-// Plugin methods
-
-func (pn *graphNode) isRoot() bool {
-	return pn.impl.IsRoot()
-}
-
-func (pn *graphNode) setParameterStr(m_parameter string) {
-	pn.m_parameter = m_parameter
-}
