@@ -125,8 +125,12 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 			child.impl.DeliverUnit(outputUnit)
 		}
 	case common.DELIVER_REQUEST:
-		outputUnit := node.parent[0].impl.FetchUnit()
-		node.impl.DeliverUnit(outputUnit)
+		if len(node.parent) != 0 {
+			outputUnit := node.parent[0].impl.FetchUnit()
+			node.impl.DeliverUnit(outputUnit)
+		} else {
+			node.impl.DeliverUnit(nil)
+		}
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
 		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())

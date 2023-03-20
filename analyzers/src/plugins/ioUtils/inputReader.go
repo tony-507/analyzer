@@ -101,8 +101,10 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}
 
 func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit) {
-	for ir.isRunning {
+	if ir.isRunning {
 		ir.start()
+		reqUnit := common.MakeReqUnit(ir.name, common.DELIVER_REQUEST)
+		common.Post_request(ir.callback, ir.name, reqUnit)
 	}
 }
 
