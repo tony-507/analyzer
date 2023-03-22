@@ -66,8 +66,8 @@ func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {
 }
 
 func (dp *DummyPlugin) FetchUnit() common.CmUnit {
-	dp.logger.Info("fetchUnit called")
 	rv := common.MakeIOUnit(dp.inCnt*10+dp.fetchCnt, 0, -1)
+	dp.logger.Info("fetchUnit called with unit %v", rv)
 	dp.fetchCnt += 1
 	return rv
 }
