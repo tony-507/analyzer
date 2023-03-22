@@ -9,27 +9,31 @@ import (
 
 type pesPacketStruct struct {
 	pid               int
-	header            common.CmBuf
+	header            map[string]headerTuple
 	payload           []byte
 	hasOptionalHeader bool
 	sectionLen        int
 	callback          pesHandle
 }
 
+type headerTuple struct {
+	value      int
+	jsonIgnore bool
+}
+
 func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 	buf := inBuf[:6]
 	r := common.GetBufferReader(buf)
-	p.header = common.MakeSimpleBuf(buf)
 
-	p.header.SetField("pktCnt", pktCnt, false)
-	p.header.SetField("size", -1, false)
+	p.header["pktCnt"] = headerTuple{pktCnt, false}
+	p.header["size"] = headerTuple{-1, false}
 
 	if r.ReadBits(24) != 0x000001 {
 		return errors.New("PES prefix start code not match")
 	}
 
 	streamId := r.ReadBits(8)
-	p.header.SetField("streamId", streamId, true)
+	p.header["streamId"] = headerTuple{streamId, true}
 	sectionLen := r.ReadBits(16) // Can be zero
 	readLen := 6
 	optionalHeaderLength := 0
@@ -68,10 +72,10 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 	if r.ReadBits(2) != 0 {
 		return 0, errors.New("PES packet is scrambled")
 	}
-	p.header.SetField("priority", r.ReadBits(1), true)
+	p.header["priority"] = headerTuple{r.ReadBits(1), true}
 	r.ReadBits(1) // Data alignment indicator
-	p.header.SetField("copyright", r.ReadBits(1), true)
-	p.header.SetField("original", r.ReadBits(1), true)
+	p.header["copyright"] = headerTuple{r.ReadBits(1), true}
+	p.header["original"] = headerTuple{r.ReadBits(1), true}
 
 	pts := -1
 	dts := -1
@@ -132,8 +136,8 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 		errMsg := fmt.Sprintf("Forbidden timestamp flag: flag=%d", ptsDtsIdr)
 		return 0, errors.New(errMsg)
 	}
-	p.header.SetField("pts", pts, false)
-	p.header.SetField("dts", dts, false)
+	p.header["pts"] = headerTuple{pts, false}
+	p.header["dts"] = headerTuple{dts, false}
 
 	if hasEscr {
 		r.ReadBits(2)
@@ -147,7 +151,7 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 		r.ReadBits(1)
 		remained -= 6
 	}
-	p.header.SetField("escr", escr, true)
+	p.header["escr"] = headerTuple{escr, true}
 
 	if hasEsRate {
 		r.ReadBits(1)
@@ -155,7 +159,7 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 		r.ReadBits(1)
 		remained -= 3
 	}
-	p.header.SetField("esRate", esRate, true)
+	p.header["esRate"] = headerTuple{esRate, true}
 
 	if isDsmTrickMode {
 		control := r.ReadBits(3)
@@ -207,8 +211,12 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 }
 
 func (p *pesPacketStruct) Process() error {
-	p.header.SetField("size", len(p.payload), false)
-	p.callback.PesPacketReady(p.header, p.pid)
+	p.header["size"] = headerTuple{len(p.payload), false}
+	rv := common.MakeSimpleBuf(p.payload)
+	for k, v := range p.header {
+		rv.SetField(k, v.value, v.jsonIgnore)
+	}
+	p.callback.PesPacketReady(rv, p.pid)
 	return nil
 }
 
@@ -217,15 +225,20 @@ func (p *pesPacketStruct) Append(buf []byte) {
 }
 
 func (p *pesPacketStruct) GetField(str string) (int, error) {
-	return resolveHeaderField(p, str)
+	if tuple, ok := p.header[str]; ok {
+		return tuple.value, nil
+	} else {
+		return -1, errors.New(fmt.Sprintf("Field %s not found", str))
+	}
 }
 
 func (p *pesPacketStruct) GetName() string {
 	return "PES packet"
 }
 
+// This should not be used
 func (p *pesPacketStruct) GetHeader() common.CmBuf {
-	return p.header
+	return nil
 }
 
 func (p *pesPacketStruct) GetPayload() []byte {
@@ -246,11 +259,11 @@ func (p *pesPacketStruct) Serialize() []byte {
 }
 
 func PesPacket(callback pesHandle, buf []byte, pid int, pktCnt int, progNum int, streamType int) (DataStruct, error) {
-	rv := &pesPacketStruct{pid: pid, hasOptionalHeader: false, payload: make([]byte, 0), callback: callback}
+	rv := &pesPacketStruct{pid: pid, hasOptionalHeader: false, header: map[string]headerTuple{}, payload: make([]byte, 0), callback: callback}
 	err := rv.setBuffer(buf, pktCnt)
 
-	rv.header.SetField("progNum", progNum, true)
-	rv.header.SetField("streamType", streamType, true)
+	rv.header["progNum"] = headerTuple{progNum, true}
+	rv.header["streamType"] = headerTuple{streamType, true}
 
 	return rv, err
 }

@@ -57,8 +57,12 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 		}
 
 		_, hasPid := df.handlers[pid]
-		dType, hasField := cmBuf.GetField("streamType")
+		field, hasField := cmBuf.GetField("streamType")
 		if !hasField {
+			return
+		}
+		dType, ok := field.(int)
+		if !ok {
 			return
 		}
 		if !hasPid {
