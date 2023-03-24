@@ -25,6 +25,7 @@ type FileWriter struct {
 	idMapping  []string // This maps id to channel index
 	outFolder  string
 	wg         sync.WaitGroup
+	mtx        sync.Mutex
 }
 
 func (m_writer *FileWriter) setup(writerParam ioWriterParam) error {
@@ -39,10 +40,12 @@ func (m_writer *FileWriter) setup(writerParam ioWriterParam) error {
 }
 
 func (m_writer *FileWriter) stop() {
+	m_writer.mtx.Lock()
 	for idx := range m_writer.idMapping {
 		stopUnit := common.MakeStatusUnit(common.STATUS_END_ROUTINE, nil)
 		m_writer.writerMap[idx] <- stopUnit
 	}
+	m_writer.mtx.Unlock()
 
 	m_writer.wg.Wait()
 }
@@ -56,12 +59,15 @@ func (m_writer *FileWriter) processUnit(unit common.CmUnit) {
 	if outId == 1 {
 		return
 	}
+
 	idIdx := -1
+	m_writer.mtx.Lock()
 	for idx, id := range m_writer.idMapping {
 		if id == strconv.Itoa(outId) {
 			idIdx = idx
 		}
 	}
+	m_writer.mtx.Unlock()
 
 	if idIdx == -1 {
 		m_writer.logger.Error("Handler not found for unit: %v", unit)
@@ -243,8 +249,10 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 		}
 
 		if addId {
+			m_writer.mtx.Lock()
 			idIdx := len(m_writer.idMapping)
 			m_writer.idMapping = append(m_writer.idMapping, outId)
+			m_writer.mtx.Unlock()
 			switch outType {
 			case 0:
 				// Undefined, skip
