@@ -136,12 +136,6 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())
 		// Trigger EndSequence of children nodes
 		node.stopPlugin()
-	case common.RESOURCE_REQUEST:
-		query, ok := unit.GetBuf().([]string)
-		if !ok || len(query) != 2 {
-			panic("Wrong resource query format. Should be array of strings")
-		}
-		w.resourceLoader.Query(query[0], query[1])
 	}
 
 }
@@ -160,7 +154,9 @@ func (w *Worker) postStatus(unit common.CmUnit) {
 func (w *Worker) setGraph(nodeList []*graphNode) {
 	w.nodes = nodeList
 	// Recursively set callback for nodes
-	w.setCallbackForNodes(nil)
+	for _, node := range w.nodes {
+		node.impl.SetCallback(w.handleRequests)
+	}
 
 	isRunning := 0
 	for _, node := range w.nodes {
@@ -171,21 +167,6 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 		}
 	}
 	w.isRunning = isRunning
-}
-
-func (w *Worker) setCallbackForNodes(curNode *graphNode) {
-	if curNode == nil {
-		for _, root := range w.nodes {
-			w.setCallbackForNodes(root)
-		}
-	} else {
-		if len(curNode.children) != 0 {
-			for _, child := range curNode.children {
-				w.setCallbackForNodes(child)
-			}
-		}
-		curNode.impl.SetCallback(w.handleRequests)
-	}
 }
 
 func getWorker() Worker {
