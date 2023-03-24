@@ -19,12 +19,6 @@ type graphNode struct {
 }
 
 // Graph node control flow
-func (node *graphNode) startPlugin(resouceLoader *common.ResourceLoader) {
-	node.impl.SetParameter(node.m_parameter)
-	node.impl.SetResource(resouceLoader)
-	node.impl.StartSequence()
-}
-
 func (node *graphNode) runPlugin() {
 	if node.impl.IsRoot() {
 		node.impl.DeliverUnit(nil)

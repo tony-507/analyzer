@@ -2,9 +2,16 @@ package tttKernel
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
 )
+
+type workerRequest struct {
+	source  string
+	reqType common.WORKER_REQUEST
+	body    interface{}
+}
 
 // A worker runs a graph to provide a service
 // Assumption: The graph does not contain any cyclic subgraph
@@ -13,32 +20,33 @@ type Worker struct {
 	nodes          []*graphNode
 	resourceLoader common.ResourceLoader
 	isRunning      int
-	ready          bool             // All plugins are initialized
 	statusStore    map[int][]string // Map from msgId to an array of plugin names
-	statusList     []common.CmUnit  // Store status from plugins sent before finishing initialization
+	reqChannel     chan workerRequest
+	mtx            sync.Mutex
 }
 
 // Main function for running a graph
 func (w *Worker) runGraph() {
 	for _, node := range w.nodes {
-		node.startPlugin(&w.resourceLoader)
+		node.impl.SetParameter(node.m_parameter)
 	}
-	w.ready = true
-	w.handlePendingStatus()
 	for _, node := range w.nodes {
-		node.runPlugin()
+		node.impl.SetResource(&w.resourceLoader)
+	}
+	for _, node := range w.nodes {
+		node.impl.StartSequence()
+	}
+	for _, node := range w.nodes {
+		go node.runPlugin()
 	}
 
-	// Wait until all plugins stop
-	for w.isRunning != 0 {
-	}
+	w.handleRequests()
 }
 
-func (w *Worker) handlePendingStatus() {
-	for _, unit := range w.statusList {
-		w.postStatus(unit)
-	}
-	w.statusList = make([]common.CmUnit, 0)
+// Callback function
+func (w *Worker) onRequestReceived(name string, reqType common.WORKER_REQUEST, obj interface{}) {
+	request := workerRequest{source: name, reqType: reqType, body: obj}
+	w.reqChannel <- request
 }
 
 // Depth-first search
@@ -73,7 +81,17 @@ func (w *Worker) searchNode(name string, curPos *graphNode) *graphNode {
 	return nil
 }
 
-func (w *Worker) handleRequests(name string, reqType common.WORKER_REQUEST, obj interface{}) {
+func (w *Worker) handleRequests() {
+	for {
+		request := <-w.reqChannel
+		w.handleOneRequest(request.source, request.reqType, request.body)
+		if w.isRunning == 0 {
+			break
+		}
+	}
+}
+
+func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, obj interface{}) {
 	if reqType == common.POST_REQUEST {
 		unit, _ := obj.(common.CmUnit)
 		w.postRequest(name, unit)
@@ -90,11 +108,7 @@ func (w *Worker) handleRequests(name string, reqType common.WORKER_REQUEST, obj 
 		}
 	} else if reqType == common.STATUS_REQUEST {
 		if unit, isValid := obj.(*common.CmStatusUnit); isValid {
-			if w.ready {
-				w.postStatus(unit)
-			} else {
-				w.statusList = append(w.statusList, unit)
-			}
+			w.postStatus(unit)
 		} else {
 			w.logger.Error("Worker error: Receive a status request with invalid unit: %v", obj)
 		}
@@ -145,6 +159,7 @@ func (w *Worker) postStatus(unit common.CmUnit) {
 		if arr, hasKey := w.statusStore[id]; hasKey {
 			for _, name := range arr {
 				node := w.searchNode(name, nil)
+				w.logger.Info("Deliver a status to %s", node.impl.Name())
 				node.impl.DeliverStatus(unit)
 			}
 		}
@@ -155,7 +170,7 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 	w.nodes = nodeList
 	// Recursively set callback for nodes
 	for _, node := range w.nodes {
-		node.impl.SetCallback(w.handleRequests)
+		node.impl.SetCallback(w.onRequestReceived)
 	}
 
 	isRunning := 0
@@ -172,11 +187,10 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 func getWorker() Worker {
 	w := Worker{
 		isRunning:      0,
-		ready:          false,
 		resourceLoader: common.CreateResourceLoader(),
 		logger:         common.CreateLogger("Worker"),
 		statusStore:    make(map[int][]string, 0),
-		statusList:     make([]common.CmUnit, 0),
+		reqChannel:     make(chan workerRequest, 50),
 	}
 	return w
 }
