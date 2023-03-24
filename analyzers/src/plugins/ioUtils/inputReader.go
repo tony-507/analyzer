@@ -18,19 +18,29 @@ type IReader interface {
 }
 
 type inputReaderPlugin struct {
-	logger      common.Log
-	callback    common.RequestHandler
-	impl        IReader
-	isRunning   bool
-	outputQueue []common.CmUnit
-	outCnt      int
-	name        string
-	skipCnt     int
-	maxInCnt    int
+	logger       common.Log
+	callback     common.RequestHandler
+	impl         IReader
+	isRunning    bool
+	outputQueue  []common.CmUnit
+	outCnt       int
+	name         string
+	skipCnt      int
+	maxInCnt     int
+	dumpRawInput bool
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
+
+	if ir.dumpRawInput {
+		buf := common.MakeSimpleBuf([]byte{})
+		buf.SetField("id", "-1", false)
+		buf.SetField("addId", true, false)
+		buf.SetField("type", 3, false)
+		unit := common.MakeStatusUnit(0x10, buf)
+		common.Post_status(ir.callback, ir.name, unit)
+	}
 
 	err := ir.impl.startRecv()
 	if err != nil {
@@ -69,14 +79,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.maxInCnt = -1
 	}
 
-	if param.DumpRawInput {
-		buf := common.MakeSimpleBuf([]byte{})
-		buf.SetField("id", "-1", false)
-		buf.SetField("addId", true, false)
-		buf.SetField("type", 3, false)
-		unit := common.MakeStatusUnit(0x10, buf)
-		common.Post_status(ir.callback, ir.name, unit)
-	}
+	ir.dumpRawInput = param.DumpRawInput
 
 	ir.outCnt = 0
 	srcType := "unknown"

@@ -41,14 +41,14 @@ func (w *outputWriterPlugin) SetParameter(m_parameter string) {
 	if err != nil {
 		panic(err)
 	}
+
+	common.Listen_msg(w.callback, w.name, 0x10)
 }
 
 func (w *outputWriterPlugin) SetResource(loader *common.ResourceLoader) {}
 
 func (w *outputWriterPlugin) StartSequence() {
 	w.isRunning = true
-
-	common.Listen_msg(w.callback, w.name, 0x10)
 }
 
 func (w *outputWriterPlugin) EndSequence() {
