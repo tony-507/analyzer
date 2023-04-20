@@ -1,6 +1,7 @@
 package tttKernel
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -95,10 +96,11 @@ func (w *Worker) handleRequests() {
 }
 
 func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, obj interface{}) {
-	if reqType == common.POST_REQUEST {
+	switch reqType {
+	case common.POST_REQUEST:
 		unit, _ := obj.(common.CmUnit)
 		w.postRequest(name, unit)
-	} else if reqType == common.STATUS_LISTEN_REQUEST {
+	case common.STATUS_LISTEN_REQUEST:
 		if msgId, isInt := obj.(int); isInt {
 			if _, hasKey := w.statusStore[msgId]; hasKey {
 				w.statusStore[msgId] = append(w.statusStore[msgId], name)
@@ -109,16 +111,20 @@ func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, ob
 		} else {
 			panic(fmt.Sprintf("Attempt to listen to a status message with invalid ID: %v", obj))
 		}
-	} else if reqType == common.STATUS_REQUEST {
+	case common.STATUS_REQUEST:
 		if unit, isValid := obj.(*common.CmStatusUnit); isValid {
 			w.postStatus(unit)
 		} else {
 			w.logger.Error("Worker error: Receive a status request with invalid unit: %v", obj)
 		}
-	} else if reqType == common.ERROR_REQUEST {
+	case common.ERROR_REQUEST:
 		err, _ := obj.(error)
 		w.logger.Error(name, "throws an error")
 		panic(err)
+	default:
+		errMsg := fmt.Sprintf("Non-implemented request type %v", reqType)
+		w.logger.Error(errMsg)
+		panic(errors.New(errMsg))
 	}
 }
 

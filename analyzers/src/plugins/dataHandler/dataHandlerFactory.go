@@ -87,13 +87,14 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 func (df *DataHandlerFactoryPlugin) DeliverStatus(unit common.CmUnit) {}
 
 func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
-	if len(df.outputUnit) == 0 {
+	switch len(df.outputUnit) {
+	case 0:
 		return nil
-	} else if len(df.outputUnit) == 1 {
+	case 1:
 		rv := df.outputUnit[0]
 		df.outputUnit = make([]common.CmUnit, 0)
 		return rv
-	} else {
+	default:
 		rv := df.outputUnit[0]
 		df.outputUnit = df.outputUnit[1:]
 		return rv

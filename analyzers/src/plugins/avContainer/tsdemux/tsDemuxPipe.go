@@ -100,17 +100,20 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 		}
 	}
 
-	if pid == 0 {
+	switch pid {
+	case 0:
 		// PAT
 		err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
 		if err != nil {
 			return err
 		}
-	} else if pid < 32 {
-		// Special pids
-		dataProcessed = false
-	} else if pid != 8191 {
-		// Skip null packet
+	case 8191:
+		// Null packets
+	default:
+		if pid < 32 {
+			// Special pids
+			dataProcessed = false
+		}
 		hasKey := false
 		for _, pmtPid := range m_pMux.programRecords {
 			if pid == pmtPid {
