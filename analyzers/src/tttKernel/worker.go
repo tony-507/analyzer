@@ -3,7 +3,6 @@ package tttKernel
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -24,7 +23,6 @@ type Worker struct {
 	isRunning      int
 	statusStore    map[int][]string // Map from msgId to an array of plugin names
 	reqChannel     chan workerRequest
-	mtx            sync.Mutex
 }
 
 // Main function for running a graph
@@ -148,12 +146,7 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 			child.impl.DeliverUnit(outputUnit)
 		}
 	case common.DELIVER_REQUEST:
-		if len(node.parent) != 0 {
-			outputUnit := node.parent[0].impl.FetchUnit()
-			node.impl.DeliverUnit(outputUnit)
-		} else {
-			node.impl.DeliverUnit(nil)
-		}
+		node.impl.DeliverUnit(nil)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
 		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())

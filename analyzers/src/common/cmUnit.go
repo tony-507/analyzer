@@ -84,7 +84,6 @@ const (
 	FETCH_REQUEST         WORKER_REQUEST = 1  // Ready for fetch
 	DELIVER_REQUEST       WORKER_REQUEST = 2  // Request for input
 	EOS_REQUEST           WORKER_REQUEST = 3  // Root has nothing more to do, please stop
-	RESOURCE_REQUEST      WORKER_REQUEST = 4  // Request for querying resourceLoader. buf should be ["path", "key"]
 	STATUS_LISTEN_REQUEST WORKER_REQUEST = 6  // Request to register a status message destination
 	STATUS_REQUEST        WORKER_REQUEST = 7  // Send a status
 	ERROR_REQUEST         WORKER_REQUEST = 11 // Throw error
