@@ -3,6 +3,7 @@ package tttKernel
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -27,6 +28,7 @@ type Worker struct {
 
 // Main function for running a graph
 func (w *Worker) runGraph() {
+	startTime := time.Now()
 	for _, node := range w.nodes {
 		node.impl.SetParameter(node.m_parameter)
 	}
@@ -39,6 +41,7 @@ func (w *Worker) runGraph() {
 	for _, node := range w.nodes {
 		go node.runPlugin()
 	}
+	w.logger.Info("Start up delay: %dms", time.Now().Sub(startTime).Milliseconds())
 
 	w.handleRequests()
 }
