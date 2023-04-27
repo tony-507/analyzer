@@ -23,11 +23,6 @@ func constructOverallParam(name string, params string, children []string) Overal
 	return OverallParams{pluginName: name, pluginParam: params, children: children}
 }
 
-func (w *Worker) startService(params []OverallParams) {
-	w.setGraph(buildGraph(params))
-	w.runGraph()
-}
-
 // Construct graph from parameters and run the graph
 func buildGraph(params []OverallParams) []*graphNode {
 	logger := common.CreateLogger("Worker")
