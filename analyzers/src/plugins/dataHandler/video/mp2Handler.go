@@ -47,23 +47,10 @@ func (h *mpeg2Handler) Feed(unit common.CmUnit) {
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
 	buf := cmBuf.GetBuf()
 	r := common.GetBufferReader(buf)
-	sequenceHeaderFound := false
 
-	for {
-		nextBits := r.ReadBits(32)
-		if nextBits == int(_SEQUENCE_HEADER) {
-			sequenceHeaderFound = true
-			break
-		}
-		if len(r.GetRemainedBuffer()) < 4 {
-			break
-		}
-	}
-
-	if sequenceHeaderFound {
+	nextBits := r.ReadBits(32)
+	if nextBits == int(_SEQUENCE_HEADER) {
 		h.readSequenceHeader(&r)
-	} else {
-		return
 	}
 }
 
