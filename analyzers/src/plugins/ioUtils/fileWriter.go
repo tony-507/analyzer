@@ -186,34 +186,6 @@ func (m_writer *FileWriter) _processCsvOutput(id string, chIdx int) {
 	m_writer.logger.Trace("CSV handler with id %s stops", id)
 }
 
-func (m_writer *FileWriter) _processRawOutput(id string, chIdx int) {
-	defer m_writer.wg.Done()
-	m_writer.logger.Trace("Raw handler with id %s starts", id)
-
-	fname := fmt.Sprintf("%sout%s.ts", m_writer.outFolder, id)
-	f, err := os.Create(fname)
-	if err != nil {
-		m_writer.logger.Error("Fail to create and open %s: %s", fname, err.Error())
-	}
-
-	for {
-		unit := <-m_writer.writerMap[chIdx]
-		_, isStatus := unit.(*common.CmStatusUnit)
-
-		if isStatus {
-			break
-		}
-
-		buf, _ := unit.GetBuf().([]byte)
-
-		_, err := f.Write(buf)
-		if err != nil {
-			m_writer.logger.Error("Error writing data (%v) to %s: %s", buf, fname, err.Error())
-		}
-	}
-	m_writer.logger.Trace("Raw handler with id %s stops", id)
-}
-
 func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 	id, isValidId := unit.GetField("id").(int)
 	if !isValidId {
@@ -262,9 +234,6 @@ func (m_writer *FileWriter) processControl(unit common.CmUnit) {
 			case 2:
 				m_writer.wg.Add(1)
 				go m_writer._processJsonOutput(outId, idIdx)
-			case 3:
-				m_writer.wg.Add(1)
-				go m_writer._processRawOutput(outId, idIdx)
 			default:
 				m_writer.logger.Error("Received unknown output type %d for id %d", outType, idIdx)
 			}

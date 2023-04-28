@@ -2,10 +2,8 @@ package ioUtils
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,42 +68,6 @@ func TestReaderDeliverUnit(t *testing.T) {
 			assert.Equal(t, expected, obj, "Expect an EOS request")
 		})
 		ir.start()
-	}
-}
-
-func TestWriterMultiThread(t *testing.T) {
-	fw := getFileWriter("Dummy")
-	param := ioWriterParam{FileOutput: fileOutputParam{OutFolder: TEST_OUT_DIR}}
-	fw.setup(param)
-
-	buf1 := common.MakeSimpleBuf([]byte{})
-	buf1.SetField("addId", true, false)
-	buf1.SetField("id", "5", false)
-	buf1.SetField("type", 3, false)
-
-	buf2 := common.MakeSimpleBuf([]byte{})
-	buf2.SetField("addId", true, false)
-	buf2.SetField("id", "2", false)
-	buf2.SetField("type", 3, false)
-
-	fw.processControl(common.MakeStatusUnit(0x10, buf1))
-	fw.processControl(common.MakeStatusUnit(0x10, buf2))
-
-	rawUnit := common.MakeIOUnit([]byte{1}, 3, 5)
-	rawUnit2 := common.MakeIOUnit([]byte{1}, 3, 2)
-	fw.processUnit(rawUnit)
-	fw.processUnit(rawUnit2)
-
-	fw.stop()
-
-	t.Logf(TEST_OUT_DIR)
-
-	filesArr := []int{2, 5}
-	for _, id := range filesArr {
-		f, _ := os.Open(TEST_OUT_DIR + "out" + strconv.Itoa(id) + ".ts")
-		data := make([]byte, 1)
-		f.Read(data)
-		assert.Equal(t, uint8(1), data[0], "Expect 1")
 	}
 }
 
