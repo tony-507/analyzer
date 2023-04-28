@@ -2,6 +2,7 @@ package ioUtils
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -18,29 +19,20 @@ type IReader interface {
 }
 
 type inputReaderPlugin struct {
-	logger       common.Log
-	callback     common.RequestHandler
-	impl         IReader
-	isRunning    bool
-	outputQueue  []common.CmUnit
-	outCnt       int
-	name         string
-	skipCnt      int
-	maxInCnt     int
-	dumpRawInput bool
+	logger      common.Log
+	callback    common.RequestHandler
+	impl        IReader
+	isRunning   bool
+	outputQueue []common.CmUnit
+	outCnt      int
+	name        string
+	skipCnt     int
+	maxInCnt    int
+	rawDataFile *os.File
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
-
-	if ir.dumpRawInput {
-		buf := common.MakeSimpleBuf([]byte{})
-		buf.SetField("id", "-1", false)
-		buf.SetField("addId", true, false)
-		buf.SetField("type", 3, false)
-		unit := common.MakeStatusUnit(0x10, buf)
-		common.Post_status(ir.callback, ir.name, unit)
-	}
 
 	err := ir.impl.startRecv()
 	if err != nil {
@@ -79,7 +71,14 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.maxInCnt = -1
 	}
 
-	ir.dumpRawInput = param.DumpRawInput
+	if param.DumpRawInput {
+		fname := "output/rawBuffer"
+		f, err := os.Create(fname)
+		ir.rawDataFile = f
+		if err != nil {
+			ir.logger.Error("Fail to create and open %s: %s", fname, err.Error())
+		}
+	}
 
 	ir.outCnt = 0
 	srcType := "unknown"
@@ -143,6 +142,11 @@ func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 	}
 
 	ir.skipCnt -= 1
+
+	if ir.rawDataFile != nil && rv != nil {
+		buf, _ := rv.GetBuf().([]byte)
+		ir.rawDataFile.Write(buf)
+	}
 
 	return rv
 }

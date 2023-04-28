@@ -13,10 +13,3 @@ end;
 input.SkipCnt = $skipCnt | 0;
 input.MaxInCnt = $maxInCnt | 0;
 input.DumpRawInput = true;
-
-output = #OutputWriter_1;
-
-output.OutputType = _OUTPUT_FILE;
-output.FileOutput.OutFolder = $o | output/;
-
-link(input, output);
