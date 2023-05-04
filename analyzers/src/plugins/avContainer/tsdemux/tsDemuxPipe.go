@@ -206,20 +206,12 @@ func (m_pMux *tsDemuxPipe) GetPmtVersion(progNum int) int {
 }
 
 func (m_pMux *tsDemuxPipe) AddProgram(version int, progNum int, pmtPid int) {
-	if oldPmtPid, hasKey := m_pMux.programRecords[progNum]; hasKey {
+	if version != m_pMux.patVersion {
 		m_pMux.logger.Info("PAT version updated")
-		if oldPmtPid != pmtPid {
-			m_pMux.control.updatePidStatus(strconv.Itoa(oldPmtPid), false, 2)
-		}
-		// Remove old PMT streams
 	}
-	m_pMux.control.updatePidStatus(strconv.Itoa(pmtPid), true, 2)
 	m_pMux.logger.Info("New program added: %d => %d", progNum, pmtPid)
 	m_pMux.programRecords[progNum] = pmtPid
 
-	if m_pMux.patVersion == -1 {
-		m_pMux.control.updatePidStatus("0", true, 2)
-	}
 	m_pMux.patVersion = version
 }
 

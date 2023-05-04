@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -79,6 +80,17 @@ func TestStartApp(t *testing.T) {
 				// Run app
 				fmt.Println("Running app")
 				tttKernel.StartApp("./resources/apps/", app, args)
+
+				// Move output files to outFolder
+				entries, readErr := os.ReadDir("output")
+				if readErr != nil {
+					panic(readErr)
+				}
+				for _, file := range entries {
+					if !file.IsDir() {
+						os.Rename("output/"+file.Name(), outFolder+file.Name())
+					}
+				}
 
 				// Perform validations
 				fmt.Println("Performing validations")
