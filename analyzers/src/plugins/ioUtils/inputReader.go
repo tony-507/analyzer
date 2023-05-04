@@ -47,6 +47,10 @@ func (ir *inputReaderPlugin) EndSequence() {
 	if err != nil {
 		panic(err)
 	}
+
+	if ir.rawDataFile != nil {
+		ir.rawDataFile.Close()
+	}
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
 	common.Post_request(ir.callback, ir.name, eosUnit)
 }

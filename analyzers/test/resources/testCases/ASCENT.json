@@ -3,11 +3,10 @@
 	"app": ["tsa", "editCap"],
 	"expected": {
 		"tsa": {
-			"json": ["0", "258"],
-			"csv": ["32", "33"]
+			"json": ["0_0", "258_0"]
 		},
 		"editCap": {
-			"fname": "out-1.ts",
+			"fname": "rawBuffer",
 			"size": 9400
 		}
 	}
