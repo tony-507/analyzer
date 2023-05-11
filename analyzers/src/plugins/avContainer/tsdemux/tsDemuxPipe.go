@@ -338,10 +338,6 @@ func (m_pMux *tsDemuxPipe) getDuration() int {
 	return end - start
 }
 
-func (m_pMux *tsDemuxPipe) getProgramNumber(idx int) int {
-	return idx
-}
-
 func (m_pMux *tsDemuxPipe) readyForFetch() bool {
 	return len(m_pMux.streamRecords) > 0 && len(m_pMux.outputQueue) > 0
 }

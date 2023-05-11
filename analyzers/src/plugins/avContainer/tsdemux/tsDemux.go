@@ -13,23 +13,11 @@ import (
 type IDemuxPipe interface {
 	processUnit([]byte, int) error
 	getDuration() int
-	getProgramNumber(int) int
 	readyForFetch() bool
 	getOutputUnit() common.CmUnit
 }
 
 type PKT_TYPE int
-
-func GetVersion(buf []byte) int {
-	r := common.GetBufferReader(buf)
-	pFieldLen := r.ReadBits(8)
-	// Protection on failure to get version
-	if pFieldLen+7 > r.GetSize()-4 {
-		return -1
-	}
-	r.ReadBits(pFieldLen*8 + 8 + 6 + 10 + 16 + 2)
-	return r.ReadBits(5)
-}
 
 const (
 	PKT_UNKNOWN PKT_TYPE = -1
@@ -199,12 +187,6 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt)
 	}
 	m_pMux.pktCnt += 1
-
-	// Clean up status
-	for _, status := range m_pMux.control.StatusList {
-		common.Post_status(m_pMux.callback, m_pMux.name, status)
-	}
-	m_pMux.control.StatusList = make([]common.CmUnit, 0)
 
 	// Start fetching after clock is ready
 	if m_pMux.impl.readyForFetch() {

@@ -31,11 +31,7 @@ func (w *outputWriterPlugin) SetParameter(m_parameter string) {
 		panic(err)
 	}
 	outType := "unknown"
-	switch writerParam.OutputType {
-	case _OUTPUT_FILE:
-		outType = "file"
-		w.impl = getFileWriter(w.name)
-	}
+	// TODO: Add an implementation here
 	w.logger.Info("%s writer is started", outType)
 	err := w.impl.setup(writerParam)
 	if err != nil {

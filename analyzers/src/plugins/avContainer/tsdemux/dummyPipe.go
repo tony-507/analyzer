@@ -28,10 +28,6 @@ func (dp *dummyPipe) getDuration() int {
 	return 1
 }
 
-func (dp *dummyPipe) getProgramNumber(idx int) int {
-	return 1
-}
-
 func (dp *dummyPipe) readyForFetch() bool {
 	return dp.ready
 }
