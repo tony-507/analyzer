@@ -2,7 +2,6 @@ package tsdemux
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -171,12 +170,6 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 }
 
 func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
-	outBuf := common.MakeSimpleBuf(jsonBytes)
-	outBuf.SetField("dataType", m_pMux._getPktType(pid), true)
-	outBuf.SetField("streamType", -1, true)
-
-	outUnit := common.MakeIOUnit(outBuf, 2, pid)
-	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 }
 
 func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
@@ -221,28 +214,19 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 	}
 	m_pMux.pmtVersions[progNum] = version
 
-	updateStreamStatus := true
-
 	// Check if this pid already exists
 	if oldType, hasKey := m_pMux.streamRecords[streamPid]; hasKey {
 		// Check if stream type of the pid changes
 		if oldType != streamType {
 			m_pMux.logger.Info("Stream type of stream with pid %d updated: %d => %d", streamPid, oldType, streamType)
-			actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(oldType), " ")
-			actualType := actualTypeSlice[len(actualTypeSlice)-1]
-			if actualType == "data" {
-				m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), false, 2)
-			} else {
-				m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), false, 1)
-			}
-		} else {
-			updateStreamStatus = true
 		}
 
 		// Check if the stream belongs to another program
 		for oldPid, oldProgNum := range m_pMux.streamTree {
-			if oldPid == streamPid && oldProgNum != progNum {
-				m_pMux.logger.Info("Pid %d parent program updated: %d => %d", streamPid, oldProgNum, progNum)
+			if oldPid == streamPid {
+				if oldProgNum != progNum {
+					m_pMux.logger.Info("Pid %d parent program updated: %d => %d", streamPid, oldProgNum, progNum)
+				}
 				break
 			}
 		}
@@ -252,16 +236,6 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 
 	m_pMux.streamRecords[streamPid] = streamType
 	m_pMux.streamTree[streamPid] = progNum
-
-	if updateStreamStatus {
-		actualTypeSlice := strings.Split(m_pMux.control.queryStreamType(streamType), " ")
-		actualType := actualTypeSlice[len(actualTypeSlice)-1]
-		if actualType == "data" {
-			m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), true, 2)
-		} else {
-			m_pMux.control.updatePidStatus(strconv.Itoa(streamPid), true, 1)
-		}
-	}
 }
 
 func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
