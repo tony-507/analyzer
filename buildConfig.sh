@@ -1,11 +1,14 @@
 #!/bin/bash
 
 buildDir="${MODULE_DIR}/build"
+testOutputDir="${MODULE_DIR}/test/output"
 
 init() {
-	rm -rf $buildDir
+	for d in ${MODULE_DIR}/{build,test/output}; do
+		rm -rf $d
 
-	mkdir -p $buildDir
+		mkdir -p $d
+	done
 }
 
 build_app() {
@@ -23,6 +26,22 @@ build_app() {
 	cd ..
 }
 
+run_unit_tests () {
+	go install github.com/jstemmer/go-junit-report
+	binPath="$(go env GOPATH)/bin/"
+	pkgList=$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) 
+
+	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/testCoverage.txt ./... -timeout 60s 2>&1 |  $binPath/go-junit-report > $MODULE_DIR/build/test_detail.xml
+}
+
+generate_coverage_report () {
+	echo "Generating code coverage report"
+	while read p || [[ -n $p ]]; do
+		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/testCoverage.txt
+	done <$MODULE_DIR/.testCoverageIgnore
+	go tool cover -html=$MODULE_DIR/build/testCoverage.txt -o $MODULE_DIR/build/testCoverage.html
+}
+
 userBuild () {
 	# Fail on any error
 	set -e
@@ -38,16 +57,10 @@ userBuild () {
 
 userTest() {
 	cd $MODULE_DIR
-	go install github.com/jstemmer/go-junit-report
-	binPath="$(go env GOPATH)/bin/"
-	pkgList=$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) 
 
-	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/testCoverage.txt ./... -timeout 60s 2>&1 |  $binPath/go-junit-report > $MODULE_DIR/build/test_detail.xml
+	run_unit_tests
 
-	echo "Generating code coverage report"
-	while read p || [[ -n $p ]]; do
-		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/testCoverage.txt
-	done <$MODULE_DIR/.testCoverageIgnore
-	go tool cover -html=$MODULE_DIR/build/testCoverage.txt -o $MODULE_DIR/build/testCoverage.html
+	generate_coverage_report
+
 	cd ..
 }
