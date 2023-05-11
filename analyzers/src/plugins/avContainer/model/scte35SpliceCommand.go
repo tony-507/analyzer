@@ -10,25 +10,6 @@ type Splice_command interface {
 	GetSplicePTS() []int
 }
 
-// SCTE-35 2019a section 9.9
-type Splice_info_section struct {
-	TableId          int
-	SectionSyntaxIdr bool
-	PrivateIdr       bool
-	SectionLen       int
-	ProtocolVersion  int
-	EncryptedPkt     bool
-	EncryptAlgo      int
-	PtsAdjustment    int
-	CwIdx            int
-	Tier             int
-	SpliceCmdLen     int
-	SpliceCmdType    int
-	SpliceCmdTypeStr string
-	SpliceCmd        Splice_command
-	Crc32            int
-}
-
 // SCTE-35 2019a section 9.7.1
 type Splice_null struct{}
 
