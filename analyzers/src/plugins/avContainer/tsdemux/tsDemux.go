@@ -170,11 +170,11 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 
 	// Perform demuxing on the received TS packet
 	buf, _ := inUnit.GetBuf().([]byte)
-	m_pMux.pktCnt += 1
 	procErr := m_pMux.impl.processUnit(buf, m_pMux.pktCnt)
 	if procErr != nil {
 		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt)
 	}
+	m_pMux.pktCnt += 1
 
 	// Clean up status
 	for _, status := range m_pMux.control.StatusList {
