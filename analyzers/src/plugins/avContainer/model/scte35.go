@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -134,8 +135,18 @@ func (s *scte35Struct) Process() error {
 
 	// TODO Continue...
 
-	jsonBytes, _ := json.MarshalIndent(s.schema, "\t", "\t") // Extra tab prefix to support array of Jsons
+	jsonBytes, _ := json.MarshalIndent(s.schema, "", "\t")
 	s.callback.PsiUpdateFinished(s.pid, jsonBytes)
+
+	if _, err := os.Stat("output"); err == nil {
+		fname := fmt.Sprintf("output/%d.json", s.pid)
+		jsonFile, err := os.Create(fname)
+		if err != nil {
+			return err
+		}
+		jsonFile.Write(jsonBytes)
+		jsonFile.Close()
+	}
 
 	return nil
 }
