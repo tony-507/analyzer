@@ -165,7 +165,7 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 	buf, _ := inUnit.GetBuf().([]byte)
 	procErr := m_pMux.impl.processUnit(buf, m_pMux.pktCnt)
 	if procErr != nil {
-		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt)
+		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt, procErr)
 	}
 	m_pMux.pktCnt += 1
 

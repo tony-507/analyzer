@@ -3,7 +3,6 @@ package common
 import (
 	"encoding/hex"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -47,12 +46,9 @@ func (br *BsReader) ReadHex(n int) string {
 func (br *BsReader) ReadChar(n int) string {
 	rv := ""
 	for i := 0; i < n; i++ {
-		rv += string(strconv.FormatInt(int64(br.ReadBits(8)), 16))
+		rv += fmt.Sprintf("%02x", br.ReadBits(8))
 	}
-	bs, err := hex.DecodeString(rv)
-	if err != nil {
-		panic(err)
-	}
+	bs, _ := hex.DecodeString(rv)
 	return string(bs)
 }
 
