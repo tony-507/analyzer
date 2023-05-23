@@ -138,8 +138,16 @@ func (s *scte35Struct) Process() error {
 	jsonBytes, _ := json.MarshalIndent(s.schema, "", "\t")
 	s.callback.PsiUpdateFinished(s.pid, jsonBytes)
 
-	if _, err := os.Stat("output"); err == nil {
-		fname := fmt.Sprintf("output/%d.json", s.pid)
+	if _, err := os.Stat("output"); err == nil && s.schema.SpliceCmdTypeStr != "splice_null" {
+		fileId := 0
+		fname := ""
+		for {
+			fname = fmt.Sprintf("output/%d_%d.json", s.pid, fileId)
+			if _, err := os.Stat(fname); errors.Is(err, os.ErrNotExist) {
+				break
+			}
+			fileId += 1
+		}
 		jsonFile, err := os.Create(fname)
 		if err != nil {
 			return err
