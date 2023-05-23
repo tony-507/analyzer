@@ -20,7 +20,6 @@ type tsDemuxPipe struct {
 	pmtVersions     map[int]int     // Program number => version
 	outputQueue     []common.CmUnit // Outputs to other plugins
 	scte35SplicePTS map[int][]int   // Program number => Splice PTS
-	isRunning       bool
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
@@ -31,7 +30,6 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.patVersion = -1
 	m_pMux.pmtVersions = make(map[int]int, 0)
 	m_pMux.scte35SplicePTS = make(map[int][]int, 0)
-	m_pMux.isRunning = false
 }
 
 // Handle incoming data from demuxer

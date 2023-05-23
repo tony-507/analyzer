@@ -16,30 +16,30 @@ func CreateLogger(id string) Log {
 }
 
 func (l *Log) Trace(msg string, param ...interface{}) {
-	l.Log(_LOG_TRACE, msg, param...)
+	l._log(_LOG_TRACE, msg, param...)
 }
 
 func (l *Log) Info(msg string, param ...interface{}) {
-	l.Log(_LOG_INFO, msg, param...)
+	l._log(_LOG_INFO, msg, param...)
 }
 
 func (l *Log) Warn(msg string, param ...interface{}) {
-	l.Log(_LOG_WARN, msg, param...)
+	l._log(_LOG_WARN, msg, param...)
 }
 
 func (l *Log) Error(msg string, param ...interface{}) {
-	l.Log(_LOG_ERROR, msg, param...)
+	l._log(_LOG_ERROR, msg, param...)
 }
 
 func (l *Log) Critical(msg string, param ...interface{}) {
-	l.Log(_LOG_CRITICAL, msg, param...)
+	l._log(_LOG_CRITICAL, msg, param...)
 }
 
 func (l *Log) Fatal(msg string, param ...interface{}) {
-	l.Log(_LOG_FATAL, msg, param...)
+	l._log(_LOG_FATAL, msg, param...)
 }
 
-func (l *Log) Log(level int, msg string, param ...interface{}) {
+func (l *Log) _log(level int, msg string, param ...interface{}) {
 	// Check if user has setting
 	if globalConfig.logLevel == 0 {
 		globalConfig.logLevel = _LOG_TRACE
