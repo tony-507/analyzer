@@ -52,8 +52,6 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 		return errors.New("the packet is scrambled")
 	}
 
-	dataProcessed := true // controller use
-
 	// Determine the type of the unit
 	pid, fieldErr := pkt.GetField("pid")
 	if fieldErr != nil {
@@ -111,7 +109,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 	default:
 		if pid < 32 {
 			// Special pids
-			dataProcessed = false
+			return nil
 		}
 		hasKey := false
 		for _, pmtPid := range m_pMux.programRecords {
@@ -155,16 +153,13 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 					}
 				default:
 					// Not sure, passthrough first
-					dataProcessed = false
+					return nil
 				}
 			} else {
 				// Not contained in PMT
-				dataProcessed = false
+				return nil
 			}
 		}
-	}
-	if dataProcessed {
-		m_pMux.control.dataParsed(pid)
 	}
 	return nil
 }
@@ -256,6 +251,8 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 		clk.updatePcrRecord(pcr, pktCnt)
 	}
 
+	dataProcessed := true
+
 	if pusi {
 		if m_pMux.dataStructs[pid] != nil {
 			parseErr := m_pMux.dataStructs[pid].Process()
@@ -293,8 +290,13 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 			}
 		}
 	} else {
-		m_pMux.logger.Warn("[%d] drop TS packet with pid %d without preceding section data", pktCnt, pid)
+		dataProcessed = false
 	}
+
+	if dataProcessed {
+		m_pMux.control.dataParsed(pid)
+	}
+
 	return nil
 }
 

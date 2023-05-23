@@ -119,6 +119,14 @@ func (dc *demuxController) printSummary(duration int) {
 }
 
 func getControl() *demuxController {
-	rv := demuxController{isRunning: true, pollPeriod: 5, inCnt: 0, pCnt: 0, outLen: 0, progClkMap: make(map[int]*programSrcClk, 0), pktCntMap: make(map[int]int, 0)}
+	rv := demuxController{
+		isRunning:  true,
+		pollPeriod: 5,
+		inCnt:      0,
+		pCnt:       0,
+		outLen:     0,
+		progClkMap: make(map[int]*programSrcClk, 0),
+		pktCntMap:  make(map[int]int, 0),
+	}
 	return &rv
 }
