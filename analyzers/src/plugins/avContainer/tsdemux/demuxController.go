@@ -8,6 +8,19 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
+// Stream type conversion helper
+type PKT_TYPE string
+
+const (
+	UNKNOWN PKT_TYPE = "undefined"
+	PAT     PKT_TYPE = "PAT"
+	PMT     PKT_TYPE = "PMT"
+	SDT     PKT_TYPE = "SDT"
+	VIDEO   PKT_TYPE = "video"
+	AUDIO   PKT_TYPE = "audio"
+	DATA    PKT_TYPE = "data"
+)
+
 // Internal controller for demuxer
 // This enhances data protection among structs and provides higher flexibility
 type demuxController struct {

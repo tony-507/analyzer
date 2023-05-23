@@ -17,25 +17,6 @@ type IDemuxPipe interface {
 	getOutputUnit() common.CmUnit
 }
 
-type PKT_TYPE int
-
-const (
-	PKT_UNKNOWN PKT_TYPE = -1
-	PKT_PAT     PKT_TYPE = 0
-	PKT_SDT     PKT_TYPE = 1
-	PKT_PMT     PKT_TYPE = 2
-	PKT_SCTE    PKT_TYPE = 3
-	PKT_VIDEO   PKT_TYPE = 17
-	PKT_MPEG2   PKT_TYPE = 18
-	PKT_AVC     PKT_TYPE = 19
-	PKT_HEVC    PKT_TYPE = 20
-	PKT_AUDIO   PKT_TYPE = 33
-	PKT_MPEG1   PKT_TYPE = 34
-	PKT_AC3     PKT_TYPE = 35
-	PKT_AAC     PKT_TYPE = 36
-	PKT_NULL    PKT_TYPE = 8191
-)
-
 type tsDemuxerPlugin struct {
 	logger    common.Log
 	callback  common.RequestHandler

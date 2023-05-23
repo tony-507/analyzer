@@ -2,6 +2,7 @@ package tsdemux
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -131,29 +132,9 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 
 			// Contained in PMT, continue the parsing
 			if isKnownStream {
-				pktType := m_pMux._getPktType(pid)
-				// Determine stream type from last word
-				actualTypeSlice := strings.Split(pktType, " ")
-				actualType := actualTypeSlice[len(actualTypeSlice)-1]
-				switch actualType {
-				case "video":
-					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
-					if err != nil {
-						return err
-					}
-				case "audio":
-					err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
-					if err != nil {
-						return err
-					}
-				case "data":
-					err := m_pMux.handleData(buf, pid, pusi, pktCnt, -1, -1, pcr)
-					if err != nil {
-						return err
-					}
-				default:
-					// Not sure, passthrough first
-					return nil
+				err := m_pMux.handleData(buf, pid, pusi, pktCnt, progNum, streamType, pcr)
+				if err != nil {
+					return err
 				}
 			} else {
 				// Not contained in PMT
@@ -263,10 +244,19 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 		}
 		var ds model.DataStruct
 		var err error
-		if streamType == -1 {
+		switch m_pMux._getPktType(pid) {
+		case PAT:
+			fallthrough
+		case PMT:
+			fallthrough
+		case DATA:
 			ds, err = model.PsiTable(m_pMux, pktCnt, pid, buf)
-		} else {
+		case VIDEO:
+			fallthrough
+		case AUDIO:
 			ds, err = model.PesPacket(m_pMux, buf, pid, pktCnt, progNum, streamType)
+		default:
+			err = errors.New(fmt.Sprintf("Unknown stream type for pid %d", pid))
 		}
 		if err != nil {
 			return err
@@ -300,9 +290,10 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 	return nil
 }
 
-func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
+// Return type of packets
+func (m_pMux *tsDemuxPipe) _getPktType(pid int) PKT_TYPE {
 	if pid == 0 {
-		return "PAT"
+		return PAT
 	}
 
 	// Check if PMT pid
@@ -314,16 +305,19 @@ func (m_pMux *tsDemuxPipe) _getPktType(pid int) string {
 		}
 	}
 	if hasKey {
-		return "PMT"
+		return PMT
 	}
 
 	// Check stream type
 	streamType, isKnownStream := m_pMux.streamRecords[pid]
 	if isKnownStream {
-		return m_pMux.control.queryStreamType(streamType)
+		streamName := m_pMux.control.queryStreamType(streamType)
+		splitStreamName := strings.Split(streamName, " ")
+		streamTypeName := splitStreamName[len(splitStreamName)-1]
+		return PKT_TYPE(streamTypeName)
 	}
 
-	return ""
+	return UNKNOWN
 }
 
 // Duration is independent of program, so just choose one
