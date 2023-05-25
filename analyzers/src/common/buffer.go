@@ -13,6 +13,7 @@ import (
 
 type CmBuf interface {
 	GetBuf() []byte
+	ResetBuf(buf []byte)
 	ToString() string                                         // Return data as byte string
 	GetFieldAsString() string                                 // Return name of the fields as byte string
 	SetField(name string, datum interface{}, jsonIgnore bool) // Set datum to buffer. If jsonIgnore is true, the field would not appear in toString
@@ -28,6 +29,10 @@ type simpleBuf struct {
 
 func (b *simpleBuf) GetBuf() []byte {
 	return b.buf
+}
+
+func (b *simpleBuf) ResetBuf(buf []byte) {
+	b.buf = buf
 }
 
 func (b *simpleBuf) ToString() string {

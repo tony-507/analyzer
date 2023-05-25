@@ -208,6 +208,7 @@ func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
 
 func (p *pesPacketStruct) Process() error {
 	p.header.SetField("size", len(p.payload), false)
+	p.header.ResetBuf(p.payload)
 	p.callback.PesPacketReady(p.header, p.pid)
 	return nil
 }
