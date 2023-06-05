@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -23,6 +24,11 @@ func setupLogging(appDir string) {
 	common.SetLoggingProperty("logDir", appDir+"logs")
 }
 
+func getOutputDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Dir(filename)
+}
+
 // TODO How to validate?
 func TestListApp(t *testing.T) {
 	tttKernel.ListApp("./resources/apps/")
@@ -30,7 +36,8 @@ func TestListApp(t *testing.T) {
 
 func TestStartApp(t *testing.T) {
 	specs := []string{
-		"resources/testCases/ASCENT.json",
+		"resources/testCases/ASCENT_tsa.json",
+		"resources/testCases/ASCENT_editCap.json",
 		"resources/testCases/AdSmart.json",
 	}
 
@@ -53,7 +60,7 @@ func TestStartApp(t *testing.T) {
 		inFile := "resources/assets/" + tc.Source
 
 		for _, app := range tc.App {
-			outFolder := "output/" + caseName + "/" + app + "/"
+			outFolder := getOutputDir() + "/output/" + caseName + "/" + app + "/"
 			testName := caseName + "_" + app
 			t.Run(testName, func(t *testing.T) {
 				setupLogging(outFolder)

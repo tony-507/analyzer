@@ -1,0 +1,16 @@
+{
+	"source": "ASCENT.TS",
+	"app": ["tsa"],
+	"expected": {
+		"tsa": {
+			"json": ["0_0", "258_0"],
+			"csv": ["32", "33"],
+			"md5sum": [
+				{
+					"fname": "32.pes",
+					"md5sum": "1a38d99310c3e190dac56f92318f0369"
+				}
+			]
+		}
+	}
+}

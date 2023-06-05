@@ -1,11 +1,7 @@
 {
 	"source": "ASCENT.TS",
-	"app": ["tsa", "editCap"],
+	"app": ["editCap"],
 	"expected": {
-		"tsa": {
-			"json": ["0_0", "258_0"],
-			"csv": ["32", "33"]
-		},
 		"editCap": {
 			"fname": "rawBuffer",
 			"size": 9400

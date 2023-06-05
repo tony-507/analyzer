@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"os/exec"
+	"strings"
 
 	"github.com/tony-507/analyzers/test/schema"
 )
@@ -48,6 +50,19 @@ func validateTsa(outFolder string, expectedTsaProp *schema.TsaExpectedProp) erro
 	for _, fname := range expectedTsaProp.JsonList {
 		if err = hasNonEmptyFileInList(fname+".json", -1, fileInfo); err != nil {
 			return err
+		}
+	}
+
+	if expectedTsaProp.Md5sum != nil {
+		for _, prop := range *expectedTsaProp.Md5sum {
+			out, err := exec.Command("md5sum", fmt.Sprintf("%s%s", outFolder, prop.Fname)).Output()
+			if err != nil {
+				return err
+			}
+			actualMd5sum := strings.Split(string(out), " ")[0]
+			if actualMd5sum != prop.Md5sum {
+				return errors.New(fmt.Sprintf("Md5sum not match. Expecting %s, but got %s", prop.Md5sum, actualMd5sum))
+			}
 		}
 	}
 

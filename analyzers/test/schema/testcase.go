@@ -12,11 +12,17 @@ type ExpectedProp struct {
 }
 
 type TsaExpectedProp struct {
-	JsonList []string `json:"json"`
-	CsvList  []string `json:"csv"`
+	JsonList []string              `json:"json"`
+	CsvList  []string              `json:"csv"`
+	Md5sum   *[]Md5sumExpectedProp `json:"md5sum"`
 }
 
 type EditCapExpectedProp struct {
 	Fname string `json:"fname"`
 	Size  int    `json:"size"`
+}
+
+type Md5sumExpectedProp struct {
+	Fname  string `json:"fname"`
+	Md5sum string `json:"md5sum"`
 }
