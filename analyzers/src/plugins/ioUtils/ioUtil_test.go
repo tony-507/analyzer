@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 )
 
 func getOutputDir() string {
@@ -26,17 +27,21 @@ func TestReaderSetParameter(t *testing.T) {
 		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
 	}
 
-	expectedExt := []INPUT_TYPE{INPUT_TS, INPUT_TS, INPUT_UNKNOWN}
+	expectedExt := []fileReader.INPUT_TYPE{
+		fileReader.INPUT_TS,
+		fileReader.INPUT_TS,
+		fileReader.INPUT_UNKNOWN,
+	}
 
 	for idx, param := range specs {
 		fr := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
 		fr.SetParameter(param)
 
-		impl, isFileReader := fr.impl.(*fileReaderStruct)
+		impl, isFileReader := fr.impl.(*fileReader.FileReaderStruct)
 		if !isFileReader {
 			panic("File reader not created")
 		}
-		assert.Equal(t, expectedExt[idx], impl.ext, fmt.Sprintf("[%d] Input file extension should be %v", idx, expectedExt[idx]))
+		assert.Equal(t, expectedExt[idx], impl.GetType(), fmt.Sprintf("[%d] Input file extension should be %v", idx, expectedExt[idx]))
 		assert.Equal(t, -1, fr.maxInCnt, "Uninitialized maxInCnt should be -1")
 	}
 }

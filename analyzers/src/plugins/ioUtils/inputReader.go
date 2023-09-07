@@ -5,23 +5,14 @@ import (
 	"os"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 )
-
-const (
-	TS_PKT_SIZE int = 188
-)
-
-type IReader interface {
-	setup()                            // Set up reader
-	startRecv() error                  // Start receiver
-	stopRecv() error                   // Stop receiver
-	dataAvailable(*common.IOUnit) bool // Get next unit of data
-}
 
 type inputReaderPlugin struct {
 	logger      common.Log
 	callback    common.RequestHandler
-	impl        IReader
+	impl        def.IReader
 	isRunning   bool
 	outputQueue []common.CmUnit
 	outCnt      int
@@ -34,7 +25,7 @@ type inputReaderPlugin struct {
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
 
-	err := ir.impl.startRecv()
+	err := ir.impl.StartRecv()
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +34,7 @@ func (ir *inputReaderPlugin) StartSequence() {
 func (ir *inputReaderPlugin) EndSequence() {
 	ir.logger.Info("Ending sequence, fetch count = %d", ir.outCnt)
 	ir.isRunning = false
-	err := ir.impl.stopRecv()
+	err := ir.impl.StopRecv()
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +84,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.impl = &dummyReader{}
 	case _SOURCE_FILE:
 		srcType = "file"
-		ir.impl = FileReader(ir.name, param.FileInput.Fname)
+		ir.impl = fileReader.FileReader(ir.name, param.FileInput.Fname)
 	case _SOURCE_UDP:
 		srcType = "UDP"
 		ir.impl = udpReader(&param.UdpInput, ir.name)
@@ -101,7 +92,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 
 	ir.logger.Info("%s reader created", srcType)
 
-	ir.impl.setup()
+	ir.impl.Setup()
 }
 
 func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}
@@ -119,7 +110,7 @@ func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
 func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
-	if ir.maxInCnt != 0 && ir.impl.dataAvailable(&newUnit) {
+	if ir.maxInCnt != 0 && ir.impl.DataAvailable(&newUnit) {
 		if newUnit.Buf != nil {
 			ir.outCnt += 1
 			ir.maxInCnt -= 1

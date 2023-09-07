@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type dataPacketStruct interface {
@@ -243,9 +244,9 @@ func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 			return buf, errors.New("Fail to retrieve application payload")
 		}
 
-		numTsPkt := len(buffer) / TS_PKT_SIZE
+		numTsPkt := len(buffer) / def.TS_PKT_SIZE
 		for i := 0; i < numTsPkt; i++ {
-			pcap.bufferQueue = append(pcap.bufferQueue, buffer[(i*TS_PKT_SIZE):((i+1)*TS_PKT_SIZE)])
+			pcap.bufferQueue = append(pcap.bufferQueue, buffer[(i*def.TS_PKT_SIZE):((i+1)*def.TS_PKT_SIZE)])
 		}
 	}
 

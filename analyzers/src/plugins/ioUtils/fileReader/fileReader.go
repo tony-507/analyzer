@@ -1,4 +1,4 @@
-package ioUtils
+package fileReader
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type INPUT_TYPE int
@@ -20,14 +21,14 @@ const (
 	INPUT_M2V     INPUT_TYPE = 0x10
 )
 
-type fileReaderStruct struct {
+type FileReaderStruct struct {
 	logger  common.Log
 	fname   string
 	fHandle *os.File
 	ext     INPUT_TYPE
 }
 
-func (fr *fileReaderStruct) setup() {
+func (fr *FileReaderStruct) Setup() {
 	ext := strings.ToLower(path.Ext(fr.fname)[1:])
 	switch ext {
 	case "ts":
@@ -43,7 +44,7 @@ func (fr *fileReaderStruct) setup() {
 	}
 }
 
-func (fr *fileReaderStruct) startRecv() error {
+func (fr *FileReaderStruct) StartRecv() error {
 	// Parse the data to have it in the form of a TS packet
 	if fr.ext != INPUT_TS {
 		return errors.New("Input file type not supported. Please check the extension")
@@ -59,12 +60,12 @@ func (fr *fileReaderStruct) startRecv() error {
 	return nil
 }
 
-func (fr *fileReaderStruct) stopRecv() error {
+func (fr *FileReaderStruct) StopRecv() error {
 	return fr.fHandle.Close()
 }
 
-func (fr *fileReaderStruct) dataAvailable(unit *common.IOUnit) bool {
-	buf := make([]byte, TS_PKT_SIZE)
+func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
+	buf := make([]byte, def.TS_PKT_SIZE)
 	n, err := fr.fHandle.Read(buf)
 	if err == io.EOF {
 		return false
@@ -73,7 +74,7 @@ func (fr *fileReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 			fr.logger.Error("Fail to read buffer: %s", err.Error())
 		}
 	}
-	if n < TS_PKT_SIZE {
+	if n < def.TS_PKT_SIZE {
 		return false
 	}
 	unit.IoType = 3
@@ -82,7 +83,11 @@ func (fr *fileReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 	return true
 }
 
-func FileReader(name string, fname string) IReader {
-	rv := &fileReaderStruct{logger: common.CreateLogger(name), fname: fname}
+func (fr *FileReaderStruct) GetType() INPUT_TYPE {
+	return fr.ext
+}
+
+func FileReader(name string, fname string) def.IReader {
+	rv := &FileReaderStruct{logger: common.CreateLogger(name), fname: fname}
 	return rv
 }

@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"golang.org/x/net/ipv4"
 )
 
@@ -116,19 +117,19 @@ type udpReaderStruct struct {
 	udpCount    int
 }
 
-func (ur *udpReaderStruct) setup() {
+func (ur *udpReaderStruct) Setup() {
 	ur.conn = socketConnection(ur.logger, ur.address, ur.port, ur.itf)
 }
 
-func (ur *udpReaderStruct) startRecv() error {
+func (ur *udpReaderStruct) StartRecv() error {
 	return ur.conn.init()
 }
 
-func (ur *udpReaderStruct) stopRecv() error {
+func (ur *udpReaderStruct) StopRecv() error {
 	return ur.conn.close()
 }
 
-func (ur *udpReaderStruct) dataAvailable(unit *common.IOUnit) bool {
+func (ur *udpReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 	if len(ur.bufferQueue) <= 1 {
 		udpBuf, err := ur.conn.read()
 
@@ -138,9 +139,9 @@ func (ur *udpReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 
 		ur.udpCount += 1
 
-		nTsPkt := len(udpBuf) / TS_PKT_SIZE
+		nTsPkt := len(udpBuf) / def.TS_PKT_SIZE
 		for i := 0; i < nTsPkt; i++ {
-			ur.bufferQueue = append(ur.bufferQueue, udpBuf[(i*TS_PKT_SIZE):((i+1)*TS_PKT_SIZE)])
+			ur.bufferQueue = append(ur.bufferQueue, udpBuf[(i*def.TS_PKT_SIZE):((i+1)*def.TS_PKT_SIZE)])
 		}
 	}
 
@@ -154,7 +155,7 @@ func (ur *udpReaderStruct) dataAvailable(unit *common.IOUnit) bool {
 	return true
 }
 
-func udpReader(param *udpInputParam, name string) IReader {
+func udpReader(param *udpInputParam, name string) def.IReader {
 	rv := udpReaderStruct{}
 	rv.conn = nil
 	rv.udpCount = 0
