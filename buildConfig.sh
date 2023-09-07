@@ -14,14 +14,8 @@ init() {
 build_app() {
 	cd $MODULE_DIR
 
-	for d in $MODULE_DIR/cmd/*; do
-		app=$(basename $d)
-		echo "Building $app"
-
-		go build $d/main.go
-		mv $MODULE_DIR/main $buildDir/$app
-		echo ""
-	done
+	# Need relative to project base directory
+	go build -o $buildDir/ ./cmd/...
 
 	cd ..
 }
