@@ -36,9 +36,20 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 	frame_rate_code := r.ReadBits(4)
 	bit_rate_value := r.ReadBits(18)
 	r.ReadBits(1)
+	vbv_buffer_size_value := r.ReadBits(10)
+	constrained_parameters_flag := r.ReadBits(1)
 	if !h.bInit {
-		h.logger.Trace(fmt.Sprintf("Resolution: %d x %d, aspect ratio: %d, frame_rate_code: %d, bit_rate_value: %d", hSize, vSize, aspectRatio, frame_rate_code, bit_rate_value))
+		h.logger.Trace(fmt.Sprintf("Resolution: %d x %d, aspect ratio: %d, frame_rate_code: %d, bit_rate_value: %d, vbv_buffer_size_value: %d, constrained_parameters_flag: %d",
+			hSize, vSize, aspectRatio, frame_rate_code, bit_rate_value, vbv_buffer_size_value, constrained_parameters_flag))
 		h.bInit = true
+	}
+	// intra_quantiser_matrix
+	if r.ReadBits(1) != 0 {
+		r.ReadBits(8 * 64)
+	}
+	// non_intra_quantiser_matrix
+	if r.ReadBits(1) != 0 {
+		r.ReadBits(8 * 64)
 	}
 }
 
