@@ -13,3 +13,4 @@ end;
 input.SkipCnt = $skipCnt | 0;
 input.MaxInCnt = $maxInCnt | 0;
 input.DumpRawInput = true;
+input.Protocols = TS;

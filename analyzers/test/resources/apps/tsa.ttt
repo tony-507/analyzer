@@ -12,6 +12,7 @@ end;
 
 input.SkipCnt = $skipCnt | 0;
 input.MaxInCnt = $maxInCnt | 0;
+input.Protocols = TS;
 
 demuxer = #TsDemuxer_1;
 demuxer.Mode = $demuxMode | _DEMUX_FULL;

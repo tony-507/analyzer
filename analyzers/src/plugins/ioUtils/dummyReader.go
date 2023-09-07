@@ -2,13 +2,14 @@ package ioUtils
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type dummyReader struct {
 	readCnt int
 }
 
-func (dr *dummyReader) Setup() {
+func (dr *dummyReader) Setup(config def.IReaderConfig) {
 	dr.readCnt = 0
 }
 

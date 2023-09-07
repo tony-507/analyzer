@@ -10,6 +10,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 	"golang.org/x/net/ipv4"
 )
 
@@ -113,12 +114,14 @@ type udpReaderStruct struct {
 	port        string
 	itf         string
 	conn        *sockConn
-	bufferQueue [][]byte
+	bufferQueue []def.ParseResult
 	udpCount    int
+	config      def.IReaderConfig
 }
 
-func (ur *udpReaderStruct) Setup() {
+func (ur *udpReaderStruct) Setup(config def.IReaderConfig) {
 	ur.conn = socketConnection(ur.logger, ur.address, ur.port, ur.itf)
+	ur.config = config
 }
 
 func (ur *udpReaderStruct) StartRecv() error {
@@ -139,10 +142,7 @@ func (ur *udpReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 
 		ur.udpCount += 1
 
-		nTsPkt := len(udpBuf) / def.TS_PKT_SIZE
-		for i := 0; i < nTsPkt; i++ {
-			ur.bufferQueue = append(ur.bufferQueue, udpBuf[(i*def.TS_PKT_SIZE):((i+1)*def.TS_PKT_SIZE)])
-		}
+		ur.bufferQueue = append(ur.bufferQueue, protocol.ParseWithParsers(ur.config.Protocols, udpBuf)...)
 	}
 
 	buf := ur.bufferQueue[0]
@@ -161,7 +161,7 @@ func udpReader(param *udpInputParam, name string) def.IReader {
 	rv.udpCount = 0
 
 	rv.logger = common.CreateLogger(name)
-	rv.bufferQueue = make([][]byte, 0)
+	rv.bufferQueue = make([]def.ParseResult, 0)
 
 	tmp := strings.Split(param.Address, ":")
 	rv.address = tmp[0]

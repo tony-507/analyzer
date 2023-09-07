@@ -8,7 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
 
 func getOutputDir() string {
@@ -140,4 +142,32 @@ func TestReadPcapFile(t *testing.T) {
 		assert.Equal(t, uint8(0x47), buf[0], "TS sync byte not match")
 	}
 	assert.Equal(t, 0x01, pcap.linkLayerType, "Link layer type is not Ethernet")
+}
+
+func TestTsParser(t *testing.T) {
+	parser := protocol.TsParser()
+	data := make([]byte, protocol.TS_PKT_SIZE * 7)
+	for i := 0; i < 7; i++ {
+		for j := 0; j < protocol.TS_PKT_SIZE; j++ {
+			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
+		}
+	}
+	resList := parser.Parse(data)
+	for idx, res := range(resList) {
+		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
+	}
+}
+
+func TestParseWithParsers(t *testing.T) {
+	// Ensure no infinite loop or weird stuff
+	data := make([]byte, protocol.TS_PKT_SIZE * 7)
+	for i := 0; i < 7; i++ {
+		for j := 0; j < protocol.TS_PKT_SIZE; j++ {
+			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
+		}
+	}
+	resList := protocol.ParseWithParsers([]def.PROTOCOL{def.PROT_TS, def.PROT_TS}, data)
+	for idx, res := range(resList) {
+		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
+	}
 }

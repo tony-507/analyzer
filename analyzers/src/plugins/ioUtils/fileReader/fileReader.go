@@ -2,13 +2,14 @@ package fileReader
 
 import (
 	"errors"
-	"io"
+	"fmt"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
 
 type INPUT_TYPE int
@@ -22,13 +23,15 @@ const (
 )
 
 type FileReaderStruct struct {
-	logger  common.Log
-	fname   string
-	fHandle *os.File
-	ext     INPUT_TYPE
+	logger      common.Log
+	fname       string
+	fHandle     *os.File
+	ext         INPUT_TYPE
+	config      def.IReaderConfig
+	bufferQueue []def.ParseResult
 }
 
-func (fr *FileReaderStruct) Setup() {
+func (fr *FileReaderStruct) Setup(config def.IReaderConfig) {
 	ext := strings.ToLower(path.Ext(fr.fname)[1:])
 	switch ext {
 	case "ts":
@@ -42,6 +45,7 @@ func (fr *FileReaderStruct) Setup() {
 	default:
 		fr.ext = INPUT_UNKNOWN
 	}
+	fr.config = config
 }
 
 func (fr *FileReaderStruct) StartRecv() error {
@@ -57,6 +61,17 @@ func (fr *FileReaderStruct) StartRecv() error {
 	}
 	fr.fHandle = fHandle
 
+	stat, err := fr.fHandle.Stat()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error()))
+	}
+	buf := make([]byte, stat.Size())
+	_, err = fr.fHandle.Read(buf)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error()))
+	}
+	fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
+
 	return nil
 }
 
@@ -65,22 +80,18 @@ func (fr *FileReaderStruct) StopRecv() error {
 }
 
 func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
-	buf := make([]byte, def.TS_PKT_SIZE)
-	n, err := fr.fHandle.Read(buf)
-	if err == io.EOF {
-		return false
-	} else {
-		if err != nil {
-			fr.logger.Error("Fail to read buffer: %s", err.Error())
+	if len(fr.bufferQueue) > 0 {
+		unit.IoType = 3
+		unit.Id = -1
+		unit.Buf = fr.bufferQueue[0].GetBuffer()
+		if len(fr.bufferQueue) > 1 {
+			fr.bufferQueue = fr.bufferQueue[1:]
+		} else {
+			fr.bufferQueue = []def.ParseResult{}
 		}
+		return true
 	}
-	if n < def.TS_PKT_SIZE {
-		return false
-	}
-	unit.IoType = 3
-	unit.Id = -1
-	unit.Buf = buf
-	return true
+	return false
 }
 
 func (fr *FileReaderStruct) GetType() INPUT_TYPE {
@@ -88,6 +99,11 @@ func (fr *FileReaderStruct) GetType() INPUT_TYPE {
 }
 
 func FileReader(name string, fname string) def.IReader {
-	rv := &FileReaderStruct{logger: common.CreateLogger(name), fname: fname}
+	rv := &FileReaderStruct{
+		logger: common.CreateLogger(name),
+		fname: fname,
+		config: def.IReaderConfig{},
+		bufferQueue: []def.ParseResult{},
+	}
 	return rv
 }

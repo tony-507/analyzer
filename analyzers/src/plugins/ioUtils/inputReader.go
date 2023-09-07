@@ -3,6 +3,7 @@ package ioUtils
 import (
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
@@ -90,9 +91,17 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.impl = udpReader(&param.UdpInput, ir.name)
 	}
 
+	prot_str := strings.Split(param.Protocols, ",")
+	protocols := make([]def.PROTOCOL, len(prot_str))
+	for idx, prot := range(prot_str) {
+		protocols[idx] = def.StringToProtocol(prot)
+	}
+
 	ir.logger.Info("%s reader created", srcType)
 
-	ir.impl.Setup()
+	ir.impl.Setup(def.IReaderConfig{
+		Protocols: protocols,
+	})
 }
 
 func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}

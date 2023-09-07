@@ -18,9 +18,10 @@ type ioReaderParam struct {
 	Source       _SOURCE_TYPE
 	FileInput    fileInputParam
 	UdpInput     udpInputParam
-	SkipCnt      int  // Number of packets to skip at start
-	MaxInCnt     int  // Number of packets to be parsed
-	DumpRawInput bool // Dump input data
+	SkipCnt      int      // Number of packets to skip at start
+	MaxInCnt     int      // Number of packets to be parsed
+	DumpRawInput bool     // Dump input data
+	Protocols    string // List of application protocols used, e.g. TS over RTP over SRT would be SRT,RTP,TS
 }
 
 type fileInputParam struct {
