@@ -29,21 +29,13 @@ func TestReaderSetParameter(t *testing.T) {
 		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
 	}
 
-	expectedExt := []fileReader.INPUT_TYPE{
-		fileReader.INPUT_TS,
-		fileReader.INPUT_TS,
-		fileReader.INPUT_UNKNOWN,
-	}
 
-	for idx, param := range specs {
+	for _, param := range specs {
 		fr := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
 		fr.SetParameter(param)
 
-		impl, isFileReader := fr.impl.(*fileReader.FileReaderStruct)
-		if !isFileReader {
-			panic("File reader not created")
-		}
-		assert.Equal(t, expectedExt[idx], impl.GetType(), fmt.Sprintf("[%d] Input file extension should be %v", idx, expectedExt[idx]))
+		_, isFileReader := fr.impl.(*fileReader.FileReaderStruct)
+		assert.Equal(t, true, isFileReader, "impl should be a file reader")
 		assert.Equal(t, -1, fr.maxInCnt, "Uninitialized maxInCnt should be -1")
 	}
 }

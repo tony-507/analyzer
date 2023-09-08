@@ -1,59 +1,34 @@
 package fileReader
 
+/*
+ * A class for handling file containing raw binary data.
+ *
+ * Currently only support TS.
+ */
+
 import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
-	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
 
-type INPUT_TYPE int
-
-const (
-	INPUT_UNKNOWN INPUT_TYPE = 0x00
-	INPUT_TS      INPUT_TYPE = 0x01
-	INPUT_MXF     INPUT_TYPE = 0x02
-	INPUT_PCAP    INPUT_TYPE = 0x03
-	INPUT_M2V     INPUT_TYPE = 0x10
-)
-
 type FileReaderStruct struct {
 	logger      common.Log
 	fname       string
 	fHandle     *os.File
-	ext         INPUT_TYPE
 	config      def.IReaderConfig
 	bufferQueue []def.ParseResult
 }
 
 func (fr *FileReaderStruct) Setup(config def.IReaderConfig) {
-	ext := strings.ToLower(path.Ext(fr.fname)[1:])
-	switch ext {
-	case "ts":
-		fr.ext = INPUT_TS
-	case "tp":
-		fr.ext = INPUT_TS
-	case "mxf":
-		fr.ext = INPUT_MXF
-	case "pcap":
-		fr.ext = INPUT_PCAP
-	default:
-		fr.ext = INPUT_UNKNOWN
-	}
 	fr.config = config
 }
 
 func (fr *FileReaderStruct) StartRecv() error {
-	// Parse the data to have it in the form of a TS packet
-	if fr.ext != INPUT_TS {
-		return errors.New("Input file type not supported. Please check the extension")
-	}
-
 	// Open the file and start reading
 	fHandle, err := os.Open(fr.fname)
 	if err != nil {
@@ -92,10 +67,6 @@ func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 		return true
 	}
 	return false
-}
-
-func (fr *FileReaderStruct) GetType() INPUT_TYPE {
-	return fr.ext
 }
 
 func FileReader(name string, fname string) def.IReader {
