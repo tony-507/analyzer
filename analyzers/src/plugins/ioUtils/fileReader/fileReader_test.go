@@ -1,6 +1,7 @@
 package fileReader
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -68,7 +69,8 @@ func TestReadPcapPacket(t *testing.T) {
 func TestReadPcapFile(t *testing.T) {
 	fname := ASSET_DIR + "adSmart.pcap"
 	logger := common.CreateLogger("Dummy")
-	pcap, err := pcapFile(fname, logger)
+	handle, err := os.Open(fname)
+	pcap, err := pcapFile(handle, logger)
 	if err != nil {
 		panic(err)
 	}

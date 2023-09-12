@@ -3,13 +3,16 @@ package fileReader
 /*
  * A class for handling file containing raw binary data.
  *
- * Currently only support TS.
+ * The reader
+ * - extracts UDP payload based on file type
+ * - extracts application payload based on configured application-layer protocols
  */
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
@@ -36,14 +39,37 @@ func (fr *FileReaderStruct) StartRecv() error {
 	}
 	fr.fHandle = fHandle
 
-	stat, err := fr.fHandle.Stat()
-	if err != nil {
-		return errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error()))
-	}
-	buf := make([]byte, stat.Size())
-	_, err = fr.fHandle.Read(buf)
-	if err != nil {
-		return errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error()))
+	var buf []byte
+	splitRes := strings.Split(fr.fname, ".")
+	ext := splitRes[len(splitRes) - 1]
+
+	if ext == "pcap" {
+		buf = []byte{}
+		pcap, err := pcapFile(fr.fHandle, fr.logger)
+		if err != nil {
+			return err
+		}
+		for {
+			rawBuf, err := pcap.getBuffer()
+			if err != nil {
+				return err
+			}
+			if len(rawBuf) == 0 {
+				fr.logger.Info("No more buffer from pcap")
+				break
+			}
+			buf = append(buf, rawBuf...)
+		}
+	} else {
+		stat, err := fr.fHandle.Stat()
+		if err != nil {
+			return errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error()))
+		}
+		buf = make([]byte, stat.Size())
+		_, err = fr.fHandle.Read(buf)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error()))
+		}
 	}
 	fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
 

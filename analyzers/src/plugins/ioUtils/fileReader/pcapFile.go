@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type dataPacketStruct interface {
@@ -218,10 +217,16 @@ func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 	if len(pcap.bufferQueue) == 0 {
 		// Check pcap packet header
 		buf, _ := pcap.advanceCursor(16)
+		if len(buf) == 0 {
+			return buf, nil
+		}
 		pcapPkt := pcapPacket(pcap.isBigEndian)
 		pcapPkt.parseHeader(buf, pcap.logger)
 
 		body, _ := pcap.advanceCursor(pcapPkt.length)
+		if len(body) == 0 {
+			return body, nil
+		}
 		pcapPkt.setPayload(body, pcap.logger)
 
 		dataLink, ok := pcapPkt.getPayload().(dataPacketStruct)
@@ -244,10 +249,7 @@ func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 			return buf, errors.New("Fail to retrieve application payload")
 		}
 
-		numTsPkt := len(buffer) / def.TS_PKT_SIZE
-		for i := 0; i < numTsPkt; i++ {
-			pcap.bufferQueue = append(pcap.bufferQueue, buffer[(i*def.TS_PKT_SIZE):((i+1)*def.TS_PKT_SIZE)])
-		}
+		pcap.bufferQueue = append(pcap.bufferQueue, buffer)
 	}
 
 	if len(pcap.bufferQueue) == 0 {
@@ -283,16 +285,13 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, error) {
 		pcap.logger.Error("FAIL to read %d bytes due to %s, shift back %d bytes", n, reason, l)
 		pcap.fHandle.Seek(int64(-l), 1)
 		time.Sleep(5 * time.Millisecond)
+		return []byte{}, nil
 	}
 	return buf, nil
 }
 
-func pcapFile(fname string, logger common.Log) (*pcapFileStruct, error) {
+func pcapFile(handle *os.File, logger common.Log) (*pcapFileStruct, error) {
 	rv := pcapFileStruct{}
-	handle, err := os.Open(fname)
-	if err != nil {
-		return nil, err
-	}
 	rv.fHandle = handle
 	rv.bufferQueue = make([][]byte, 0)
 	rv.logger = logger
