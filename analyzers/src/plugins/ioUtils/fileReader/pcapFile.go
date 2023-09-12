@@ -1,4 +1,4 @@
-package ioUtils
+package fileReader
 
 import (
 	"errors"
