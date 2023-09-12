@@ -1,0 +1,10 @@
+{
+	"source": "adSmart.pcap",
+	"app": ["tsa"],
+	"expected": {
+		"tsa": {
+			"json": ["0_0", "480_0"],
+			"csv": ["32"]
+		}
+	}
+}

@@ -39,6 +39,7 @@ func TestStartApp(t *testing.T) {
 		"resources/testCases/ASCENT_tsa.json",
 		"resources/testCases/ASCENT_editCap.json",
 		"resources/testCases/AdSmart.json",
+		"resources/testCases/AdSmart_pcap_tsa.json",
 	}
 
 	for _, spec := range specs {

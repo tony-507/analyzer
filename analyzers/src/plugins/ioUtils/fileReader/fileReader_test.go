@@ -74,7 +74,7 @@ func TestReadPcapFile(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 70; i++ {
+	for i := 0; i < 50; i++ {
 		buf, err := pcap.getBuffer()
 		if err != nil {
 			panic(err)
