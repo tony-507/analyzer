@@ -25,6 +25,8 @@ func parseOnce(protocol def.PROTOCOL, rawBuf []byte) []def.ParseResult {
 	switch protocol {
 	case def.PROT_TS:
 		parser = TsParser()
+	case def.PROT_RTP:
+		parser = RtpParser()
 	default:
 		panic(fmt.Sprintf("Parser %v not supported", protocol))
 	}

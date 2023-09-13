@@ -73,6 +73,19 @@ func TestTsParser(t *testing.T) {
 	}
 }
 
+func TestRtpParser(t *testing.T) {
+	data := []byte{
+		0x80, 0x60, 0xf2, 0xf6, 0xe4, 0x1a, 0xf0, 0x29, 0xab, 0xcd, 0xab, 0xcd,
+		0x01, 0x02, 0x03, 0x04, 0x05,
+	}
+	resList := protocol.ParseWithParsers([]def.PROTOCOL{def.PROT_RTP}, data)
+	assert.Equal(t, 1, len(resList))
+
+	res := resList[0]
+	timestamp, _ := res.GetField("timestamp")
+	assert.Equal(t, 3826970665, timestamp, "RTP timestamp not match")
+}
+
 func TestParseWithParsers(t *testing.T) {
 	// Ensure no infinite loop or weird stuff
 	data := make([]byte, protocol.TS_PKT_SIZE * 7)
