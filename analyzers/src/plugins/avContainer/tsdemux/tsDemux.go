@@ -18,14 +18,15 @@ type IDemuxPipe interface {
 }
 
 type tsDemuxerPlugin struct {
-	logger    common.Log
-	callback  common.RequestHandler
-	impl      IDemuxPipe       // Actual demuxing operation
-	control   *demuxController // Controller to handle demuxer internal state
-	isRunning int              // Counting channels, similar to waitGroup
-	pktCnt    int              // The index of currently fed packet
-	name      string
-	wg        sync.WaitGroup
+	logger      common.Log
+	callback    common.RequestHandler
+	impl        IDemuxPipe       // Actual demuxing operation
+	control     *demuxController // Controller to handle demuxer internal state
+	isRunning   int              // Counting channels, similar to waitGroup
+	pktCnt      int              // The index of currently fed packet
+	name        string
+	awaitFetch bool             // (Hack) Avoid sending fetch request twice for the same unit
+	wg          sync.WaitGroup
 }
 
 func (m_pMux *tsDemuxerPlugin) SetCallback(callback common.RequestHandler) {
@@ -93,6 +94,7 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 
 func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
+	m_pMux.awaitFetch = false
 	errMsg := ""
 
 	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
@@ -170,7 +172,8 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.pktCnt += 1
 
 	// Start fetching after clock is ready
-	if m_pMux.impl.readyForFetch() {
+	if m_pMux.impl.readyForFetch() && !m_pMux.awaitFetch {
+		m_pMux.awaitFetch = true
 		m_pMux.control.outputUnitAdded()
 		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
@@ -188,6 +191,9 @@ func (m_pMux *tsDemuxerPlugin) Name() string {
 }
 
 func TsDemuxer(name string) common.IPlugin {
-	rv := tsDemuxerPlugin{name: name}
+	rv := tsDemuxerPlugin{
+		name: name,
+		awaitFetch: false,
+	}
 	return &rv
 }
