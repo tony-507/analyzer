@@ -19,12 +19,6 @@ type graphNode struct {
 }
 
 // Graph node control flow
-func (node *graphNode) runPlugin() {
-	if node.impl.IsRoot() {
-		node.impl.DeliverUnit(nil)
-	}
-}
-
 func (node *graphNode) stopPlugin() {
 	for _, child := range node.children {
 		child.impl.EndSequence()

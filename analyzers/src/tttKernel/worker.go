@@ -46,9 +46,6 @@ func (w *Worker) runGraph() {
 	for _, node := range w.nodes {
 		node.impl.StartSequence()
 	}
-	for _, node := range w.nodes {
-		go node.runPlugin()
-	}
 	w.logger.Info("Start up delay: %dms", time.Now().Sub(startTime).Milliseconds())
 
 	w.handleRequests()

@@ -30,6 +30,7 @@ func (ir *inputReaderPlugin) StartSequence() {
 	if err != nil {
 		panic(err)
 	}
+	go ir.DeliverUnit(nil)
 }
 
 func (ir *inputReaderPlugin) EndSequence() {
