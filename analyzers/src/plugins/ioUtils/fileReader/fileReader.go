@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
@@ -25,6 +26,9 @@ type FileReaderStruct struct {
 	fHandle     *os.File
 	config      def.IReaderConfig
 	bufferQueue []def.ParseResult
+	running     bool
+	mtx         sync.Mutex
+	wg          sync.WaitGroup
 }
 
 func (fr *FileReaderStruct) Setup(config def.IReaderConfig) {
@@ -39,48 +43,61 @@ func (fr *FileReaderStruct) StartRecv() error {
 	}
 	fr.fHandle = fHandle
 
-	var buf []byte
-	splitRes := strings.Split(fr.fname, ".")
-	ext := splitRes[len(splitRes) - 1]
-
-	if ext == "pcap" {
-		buf = []byte{}
-		pcap, err := pcapFile(fr.fHandle, fr.logger)
-		if err != nil {
-			return err
-		}
-		for {
-			rawBuf, err := pcap.getBuffer()
-			if err != nil {
-				return err
-			}
-			if len(rawBuf) == 0 {
-				fr.logger.Info("No more buffer from pcap")
-				break
-			}
-			buf = append(buf, rawBuf...)
-		}
-	} else {
-		stat, err := fr.fHandle.Stat()
-		if err != nil {
-			return errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error()))
-		}
-		buf = make([]byte, stat.Size())
-		_, err = fr.fHandle.Read(buf)
-		if err != nil {
-			return errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error()))
-		}
-	}
-	fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
+	fr.running = true
+	fr.wg.Add(1)
+	go fr.worker()
 
 	return nil
 }
 
+func (fr *FileReaderStruct) worker() {
+	splitRes := strings.Split(fr.fname, ".")
+	ext := splitRes[len(splitRes) - 1]
+	if ext == "pcap" {
+		pcap, err := pcapFile(fr.fHandle, fr.logger)
+		if err != nil {
+			panic(err)
+		}
+		for fr.running {
+			buf, err := pcap.getBuffer()
+			if err != nil {
+				panic(err)
+			}
+			if len(buf) == 0 {
+				fr.logger.Info("No more buffer from pcap")
+				break
+			}
+			fr.mtx.Lock()
+			fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
+			fr.mtx.Unlock()
+		}
+	} else {
+		stat, err := fr.fHandle.Stat()
+		if err != nil {
+			panic(errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error())))
+		}
+		buf := make([]byte, stat.Size())
+		_, err = fr.fHandle.Read(buf)
+		if err != nil {
+			panic(errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error())))
+		}
+		fr.mtx.Lock()
+		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
+		fr.mtx.Unlock()
+	}
+	fr.running = false
+	fr.wg.Done()
+}
+
 func (fr *FileReaderStruct) StopRecv() error {
+	fr.running = false
+	fr.wg.Wait()
 	return fr.fHandle.Close()
 }
 
 func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
+	fr.mtx.Lock()
+	defer fr.mtx.Unlock()
 	if len(fr.bufferQueue) > 0 {
 		unit.IoType = 3
 		unit.Id = -1
@@ -90,6 +107,9 @@ func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 		} else {
 			fr.bufferQueue = []def.ParseResult{}
 		}
+		return true
+	} else if fr.running {
+		unit.Buf = nil
 		return true
 	}
 	return false

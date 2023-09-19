@@ -27,6 +27,6 @@ func (dr *dummyReader) DataAvailable(unit *common.IOUnit) bool {
 		return false
 	}
 	unit.IoType = 3
-	unit.Buf = dr.readCnt
+	unit.Buf = def.ParseResult{}
 	return true
 }

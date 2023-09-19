@@ -125,7 +125,12 @@ func (ir *inputReaderPlugin) start() {
 		if newUnit.Buf != nil {
 			ir.outCnt += 1
 			ir.maxInCnt -= 1
-			ir.processMetadata(&newUnit)
+			res, ok := newUnit.GetBuf().(def.ParseResult)
+			if !ok {
+				panic("Wrong unit type from downstream receiver")
+			}
+			ir.processMetadata(&res)
+			newUnit.Buf = res.GetBuffer()
 			ir.outputQueue = append(ir.outputQueue, &newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			common.Post_request(ir.callback, ir.name, reqUnit)
@@ -135,8 +140,7 @@ func (ir *inputReaderPlugin) start() {
 	}
 }
 
-func (ir *inputReaderPlugin) processMetadata(unit common.CmUnit) {
-	res, _ := unit.GetBuf().(def.ParseResult)
+func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.prevTimstamp != timestamp {
 			ir.logger.Info("New timestamp %d", timestamp)
