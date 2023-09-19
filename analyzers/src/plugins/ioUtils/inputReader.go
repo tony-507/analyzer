@@ -11,16 +11,17 @@ import (
 )
 
 type inputReaderPlugin struct {
-	logger      common.Log
-	callback    common.RequestHandler
-	impl        def.IReader
-	isRunning   bool
-	outputQueue []common.CmUnit
-	outCnt      int
-	name        string
-	skipCnt     int
-	maxInCnt    int
-	rawDataFile *os.File
+	logger       common.Log
+	callback     common.RequestHandler
+	impl         def.IReader
+	isRunning    bool
+	outputQueue  []common.CmUnit
+	outCnt       int
+	name         string
+	skipCnt      int
+	maxInCnt     int
+	rawDataFile  *os.File
+	prevTimstamp int
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
@@ -124,12 +125,23 @@ func (ir *inputReaderPlugin) start() {
 		if newUnit.Buf != nil {
 			ir.outCnt += 1
 			ir.maxInCnt -= 1
+			ir.processMetadata(&newUnit)
 			ir.outputQueue = append(ir.outputQueue, &newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			common.Post_request(ir.callback, ir.name, reqUnit)
 		}
 	} else {
 		ir.EndSequence()
+	}
+}
+
+func (ir *inputReaderPlugin) processMetadata(unit common.CmUnit) {
+	res, _ := unit.GetBuf().(def.ParseResult)
+	if timestamp, ok := res.GetField("timestamp"); ok {
+		if ir.prevTimstamp != timestamp {
+			ir.logger.Info("New timestamp %d", timestamp)
+			ir.prevTimstamp = timestamp
+		}
 	}
 }
 
@@ -161,6 +173,10 @@ func (ir *inputReaderPlugin) Name() string {
 }
 
 func InputReader(name string) common.IPlugin {
-	rv := inputReaderPlugin{name: name, logger: common.CreateLogger(name)}
+	rv := inputReaderPlugin{
+		name: name,
+		logger: common.CreateLogger(name),
+		prevTimstamp: -1,
+	}
 	return &rv
 }

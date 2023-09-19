@@ -84,7 +84,7 @@ func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 	if len(fr.bufferQueue) > 0 {
 		unit.IoType = 3
 		unit.Id = -1
-		unit.Buf = fr.bufferQueue[0].GetBuffer()
+		unit.Buf = fr.bufferQueue[0]
 		if len(fr.bufferQueue) > 1 {
 			fr.bufferQueue = fr.bufferQueue[1:]
 		} else {
