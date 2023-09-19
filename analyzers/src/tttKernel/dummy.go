@@ -26,6 +26,9 @@ func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {
 
 func (dp *DummyPlugin) StartSequence() {
 	dp.logger.Info("startSequence called")
+	if dp.role == 0 {
+		go dp.DeliverUnit(nil)
+	}
 }
 
 func (dp *DummyPlugin) EndSequence() {
@@ -77,15 +80,11 @@ func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
 	dp.callback = callback
 }
 
-func (dp *DummyPlugin) IsRoot() bool {
-	return dp.role == 0
-}
-
 func (dp *DummyPlugin) Name() string {
 	return dp.name
 }
 
-func Dummy(name string, isRoot int) common.IPlugin {
-	rv := DummyPlugin{name: name, logger: common.CreateLogger(name), role: isRoot}
+func Dummy(name string, role int) common.IPlugin {
+	rv := DummyPlugin{name: name, logger: common.CreateLogger(name), role: role}
 	return &rv
 }

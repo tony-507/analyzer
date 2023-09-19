@@ -182,10 +182,6 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 
 func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
 
-func (m_pMux *tsDemuxerPlugin) IsRoot() bool {
-	return false
-}
-
 func (m_pMux *tsDemuxerPlugin) Name() string {
 	return m_pMux.name
 }

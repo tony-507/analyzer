@@ -11,15 +11,26 @@ import (
 )
 
 // A plugin serves as a graph node of operation graph
+type _PLUGIN_STATE int
+
+const (
+	RUNNING _PLUGIN_STATE = 0
+	STOPPED _PLUGIN_STATE = 1
+)
+
 type graphNode struct {
 	impl        common.IPlugin
 	m_parameter string // Store plugin parameters
+	m_state     _PLUGIN_STATE
 	children    []*graphNode
 	parent      []*graphNode
 }
 
 // Graph node control flow
 func (node *graphNode) stopPlugin() {
+	if node.m_state == STOPPED {
+		return
+	}
 	for _, child := range node.children {
 		child.impl.EndSequence()
 	}
@@ -36,7 +47,11 @@ func addPath(parent *graphNode, children []*graphNode) {
 func getPluginByName(inputName string) *graphNode {
 	// Deduce the type of plugin by name
 	splitName := strings.Split(inputName, "_")
-	rv := &graphNode{children: make([]*graphNode, 0), parent: make([]*graphNode, 0)}
+	rv := &graphNode{
+		children: make([]*graphNode, 0),
+		parent: make([]*graphNode, 0),
+		m_state: RUNNING,
+	}
 	var impl common.IPlugin
 
 	switch splitName[0] {
@@ -49,11 +64,11 @@ func getPluginByName(inputName string) *graphNode {
 	case "DataHandler":
 		impl = dataHandler.DataHandlerFactory(inputName)
 	case "Dummy":
-		isRoot := 1
+		role := 1
 		if splitName[1] == "root" {
-			isRoot = 0
+			role = 0
 		}
-		impl = Dummy(inputName, isRoot)
+		impl = Dummy(inputName, role)
 	default:
 		msg := fmt.Sprintf("Unknown plugin name: %s", inputName)
 		panic(msg)

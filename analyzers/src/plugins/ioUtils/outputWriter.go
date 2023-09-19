@@ -67,10 +67,6 @@ func (w *outputWriterPlugin) DeliverStatus(unit common.CmUnit) {
 	w.impl.processControl(unit)
 }
 
-func (w *outputWriterPlugin) IsRoot() bool {
-	return false
-}
-
 func (w *outputWriterPlugin) Name() string {
 	return w.name
 }

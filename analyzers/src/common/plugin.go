@@ -9,6 +9,5 @@ type IPlugin interface {
 	DeliverStatus(CmUnit)
 	FetchUnit() CmUnit
 	EndSequence()
-	IsRoot() bool
 	Name() string
 }

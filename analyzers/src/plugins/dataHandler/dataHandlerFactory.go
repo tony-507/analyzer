@@ -101,10 +101,6 @@ func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
 	}
 }
 
-func (df *DataHandlerFactoryPlugin) IsRoot() bool {
-	return false
-}
-
 func (df *DataHandlerFactoryPlugin) Name() string {
 	return df.name
 }

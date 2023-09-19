@@ -156,10 +156,6 @@ func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (ir *inputReaderPlugin) IsRoot() bool {
-	return true
-}
-
 func (ir *inputReaderPlugin) Name() string {
 	return ir.name
 }

@@ -124,11 +124,8 @@ func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, ob
 	case common.ERROR_REQUEST:
 		err, _ := obj.(error)
 		w.logger.Error("From %s: %s", name, err.Error())
-		// Gracefully shutdown root nodes
 		for _, node := range w.nodes {
-			if node.impl.IsRoot() {
-				node.impl.EndSequence()
-			}
+			node.stopPlugin()
 		}
 	default:
 		errMsg := fmt.Sprintf("Non-implemented request type %v", reqType)
