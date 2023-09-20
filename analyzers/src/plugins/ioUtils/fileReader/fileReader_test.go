@@ -70,7 +70,8 @@ func TestReadPcapFile(t *testing.T) {
 	fname := ASSET_DIR + "adSmart.pcap"
 	logger := common.CreateLogger("Dummy")
 	handle, err := os.Open(fname)
-	pcap, err := pcapFile(handle, logger)
+	f := pcapFile(handle, logger)
+	pcap, _ := f.(*pcapFileStruct)
 	if err != nil {
 		panic(err)
 	}

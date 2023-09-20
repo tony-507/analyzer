@@ -9,8 +9,6 @@ package fileReader
  */
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -19,6 +17,10 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
+
+type fileHandler interface {
+	getBuffer() ([]byte, error)
+}
 
 type FileReaderStruct struct {
 	logger      common.Log
@@ -53,38 +55,29 @@ func (fr *FileReaderStruct) StartRecv() error {
 func (fr *FileReaderStruct) worker() {
 	splitRes := strings.Split(fr.fname, ".")
 	ext := splitRes[len(splitRes) - 1]
-	if ext == "pcap" {
-		pcap, err := pcapFile(fr.fHandle, fr.logger)
+	var handler fileHandler
+
+	switch ext {
+	case "pcap":
+		handler = pcapFile(fr.fHandle, fr.logger)
+	default:
+		handler = binaryDataFile(fr.fHandle)
+	}
+
+	for fr.running {
+		buf, err := handler.getBuffer()
 		if err != nil {
 			panic(err)
 		}
-		for fr.running {
-			buf, err := pcap.getBuffer()
-			if err != nil {
-				panic(err)
-			}
-			if len(buf) == 0 {
-				fr.logger.Info("No more buffer from pcap")
-				break
-			}
-			fr.mtx.Lock()
-			fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
-			fr.mtx.Unlock()
-		}
-	} else {
-		stat, err := fr.fHandle.Stat()
-		if err != nil {
-			panic(errors.New(fmt.Sprintf("Fail to retrieve file stat: %s", err.Error())))
-		}
-		buf := make([]byte, stat.Size())
-		_, err = fr.fHandle.Read(buf)
-		if err != nil {
-			panic(errors.New(fmt.Sprintf("Fail to read buffer: %s", err.Error())))
+		if len(buf) == 0 {
+			fr.logger.Info("No more buffer from file")
+			break
 		}
 		fr.mtx.Lock()
 		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
 		fr.mtx.Unlock()
 	}
+
 	fr.running = false
 	fr.wg.Done()
 }

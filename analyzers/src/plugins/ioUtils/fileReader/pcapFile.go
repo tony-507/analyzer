@@ -290,12 +290,12 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, error) {
 	return buf, nil
 }
 
-func pcapFile(handle *os.File, logger common.Log) (*pcapFileStruct, error) {
+func pcapFile(handle *os.File, logger common.Log) fileHandler {
 	rv := pcapFileStruct{}
 	rv.fHandle = handle
 	rv.bufferQueue = make([][]byte, 0)
 	rv.logger = logger
 	rv.bInit = false
 
-	return &rv, nil
+	return &rv
 }
