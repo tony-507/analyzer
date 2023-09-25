@@ -8,14 +8,14 @@ type IParser interface {
 
 type ParseResult struct {
 	Buffer []byte
-	Fields map[string]int
+	Fields map[string]int64
 }
 
 func (res *ParseResult) GetBuffer() []byte {
 	return res.Buffer
 }
 
-func (res *ParseResult) GetField(name string) (int, bool) {
+func (res *ParseResult) GetField(name string) (int64, bool) {
 	val, ok := res.Fields[name]
 	return val, ok
 }

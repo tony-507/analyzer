@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/utils"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 )
@@ -21,7 +22,8 @@ type inputReaderPlugin struct {
 	skipCnt      int
 	maxInCnt     int
 	rawDataFile  *os.File
-	prevTimstamp int
+	prevTimstamp int64
+	errCount     int
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
@@ -143,7 +145,16 @@ func (ir *inputReaderPlugin) start() {
 func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.prevTimstamp != timestamp {
-			ir.logger.Info("New timestamp %d", timestamp)
+			tc, err := utils.RtpTimestampToTimeCode(uint32(timestamp), -1, 30000, 1001, false, 0)
+			if err != nil {
+				if ir.errCount % 1000 == 0 {
+					ir.logger.Error("%s",err.Error())
+					ir.errCount++
+				} else {
+					ir.errCount = 0
+				}
+			}
+			ir.logger.Info("New timestamp %d. Expected timecode: %s", timestamp, tc.ToString())
 			ir.prevTimstamp = timestamp
 		}
 	}
@@ -181,6 +192,7 @@ func InputReader(name string) common.IPlugin {
 		name: name,
 		logger: common.CreateLogger(name),
 		prevTimstamp: -1,
+		errCount: 0,
 	}
 	return &rv
 }

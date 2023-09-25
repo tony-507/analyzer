@@ -11,7 +11,7 @@ type RtpProtocolParser struct {
 
 func (rtp *RtpProtocolParser) Parse(rawBuf []byte) []def.ParseResult {
 	res := make([]def.ParseResult, 1)
-	fields := make(map[string]int)
+	fields := make(map[string]int64)
 
 	r := common.GetBufferReader(rawBuf)
 	// RTP header
@@ -20,10 +20,10 @@ func (rtp *RtpProtocolParser) Parse(rawBuf []byte) []def.ParseResult {
 	bExtension := r.ReadBits(1) != 0
 	csrcCount := r.ReadBits(4)
 	r.ReadBits(1) // Marker
-	fields["payloadType"] = r.ReadBits(7)
-	fields["seqNumber"] = r.ReadBits(16)
-	fields["timestamp"] = r.ReadBits(32)
-	fields["syncId"] = r.ReadBits(32)
+	fields["payloadType"] = int64(r.ReadBits(7))
+	fields["seqNumber"] = int64(r.ReadBits(16))
+	fields["timestamp"] = int64(r.ReadBits(32))
+	fields["syncId"] = int64(r.ReadBits(32))
 
 	for i := 0; i < csrcCount; i++ {
 		r.ReadBits(32)
