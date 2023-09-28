@@ -66,9 +66,14 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 			return
 		}
 		if !hasPid {
-			if dType == 2 {
+			switch dType {
+			case 2:
 				df.handlers[pid] = video.MPEG2VideoHandler(pid)
-			} else if dType == 129 || dType == 135 {
+			case 27:
+				df.handlers[pid] = video.H264VideoHandler(pid)
+			case 129:
+				df.handlers[pid] = audio.AC3Handler(pid)
+			case 135:
 				df.handlers[pid] = audio.AC3Handler(pid)
 			}
 		}
