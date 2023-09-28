@@ -28,7 +28,7 @@ func (h *h264Handler) readNalUnit(r *common.BsReader, data *utils.VideoDataStruc
 		nalUnitHeaderBytes += 3 
 	}
 	// HACK: Speed up processing by assuming coded slice always present as the last NAL unit
-	if nal_unit_type <= 5 {
+	if nal_unit_type <= 5 || nal_unit_type == 19 {
 		r.ReadBits(len(r.GetRemainedBuffer()) * 8)
 	}
 	rbsp := []byte{}

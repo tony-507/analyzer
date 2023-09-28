@@ -14,6 +14,7 @@ type DataHandlerFactoryPlugin struct {
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
+	videos     []*utils.VideoDataStruct
 }
 
 func (df *DataHandlerFactoryPlugin) SetCallback(callback common.RequestHandler) {
@@ -119,12 +120,40 @@ func (df *DataHandlerFactoryPlugin) postProcessVideoData(cmBuf common.CmBuf, dat
 	pts, _ := common.GetBufFieldAsInt(cmBuf, "pts")
 	data.Dts = dts
 	data.Pts = pts
-	if data.TimeCode.Frame != -1 {
-		df.logger.Info("Timecode received at PTS %d -- %s", data.Pts, data.TimeCode.ToString())
+
+	if len(df.videos) == 20 {
+		// Clear and display stored data
+		for _, storedData := range df.videos[:10] {
+			if storedData.TimeCode.Frame != -1 {
+				df.logger.Info("Timecode received at PTS %d -- %s", storedData.Pts, storedData.TimeCode.ToString())
+			}
+		}
+		df.videos = df.videos[10:]
+	}
+
+	if (len(df.videos) == 0) {
+		df.videos = []*utils.VideoDataStruct{data}
+	} else {
+		insertIdx := -1
+		for idx, storedData := range df.videos {
+			if storedData.Pts > pts {
+				insertIdx = idx
+				break
+			}
+		}
+		if insertIdx != -1 {
+			df.videos = append(
+				append(df.videos[:insertIdx], data), df.videos[insertIdx:]...)
+		} else {
+			df.videos = append(df.videos, data)
+		}
 	}
 }
 
 func DataHandlerFactory(name string) common.IPlugin {
-	rv := DataHandlerFactoryPlugin{name: name}
+	rv := DataHandlerFactoryPlugin{
+		name: name,
+		videos: []*utils.VideoDataStruct{},
+	}
 	return &rv
 }
