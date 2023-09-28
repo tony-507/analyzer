@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
 )
 
@@ -25,9 +26,12 @@ func TestReadMultipleNal(t *testing.T) {
 	}
 	cmBuf := common.MakeSimpleBuf(data)
 	unit := common.MakeIOUnit(cmBuf, 0, 0)
-	handle.Feed(unit)
+	newData := utils.CreateParsedData()
+	handle.Feed(unit, &newData)
 
-	assert.Equal(t, true, handle.tc.Second != 0)
+	assert.Equal(t, utils.PARSED_VIDEO, newData.GetType())
+	videoData := newData.GetVideoData()
+	assert.Equal(t, "00:05:28:02", videoData.TimeCode.ToString())
 }
 
 func TestReadMultipleSei(t *testing.T) {
@@ -43,8 +47,9 @@ func TestReadMultipleSei(t *testing.T) {
 		sqp: h264.CreateSequenceParameterSet(),
 	}
 	handle.sqp.Vui.PicStructPresentFlag = true
+	vData := utils.VideoData()
 
-	handle.readSEI(data)
+	handle.readSEI(data, &vData)
 
-	assert.Equal(t, true, handle.tc.Second != 0)
+	assert.Equal(t, true, vData.TimeCode.Second != 0)
 }

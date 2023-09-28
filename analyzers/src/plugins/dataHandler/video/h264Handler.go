@@ -6,7 +6,6 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
-	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
 
 const (
@@ -17,11 +16,10 @@ type h264Handler struct{
 	logger common.Log
 	inCnt int
 	sqp    h264.SequenceParameterSet
-	tc     commonUtils.TimeCode
 }
 
 // 7.3.1
-func (h *h264Handler) readNalUnit(r *common.BsReader) {
+func (h *h264Handler) readNalUnit(r *common.BsReader, data *utils.VideoDataStruct) {
 	r.ReadBits(1) // forbidden_zero_bit
 	r.ReadBits(2) // nal_ref_idc
 	nal_unit_type := r.ReadBits(5)
@@ -47,7 +45,7 @@ func (h *h264Handler) readNalUnit(r *common.BsReader) {
 	}
 	switch nal_unit_type {
 	case 6:
-		h.readSEI(rbsp)
+		h.readSEI(rbsp, data)
 	case 7:
 		h.sqp = h264.ParseSequenceParameterSet(rbsp)
 	default:
@@ -55,7 +53,7 @@ func (h *h264Handler) readNalUnit(r *common.BsReader) {
 	}
 }
 
-func (h *h264Handler) readSEI(rbsp []byte) {
+func (h *h264Handler) readSEI(rbsp []byte, data *utils.VideoDataStruct) {
 	r := common.GetBufferReader(rbsp)
 	// Last byte is rbsp_trailing_bits
 	for len(r.GetRemainedBuffer()) > 1 {
@@ -78,10 +76,7 @@ func (h *h264Handler) readSEI(rbsp []byte) {
 		case 1:
 			picTiming := h264.ParsePicTiming(&r, h.sqp)
 			for _, clock := range picTiming.Clocks {
-				h.tc = clock.Tc
-				if clock.Tc.Second != 0 {
-					h.logger.Info("TimeCode in output: %s", clock.Tc.ToString())
-				}
+				data.TimeCode = clock.Tc
 			}
 		default:
 			r.ReadBits(payloadSize * 8)
@@ -98,11 +93,12 @@ func (h *h264Handler) isLeadingOrTrailingZeros(r *common.BsReader) bool {
 	(len(r.GetRemainedBuffer()) > 3 && r.PeekBits(24) != _H264_START_CODE_PREFIX)
 }
 
-func (h *h264Handler) Feed(unit common.CmUnit) {
+func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
 	buf := cmBuf.GetBuf()
 	r := common.GetBufferReader(buf)
 	nalCnt := 0
+	data := newData.GetVideoData()
 
 	h.inCnt++
 
@@ -121,13 +117,14 @@ func (h *h264Handler) Feed(unit common.CmUnit) {
 		}
 		r.ReadBits(24)
 		nalCnt++
-		h.readNalUnit(&r)
+		h.readNalUnit(&r, data)
 		for h.isLeadingOrTrailingZeros(&r) {
 			if r.ReadBits(8) != 0 {
 				h.logger.Error("trailing_zero_8bits is not zero")
 			}
 		}
 	}
+	return nil
 }
 
 func H264VideoHandler(pid int) utils.DataHandler {

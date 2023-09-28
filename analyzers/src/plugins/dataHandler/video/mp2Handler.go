@@ -53,7 +53,7 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 	}
 }
 
-func (h *mpeg2Handler) Feed(unit common.CmUnit) {
+func (h *mpeg2Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
 	buf := cmBuf.GetBuf()
@@ -63,6 +63,7 @@ func (h *mpeg2Handler) Feed(unit common.CmUnit) {
 	if nextBits == int(_SEQUENCE_HEADER) {
 		h.readSequenceHeader(&r)
 	}
+	return nil
 }
 
 func MPEG2VideoHandler(pid int) utils.DataHandler {

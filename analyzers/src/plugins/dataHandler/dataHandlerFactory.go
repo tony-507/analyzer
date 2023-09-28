@@ -78,7 +78,11 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 			}
 		}
 		if h, hasHandle := df.handlers[pid]; hasHandle {
-			h.Feed(unit)
+			newData := utils.CreateParsedData()
+			h.Feed(unit, &newData)
+			if newData.GetType() == utils.PARSED_VIDEO {
+				df.postProcessVideoData(cmBuf, newData.GetVideoData())
+			}
 		}
 	}
 
@@ -108,6 +112,16 @@ func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
 
 func (df *DataHandlerFactoryPlugin) Name() string {
 	return df.name
+}
+
+func (df *DataHandlerFactoryPlugin) postProcessVideoData(cmBuf common.CmBuf, data *utils.VideoDataStruct) {
+	dts, _ := common.GetBufFieldAsInt(cmBuf, "dts")
+	pts, _ := common.GetBufFieldAsInt(cmBuf, "pts")
+	data.Dts = dts
+	data.Pts = pts
+	if data.TimeCode.Frame != -1 {
+		df.logger.Info("Timecode received at PTS %d -- %s", data.Pts, data.TimeCode.ToString())
+	}
 }
 
 func DataHandlerFactory(name string) common.IPlugin {

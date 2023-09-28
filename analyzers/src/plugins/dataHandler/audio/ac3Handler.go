@@ -14,12 +14,12 @@ type ac3Handler struct {
 	bInit      bool
 }
 
-func (h *ac3Handler) Feed(unit common.CmUnit) {
+func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
 	field, hasField := cmBuf.GetField("size")
 	if !hasField {
-		return
+		return nil
 	}
 	size, _ := field.(int)
 	if h.curPesSize != size {
@@ -31,6 +31,7 @@ func (h *ac3Handler) Feed(unit common.CmUnit) {
 			h.curPesSize = size
 		}
 	}
+	return nil
 }
 
 func AC3Handler(pid int) utils.DataHandler {

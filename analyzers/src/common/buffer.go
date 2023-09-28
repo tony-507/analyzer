@@ -94,6 +94,12 @@ func (b *simpleBuf) GetField(name string) (interface{}, bool) {
 	return nil, false
 }
 
+func GetBufFieldAsInt(b CmBuf, name string) (int, bool) {
+	field, ok := b.GetField(name)
+	rv, isInt := field.(int)
+	return rv, ok && isInt
+}
+
 func MakeSimpleBuf(inBuf []byte) *simpleBuf {
 	rv := simpleBuf{dataKey: make([]string, 0), dataVal: make([]interface{}, 0), jsonIgnore: make([]bool, 0), buf: inBuf}
 	return &rv
