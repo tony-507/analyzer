@@ -83,7 +83,7 @@ func TestRtpParser(t *testing.T) {
 
 	res := resList[0]
 	timestamp, _ := res.GetField("timestamp")
-	assert.Equal(t, 3826970665, timestamp, "RTP timestamp not match")
+	assert.Equal(t, int64(3826970665), timestamp, "RTP timestamp not match")
 }
 
 func TestParseWithParsers(t *testing.T) {
