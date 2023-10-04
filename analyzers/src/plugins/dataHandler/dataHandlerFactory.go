@@ -1,6 +1,8 @@
 package dataHandler
 
 import (
+	"sort"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
@@ -134,19 +136,8 @@ func (df *DataHandlerFactoryPlugin) postProcessVideoData(cmBuf common.CmBuf, dat
 	if (len(df.videos) == 0) {
 		df.videos = []*utils.VideoDataStruct{data}
 	} else {
-		insertIdx := -1
-		for idx, storedData := range df.videos {
-			if storedData.Pts > pts {
-				insertIdx = idx
-				break
-			}
-		}
-		if insertIdx != -1 {
-			df.videos = append(
-				append(df.videos[:insertIdx], data), df.videos[insertIdx:]...)
-		} else {
-			df.videos = append(df.videos, data)
-		}
+		df.videos = append(df.videos, data)
+		sort.Slice(df.videos, func (i, j int) bool { return df.videos[i].Pts < df.videos[j].Pts })
 	}
 }
 
