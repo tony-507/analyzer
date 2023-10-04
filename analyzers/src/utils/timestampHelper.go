@@ -110,6 +110,10 @@ func getDFTimeCodeFromNFrames(nFrames int64, fr_num int, fr_den int, field bool)
 	tc.Second = int(nFramesRemained / int64(nFramesIn1Sec))
 	tc.Frame = int(nFramesRemained % int64(nFramesIn1Sec))
 
+	if tc.Frame <= 2 && tc.Second == 0 && tc.Minute % 10 > 0 {
+		tc.Frame = 2
+	}
+
 	return tc
 }
 
