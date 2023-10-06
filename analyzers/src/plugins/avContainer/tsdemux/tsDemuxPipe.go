@@ -233,9 +233,9 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 	dataProcessed := true
 
 	if pusi {
-		if m_pMux.dataStructs[pid] != nil {
-			parseErr := m_pMux.dataStructs[pid].Process()
-			m_pMux.dataStructs[pid] = nil
+		if ds, hasKey := m_pMux.dataStructs[pid]; hasKey {
+			parseErr := ds.Process()
+			delete(m_pMux.dataStructs, pid)
 			if parseErr != nil {
 				return parseErr
 			}
@@ -264,15 +264,15 @@ func (m_pMux *tsDemuxPipe) handleData(buf []byte, pid int, pusi bool, pktCnt int
 			if parseErr != nil {
 				return parseErr
 			}
-			m_pMux.dataStructs[pid] = nil
+			delete(m_pMux.dataStructs, pid)
 		} else {
 			m_pMux.dataStructs[pid] = ds
 		}
-	} else if m_pMux.dataStructs[pid] != nil {
-		m_pMux.dataStructs[pid].Append(buf)
-		if m_pMux.dataStructs[pid].Ready() {
-			parseErr := m_pMux.dataStructs[pid].Process()
-			m_pMux.dataStructs[pid] = nil
+	} else if ds, hasKey := m_pMux.dataStructs[pid]; hasKey {
+		ds.Append(buf)
+		if ds.Ready() {
+			parseErr := ds.Process()
+			delete(m_pMux.dataStructs, pid)
 			if parseErr != nil {
 				return parseErr
 			}
