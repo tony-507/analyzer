@@ -25,7 +25,7 @@ func TestReaderSetParameter(t *testing.T) {
 
 		_, isFileReader := fr.impl.(*fileReader.FileReaderStruct)
 		assert.Equal(t, true, isFileReader, "impl should be a file reader")
-		assert.Equal(t, -1, fr.maxInCnt, "Uninitialized maxInCnt should be -1")
+		assert.Equal(t, -1, fr.param.maxInCnt, "Uninitialized maxInCnt should be -1")
 	}
 }
 

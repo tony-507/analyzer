@@ -2,28 +2,37 @@ package ioUtils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/utils"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
+	"github.com/tony-507/analyzers/src/utils"
 )
 
+type inputStat struct {
+	outCnt        int
+	prevTimestamp int64
+	errCount      int
+}
+
+type inputParam struct {
+	skipCnt  int
+	maxInCnt int
+}
+
 type inputReaderPlugin struct {
-	logger       common.Log
+	name         string
 	callback     common.RequestHandler
 	impl         def.IReader
 	isRunning    bool
+	logger       common.Log
 	outputQueue  []common.CmUnit
-	outCnt       int
-	name         string
-	skipCnt      int
-	maxInCnt     int
+	stat         inputStat
+	param        inputParam
 	rawDataFile  *os.File
-	prevTimstamp int64
-	errCount     int
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
@@ -37,7 +46,7 @@ func (ir *inputReaderPlugin) StartSequence() {
 }
 
 func (ir *inputReaderPlugin) EndSequence() {
-	ir.logger.Info("Ending sequence, fetch count = %d", ir.outCnt)
+	ir.logger.Info("Ending sequence, fetch count = %d", ir.stat.outCnt)
 	ir.isRunning = false
 	err := ir.impl.StopRecv()
 	if err != nil {
@@ -61,14 +70,14 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		panic(err)
 	}
 	if param.SkipCnt > 0 {
-		ir.skipCnt = param.SkipCnt
+		ir.param.skipCnt = param.SkipCnt
 	} else {
-		ir.skipCnt = 0
+		ir.param.skipCnt = 0
 	}
 	if param.MaxInCnt > 0 {
-		ir.maxInCnt = param.MaxInCnt
+		ir.param.maxInCnt = param.MaxInCnt
 	} else {
-		ir.maxInCnt = -1
+		ir.param.maxInCnt = -1
 	}
 
 	if param.DumpRawInput {
@@ -80,7 +89,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		}
 	}
 
-	ir.outCnt = 0
+	ir.stat.outCnt = 0
 	srcType := "unknown"
 
 	switch param.Source {
@@ -123,10 +132,10 @@ func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
 func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
-	if ir.maxInCnt != 0 && ir.impl.DataAvailable(&newUnit) {
+	if ir.param.maxInCnt != 0 && ir.impl.DataAvailable(&newUnit) {
 		if newUnit.Buf != nil {
-			ir.outCnt += 1
-			ir.maxInCnt -= 1
+			ir.stat.outCnt += 1
+			ir.param.maxInCnt -= 1
 			res, ok := newUnit.GetBuf().(def.ParseResult)
 			if !ok {
 				panic("Wrong unit type from downstream receiver")
@@ -144,18 +153,18 @@ func (ir *inputReaderPlugin) start() {
 
 func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
-		if ir.prevTimstamp != timestamp {
+		if ir.stat.prevTimestamp != timestamp {
 			tc, err := utils.RtpTimestampToTimeCode(uint32(timestamp), -1, 30000, 1001, false, 0)
 			if err != nil {
-				if ir.errCount % 1000 == 0 {
+				if ir.stat.errCount % 1000 == 0 {
 					ir.logger.Error("%s",err.Error())
-					ir.errCount++
+					ir.stat.errCount++
 				} else {
-					ir.errCount = 0
+					ir.stat.errCount = 0
 				}
 			}
 			ir.logger.Info("New timestamp %d. Expected timecode: %s", timestamp, tc.ToString())
-			ir.prevTimstamp = timestamp
+			ir.stat.prevTimestamp = timestamp
 		}
 	}
 }
@@ -163,7 +172,7 @@ func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 	var rv common.CmUnit
 
-	if len(ir.outputQueue) != 0 && ir.skipCnt <= 0 {
+	if len(ir.outputQueue) != 0 && ir.param.skipCnt <= 0 {
 		rv = ir.outputQueue[0]
 	}
 
@@ -173,7 +182,7 @@ func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 		ir.outputQueue = ir.outputQueue[1:]
 	}
 
-	ir.skipCnt -= 1
+	ir.param.skipCnt -= 1
 
 	if ir.rawDataFile != nil && rv != nil {
 		buf, _ := rv.GetBuf().([]byte)
@@ -187,12 +196,25 @@ func (ir *inputReaderPlugin) Name() string {
 	return ir.name
 }
 
+func (ir *inputReaderPlugin) PrintInfo(sb *strings.Builder) {
+	stat := ir.stat
+
+	sb.WriteString(fmt.Sprintf("Out count: %d\n", stat.outCnt))
+	if stat.prevTimestamp != -1 {
+		sb.WriteString(fmt.Sprintf("Prev timestamp: %d\n", stat.prevTimestamp))
+		sb.WriteString(fmt.Sprintf("Err count: %d", stat.errCount))
+	}
+}
+
 func InputReader(name string) common.IPlugin {
 	rv := inputReaderPlugin{
 		name: name,
 		logger: common.CreateLogger(name),
-		prevTimstamp: -1,
-		errCount: 0,
+		stat: inputStat{
+			outCnt: 0,
+			prevTimestamp: -1,
+			errCount: 0,
+		},
 	}
 	return &rv
 }
