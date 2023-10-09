@@ -4,7 +4,7 @@ buildDir="${MODULE_DIR}/build"
 testOutputDir="${MODULE_DIR}/test/output"
 
 init() {
-	for d in ${MODULE_DIR}/{build,test/output}; do
+	for d in ${MODULE_DIR}/{build,build/bin,build/test_result,test/output}; do
 		rm -rf $d
 
 		mkdir -p $d
@@ -15,7 +15,7 @@ build_app() {
 	cd $MODULE_DIR
 
 	# Need relative to project base directory
-	go build -o $buildDir/ ./cmd/...
+	go build -o $buildDir/bin/ ./cmd/...
 
 	cd ..
 }
@@ -25,15 +25,15 @@ run_unit_tests () {
 	binPath="$(go env GOPATH)/bin/"
 	pkgList=$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) 
 
-	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/testCoverage.txt ./... -timeout 60s 2>&1 |  $binPath/go-junit-report > $MODULE_DIR/build/test_detail.xml
+	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/test_result/testCoverage.txt ./... -timeout 60s 2>&1 | tee /dev/tty | $binPath/go-junit-report > $MODULE_DIR/build/test_result/test_detail.xml
 }
 
 generate_coverage_report () {
 	echo "Generating code coverage report"
 	while read p || [[ -n $p ]]; do
-		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/testCoverage.txt
+		sed -i'' -e "/${p//\//\\/}/d" $MODULE_DIR/build/test_result/testCoverage.txt
 	done <$MODULE_DIR/.testCoverageIgnore
-	go tool cover -html=$MODULE_DIR/build/testCoverage.txt -o $MODULE_DIR/build/testCoverage.html
+	go tool cover -html=$MODULE_DIR/build/test_result/testCoverage.txt -o $MODULE_DIR/build/test_result/testCoverage.html
 }
 
 userBuild () {
@@ -45,8 +45,8 @@ userBuild () {
 	build_app
 
 	# Copy demo apps
-	mkdir $buildDir/.resources
-	cp $MODULE_DIR/test/resources/apps/* $buildDir/.resources/.
+	mkdir $buildDir/bin/.resources
+	cp $MODULE_DIR/test/resources/apps/* $buildDir/bin/.resources/.
 }
 
 userTest() {
