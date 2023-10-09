@@ -10,11 +10,14 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
+type IDemuxCallback interface {
+	outputReady()
+}
+
 type IDemuxPipe interface {
-	processUnit([]byte, int) error
 	getDuration() int
-	readyForFetch() bool
 	getOutputUnit() common.CmUnit
+	processUnit([]byte, int) error
 }
 
 type tsDemuxerPlugin struct {
@@ -25,7 +28,6 @@ type tsDemuxerPlugin struct {
 	isRunning   int              // Counting channels, similar to waitGroup
 	pktCnt      int              // The index of currently fed packet
 	name        string
-	awaitFetch bool             // (Hack) Avoid sending fetch request twice for the same unit
 	wg          sync.WaitGroup
 }
 
@@ -48,7 +50,7 @@ func (m_pMux *tsDemuxerPlugin) SetParameter(m_parameter string) {
 		m_pMux.impl = &impl
 	case _DEMUX_FULL:
 		pipeType = "Demux"
-		impl := getDemuxPipe(m_pMux.control, m_pMux.name)
+		impl := getDemuxPipe(m_pMux, m_pMux.control, m_pMux.name)
 		m_pMux.impl = &impl
 	}
 	m_pMux.logger.Info("%s pipe is started", pipeType)
@@ -78,12 +80,6 @@ func (m_pMux *tsDemuxerPlugin) _setupMonitor() {
 func (m_pMux *tsDemuxerPlugin) StartSequence() {}
 
 func (m_pMux *tsDemuxerPlugin) EndSequence() {
-	// Fetch all remaining units
-	for m_pMux.impl.readyForFetch() {
-		m_pMux.control.outputUnitAdded()
-		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
-		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
-	}
 	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
@@ -94,7 +90,6 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 
 func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
-	m_pMux.awaitFetch = false
 	errMsg := ""
 
 	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
@@ -170,14 +165,6 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt, procErr)
 	}
 	m_pMux.pktCnt += 1
-
-	// Start fetching after clock is ready
-	if m_pMux.impl.readyForFetch() && !m_pMux.awaitFetch {
-		m_pMux.awaitFetch = true
-		m_pMux.control.outputUnitAdded()
-		reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
-		common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
-	}
 }
 
 func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
@@ -186,10 +173,14 @@ func (m_pMux *tsDemuxerPlugin) Name() string {
 	return m_pMux.name
 }
 
+func (m_pMux *tsDemuxerPlugin) outputReady() {
+	reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
+	common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
+}
+
 func TsDemuxer(name string) common.IPlugin {
 	rv := tsDemuxerPlugin{
 		name: name,
-		awaitFetch: false,
 	}
 	return &rv
 }

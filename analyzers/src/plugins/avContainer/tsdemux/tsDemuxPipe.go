@@ -11,6 +11,7 @@ import (
 
 type tsDemuxPipe struct {
 	logger          common.Log
+	callback        IDemuxCallback
 	control         *demuxController // Controller from demuxer
 	dataStructs     map[int]model.DataStruct
 	programRecords  map[int]int // PAT
@@ -215,6 +216,7 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
 	outUnit := common.MakeIOUnit(buf, 1, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+	m_pMux.callback.outputReady()
 }
 
 func (m_pMux *tsDemuxPipe) GetPmtPidByProgNum(progNum int) int {
@@ -332,10 +334,6 @@ func (m_pMux *tsDemuxPipe) getDuration() int {
 	return end - start
 }
 
-func (m_pMux *tsDemuxPipe) readyForFetch() bool {
-	return len(m_pMux.streamRecords) > 0 && len(m_pMux.outputQueue) > 0
-}
-
 func (m_pMux *tsDemuxPipe) getOutputUnit() common.CmUnit {
 	outUnit := m_pMux.outputQueue[0]
 	if len(m_pMux.outputQueue) == 1 {
@@ -346,8 +344,12 @@ func (m_pMux *tsDemuxPipe) getOutputUnit() common.CmUnit {
 	return outUnit
 }
 
-func getDemuxPipe(control *demuxController, name string) tsDemuxPipe {
-	rv := tsDemuxPipe{control: control, logger: common.CreateLogger(name)}
+func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string) tsDemuxPipe {
+	rv := tsDemuxPipe{
+		callback: callback,
+		control: control,
+		logger: common.CreateLogger(name),
+	}
 	rv._setup()
 	return rv
 }

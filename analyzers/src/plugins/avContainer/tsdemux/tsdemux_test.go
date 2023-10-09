@@ -7,6 +7,10 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
+type dummyCallback struct {}
+
+func (dc *dummyCallback) outputReady() {}
+
 func TestDemuxDeliverUnit(t *testing.T) {
 	m_pMux := tsDemuxerPlugin{name: "dummy"}
 	m_parameter := "{\"Mode\": \"_DEMUX_DUMMY\"}"
@@ -28,7 +32,8 @@ func TestDemuxPipeProcessing(t *testing.T) {
 		0x00, 0x00, 0x00, 0x0A, 0xE1, 0x02, 0xAA, 0x4A, 0xE2, 0xD2}
 
 	control := getControl()
-	impl := getDemuxPipe(control, "Dummy")
+	dc := dummyCallback{}
+	impl := getDemuxPipe(&dc, control, "Dummy")
 
 	impl.processUnit(dummyPAT, 0)
 
@@ -73,7 +78,8 @@ func TestMultipleTsPacketPsi(t *testing.T) {
 	pmt2 := []byte{0x47, 0x01, 0xE0, 0x10, 0x00, 0x2E, 0x06, 0x44, 0x2E}
 
 	control := getControl()
-	impl := getDemuxPipe(control, "Dummy")
+	dc := dummyCallback{}
+	impl := getDemuxPipe(&dc, control, "Dummy")
 
 	impl.programRecords[10] = 480
 	impl.processUnit(pmt1, 0)
@@ -114,9 +120,10 @@ func TestPesParsedOnceReady(t *testing.T) {
 	pkt2 := []byte{0x47, 0x00, 0x20, 0x14, 0x8D, 0x18, 0x61, 0xB8, 0xD1}
 
 	control := getControl()
+	dc := dummyCallback{}
 	r := common.CreateResourceLoader()
 	control.setResource(&r)
-	impl := getDemuxPipe(control, "Dummy")
+	impl := getDemuxPipe(&dc, control, "Dummy")
 
 	impl.programRecords[10] = 480
 	impl.streamRecords[32] = 2

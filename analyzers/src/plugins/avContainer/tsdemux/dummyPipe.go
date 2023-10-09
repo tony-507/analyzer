@@ -5,7 +5,7 @@ import (
 )
 
 type dummyPipe struct {
-	callback    *tsDemuxerPlugin
+	callback    IDemuxCallback
 	outputQueue []common.CmUnit
 	ready       bool
 	inCnt       int
@@ -20,16 +20,13 @@ func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) error {
 	dummy := common.MakeIOUnit(buf, 3, -1)
 	if dp.ready {
 		dp.outputQueue = append(dp.outputQueue, dummy)
+		dp.callback.outputReady()
 	}
 	return nil
 }
 
 func (dp *dummyPipe) getDuration() int {
 	return 1
-}
-
-func (dp *dummyPipe) readyForFetch() bool {
-	return dp.ready
 }
 
 func (dp *dummyPipe) getOutputUnit() common.CmUnit {
@@ -45,6 +42,10 @@ func (dp *dummyPipe) getOutputUnit() common.CmUnit {
 	return outUnit
 }
 
-func getDummyPipe(callback *tsDemuxerPlugin) dummyPipe {
-	return dummyPipe{callback: callback, ready: false, inCnt: 0}
+func getDummyPipe(callback IDemuxCallback) dummyPipe {
+	return dummyPipe{
+		callback: callback,
+		ready: false,
+		inCnt: 0,
+	}
 }
