@@ -110,7 +110,7 @@ func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error 
 	for {
 		for h.isLeadingOrTrailingZeros(&r) {
 			if r.ReadBits(8) != 0 {
-				h.logger.Error("leading_zero_8bits is not zero")
+				h.logger.Error("leading_zero_8bits is not zero at pkt #%d", h.inCnt)
 			}
 		}
 		if len(r.GetRemainedBuffer()) == 0 {

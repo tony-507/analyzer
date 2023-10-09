@@ -47,13 +47,17 @@ func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 		return errors.New("Special stream type not implemented for PES packet")
 	}
 
-	p.payload = inBuf[(6 + optionalHeaderLength):]
-
+	l := len(inBuf) - (6 + optionalHeaderLength)
 	if sectionLen == 0 {
 		p.sectionLen = -1
+		// HACK: Assume the packet has length < 30000
+		p.payload = make([]byte, l, 30000)
 	} else {
 		p.sectionLen = readLen + sectionLen - 6 - optionalHeaderLength
+		p.payload = make([]byte, l, p.sectionLen)
 	}
+
+	copy(p.payload[:l], inBuf[(6 + optionalHeaderLength):])
 
 	return nil
 }
