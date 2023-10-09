@@ -1,8 +1,6 @@
 package dataHandler
 
 import (
-	"sort"
-
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
@@ -16,7 +14,7 @@ type DataHandlerFactoryPlugin struct {
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
-	videos     []*utils.VideoDataStruct
+	vp         videoDataProcessorStruct
 }
 
 func (df *DataHandlerFactoryPlugin) SetCallback(callback common.RequestHandler) {
@@ -84,7 +82,7 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 			newData := utils.CreateParsedData()
 			h.Feed(unit, &newData)
 			if newData.GetType() == utils.PARSED_VIDEO {
-				df.postProcessVideoData(cmBuf, newData.GetVideoData())
+				df.vp.process(cmBuf, newData.GetVideoData())
 			}
 		}
 	}
@@ -117,34 +115,10 @@ func (df *DataHandlerFactoryPlugin) Name() string {
 	return df.name
 }
 
-func (df *DataHandlerFactoryPlugin) postProcessVideoData(cmBuf common.CmBuf, data *utils.VideoDataStruct) {
-	dts, _ := common.GetBufFieldAsInt(cmBuf, "dts")
-	pts, _ := common.GetBufFieldAsInt(cmBuf, "pts")
-	data.Dts = dts
-	data.Pts = pts
-
-	if len(df.videos) == 20 {
-		// Clear and display stored data
-		for _, storedData := range df.videos[:10] {
-			if storedData.TimeCode.Frame != -1 {
-				df.logger.Info("Timecode received at PTS %d -- %s", storedData.Pts, storedData.TimeCode.ToString())
-			}
-		}
-		df.videos = df.videos[10:]
-	}
-
-	if (len(df.videos) == 0) {
-		df.videos = []*utils.VideoDataStruct{data}
-	} else {
-		df.videos = append(df.videos, data)
-		sort.Slice(df.videos, func (i, j int) bool { return df.videos[i].Pts < df.videos[j].Pts })
-	}
-}
-
 func DataHandlerFactory(name string) common.IPlugin {
 	rv := DataHandlerFactoryPlugin{
 		name: name,
-		videos: []*utils.VideoDataStruct{},
+		vp: videoDataProcessor(),
 	}
 	return &rv
 }
