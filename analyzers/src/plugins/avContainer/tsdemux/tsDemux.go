@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sync"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -26,9 +26,7 @@ type tsDemuxerPlugin struct {
 	impl        IDemuxPipe       // Actual demuxing operation
 	control     *demuxController // Controller to handle demuxer internal state
 	isRunning   int              // Counting channels, similar to waitGroup
-	pktCnt      int              // The index of currently fed packet
 	name        string
-	wg          sync.WaitGroup
 }
 
 func (m_pMux *tsDemuxerPlugin) SetCallback(callback common.RequestHandler) {
@@ -63,18 +61,7 @@ func (m_pMux *tsDemuxerPlugin) SetResource(resourceLoader *common.ResourceLoader
 
 func (m_pMux *tsDemuxerPlugin) _setup() {
 	m_pMux.logger = common.CreateLogger(m_pMux.name)
-	m_pMux.pktCnt = 1
 	m_pMux.isRunning = 0
-
-	m_pMux.wg.Add(1)
-	go m_pMux._setupMonitor()
-}
-
-// Demuxer monitor, run as a Goroutine to monitor demuxer's status
-// Currently only check if demuxer gets stuck
-func (m_pMux *tsDemuxerPlugin) _setupMonitor() {
-	defer m_pMux.wg.Done()
-	m_pMux.control.monitor()
 }
 
 func (m_pMux *tsDemuxerPlugin) StartSequence() {}
@@ -83,7 +70,7 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
-	m_pMux.wg.Wait()
+
 	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
 	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
@@ -160,14 +147,17 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 
 	// Perform demuxing on the received TS packet
 	buf, _ := inUnit.GetBuf().([]byte)
-	procErr := m_pMux.impl.processUnit(buf, m_pMux.pktCnt)
+	procErr := m_pMux.impl.processUnit(buf, m_pMux.control.getInputCount())
 	if procErr != nil {
-		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.pktCnt, procErr)
+		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.control.getInputCount(), procErr)
 	}
-	m_pMux.pktCnt += 1
 }
 
 func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
+
+func (m_pMux *tsDemuxerPlugin) PrintInfo(sb *strings.Builder) {
+	m_pMux.control.printInfo(sb)
+}
 
 func (m_pMux *tsDemuxerPlugin) Name() string {
 	return m_pMux.name

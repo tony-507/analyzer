@@ -59,7 +59,11 @@ func TestDemuxPipeProcessing(t *testing.T) {
 
 	impl.processUnit(unknownPkt, 0)
 
-	assert.Equal(t, 2, impl.control.pCnt, "Process count not match")
+	pCnt := 0
+	for _, cnt := range impl.control.pktCntMap {
+		pCnt += cnt
+	}
+	assert.Equal(t, 2, pCnt, "Process count not match")
 }
 
 func TestMultipleTsPacketPsi(t *testing.T) {

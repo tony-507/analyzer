@@ -2,8 +2,8 @@ package tsdemux
 
 import (
 	"fmt"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -25,54 +25,47 @@ const (
 // This enhances data protection among structs and provides higher flexibility
 type demuxController struct {
 	isRunning      bool                   // State of demuxer
-	pollPeriod     int                    // Period for stuck detection
-	inCnt          int                    // Current input count
-	pCnt           int                    // Current parsing count
-	outLen         int                    // Output queue length
+	inputCnt       int
+	outputQueueLen int
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	pktCntMap      map[int]int            // pid -> # of packets
 	resourceLoader *common.ResourceLoader
 	mtx            sync.Mutex
 }
 
-func (dc *demuxController) monitor() {
-	for dc.isRunning {
-		time.Sleep(time.Duration(dc.pollPeriod) * time.Second)
-		dc.mtx.Lock()
-		if dc.inCnt == dc.pCnt {
-			statMsg := "tsDemuxer status\n"
-			statMsg += fmt.Sprintf("\tCurrent count: %d\n", dc.inCnt)
-			statMsg += fmt.Sprintf("\tisRunning: %v\n", dc.isRunning)
-			statMsg += fmt.Sprintf("\tOutput queue size: %d\n", dc.outLen)
-			fmt.Println(statMsg)
-		}
-		dc.mtx.Unlock()
+func (dc *demuxController) printInfo(sb *strings.Builder) {
+	dc.mtx.Lock()
+	sb.WriteString(fmt.Sprintf("\tCurrent count: %d\n", dc.inputCnt))
+	sb.WriteString(fmt.Sprintf("\tisRunning: %v\n", dc.isRunning))
+	sb.WriteString(fmt.Sprintf("\tOutput queue length: %d\n", dc.outputQueueLen))
+	sb.WriteString("Packet statistics map:\n")
+	for pid, cnt := range dc.pktCntMap {
+		sb.WriteString(fmt.Sprintf("\t%3d: %7d\n", pid, cnt))
 	}
+	dc.mtx.Unlock()
 }
 
 func (dc *demuxController) inputReceived() {
 	dc.mtx.Lock()
-	dc.inCnt += 1
+	dc.inputCnt += 1
 	dc.mtx.Unlock()
 }
 
 func (dc *demuxController) getInputCount() int {
-	return dc.inCnt
+	return dc.inputCnt
 }
 
 func (dc *demuxController) dataParsed(pid int) {
 	dc.mtx.Lock()
-	dc.pCnt += 1
-	dc.mtx.Unlock()
-
 	if _, hasPid := dc.pktCntMap[pid]; !hasPid {
 		dc.pktCntMap[pid] = 0
 	}
 	dc.pktCntMap[pid] += 1
+	dc.mtx.Unlock()
 }
 
 func (dc *demuxController) outputUnitAdded() {
-	dc.outLen += 1
+	dc.outputQueueLen += 1
 }
 
 func (dc *demuxController) updateSrcClk(progNum int) *programSrcClk {
@@ -101,7 +94,7 @@ func (dc *demuxController) stop() {
 }
 
 func (dc *demuxController) outputUnitFetched() {
-	dc.outLen -= 1
+	dc.outputQueueLen -= 1
 }
 
 func (dc *demuxController) printSummary(duration int) {
@@ -134,10 +127,8 @@ func (dc *demuxController) printSummary(duration int) {
 func getControl() *demuxController {
 	rv := demuxController{
 		isRunning:  true,
-		pollPeriod: 5,
-		inCnt:      0,
-		pCnt:       0,
-		outLen:     0,
+		inputCnt:      0,
+		outputQueueLen:     0,
 		progClkMap: make(map[int]*programSrcClk, 0),
 		pktCntMap:  make(map[int]int, 0),
 	}
