@@ -80,18 +80,15 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	errMsg := ""
 
 	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
-		if field, hasField := cmBuf.GetField("progNum"); hasField {
-			progNum, _ := field.(int)
+		if progNum, ok := common.GetBufFieldAsInt(cmBuf, "progNum"); ok {
 			// Stamp PCR here
 			clk := m_pMux.control.updateSrcClk(progNum)
 
-			if field, hasField = cmBuf.GetField("pktCnt"); hasField {
-				curCnt, _ := field.(int)
+			if curCnt, ok := common.GetBufFieldAsInt(cmBuf, "pktCnt"); ok {
 				pid, _ := rv.GetField("id").(int)
 				pcr, _ := clk.requestPcr(pid, curCnt)
 				cmBuf.SetField("pcr", pcr, false)
-				if field, hasField = cmBuf.GetField("dts"); hasField {
-					dts, _ := field.(int)
+				if dts, ok := common.GetBufFieldAsInt(cmBuf, "dts"); ok {
 					cmBuf.SetField("delay", dts-pcr/300, false)
 				}
 				// Write output

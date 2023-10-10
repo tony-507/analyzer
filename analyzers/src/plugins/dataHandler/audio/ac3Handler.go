@@ -17,11 +17,10 @@ type ac3Handler struct {
 func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
 	cmBuf, _ := unit.GetBuf().(common.CmBuf)
-	field, hasField := cmBuf.GetField("size")
-	if !hasField {
+	size, ok := common.GetBufFieldAsInt(cmBuf, "size")
+	if !ok {
 		return nil
 	}
-	size, _ := field.(int)
 	if h.curPesSize != size {
 		if h.curPesSize == 0 {
 			h.curPesSize = size
