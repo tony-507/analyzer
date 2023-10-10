@@ -55,8 +55,7 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 
 func (h *mpeg2Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
-	cmBuf, _ := unit.GetBuf().(common.CmBuf)
-	buf := cmBuf.GetBuf()
+	buf := common.GetBytesInBuf(unit)
 	r := common.GetBufferReader(buf)
 
 	nextBits := r.ReadBits(32)

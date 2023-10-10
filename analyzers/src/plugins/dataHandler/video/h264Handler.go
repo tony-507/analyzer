@@ -98,8 +98,7 @@ func (h *h264Handler) isLeadingOrTrailingZeros(r *common.BsReader) bool {
 }
 
 func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
-	cmBuf, _ := unit.GetBuf().(common.CmBuf)
-	buf := cmBuf.GetBuf()
+	buf := common.GetBytesInBuf(unit)
 	r := common.GetBufferReader(buf)
 	nalCnt := 0
 	data := newData.GetVideoData()

@@ -59,43 +59,41 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 	}
 
 	// Extract buffer from input unit
-	cmBuf, isCmBuf := unit.GetBuf().(common.CmBuf)
-	if isCmBuf {
-		pid, isPidInt := unit.GetField("id").(int)
-		if !isPidInt {
-			panic("Something wrong with the data")
-		}
+	cmBuf := unit.GetBuf()
+	pid, isPidInt := unit.GetField("id").(int)
+	if !isPidInt {
+		panic("Something wrong with the data")
+	}
 
-		_, hasPid := df.handlers[pid]
-		dType, ok := common.GetBufFieldAsInt(cmBuf, "streamType")
-		if !ok {
-			return
+	_, hasPid := df.handlers[pid]
+	dType, ok := common.GetBufFieldAsInt(cmBuf, "streamType")
+	if !ok {
+		return
+	}
+	if !hasPid {
+		switch dType {
+		case 2:
+			df.handlers[pid] = video.MPEG2VideoHandler(pid)
+		case 27:
+			df.handlers[pid] = video.H264VideoHandler(pid)
+		case 129:
+			df.handlers[pid] = audio.AC3Handler(pid)
+		case 135:
+			df.handlers[pid] = audio.AC3Handler(pid)
 		}
-		if !hasPid {
-			switch dType {
-			case 2:
-				df.handlers[pid] = video.MPEG2VideoHandler(pid)
-			case 27:
-				df.handlers[pid] = video.H264VideoHandler(pid)
-			case 129:
-				df.handlers[pid] = audio.AC3Handler(pid)
-			case 135:
-				df.handlers[pid] = audio.AC3Handler(pid)
-			}
-		}
-		if h, hasHandle := df.handlers[pid]; hasHandle {
-			newData := utils.CreateParsedData()
-			h.Feed(unit, &newData)
-			for _, proc := range df.processors {
-				proc.Process(cmBuf, &newData)
-			}
+	}
+	if h, hasHandle := df.handlers[pid]; hasHandle {
+		newData := utils.CreateParsedData()
+		h.Feed(unit, &newData)
+		for _, proc := range df.processors {
+			proc.Process(cmBuf, &newData)
 		}
 	}
 
 	df.outputUnit = append(df.outputUnit, unit)
 
 	// Directly output the unit
-	reqUnit := common.MakeReqUnit(nil, common.FETCH_REQUEST)
+	reqUnit := common.MakeReqUnit(df.name, common.FETCH_REQUEST)
 	common.Post_request(df.callback, df.name, reqUnit)
 }
 

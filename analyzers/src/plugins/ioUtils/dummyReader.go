@@ -1,7 +1,6 @@
 package ioUtils
 
 import (
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
@@ -21,12 +20,10 @@ func (dr *dummyReader) StopRecv() error {
 	return nil
 }
 
-func (dr *dummyReader) DataAvailable(unit *common.IOUnit) bool {
+func (dr *dummyReader) DataAvailable() (def.ParseResult, bool) {
 	dr.readCnt += 1
 	if dr.readCnt > 5 {
-		return false
+		return def.ParseResult{}, false
 	}
-	unit.IoType = 3
-	unit.Buf = def.ParseResult{}
-	return true
+	return def.EmptyResult(), true
 }

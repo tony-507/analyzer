@@ -88,24 +88,21 @@ func (fr *FileReaderStruct) StopRecv() error {
 	return fr.fHandle.Close()
 }
 
-func (fr *FileReaderStruct) DataAvailable(unit *common.IOUnit) bool {
+func (fr *FileReaderStruct) DataAvailable() (def.ParseResult, bool) {
 	fr.mtx.Lock()
 	defer fr.mtx.Unlock()
 	if len(fr.bufferQueue) > 0 {
-		unit.IoType = 3
-		unit.Id = -1
-		unit.Buf = fr.bufferQueue[0]
+		buf := fr.bufferQueue[0]
 		if len(fr.bufferQueue) > 1 {
 			fr.bufferQueue = fr.bufferQueue[1:]
 		} else {
 			fr.bufferQueue = []def.ParseResult{}
 		}
-		return true
+		return buf, true
 	} else if fr.running {
-		unit.Buf = nil
-		return true
+		return def.EmptyResult(), true
 	}
-	return false
+	return def.ParseResult{}, false
 }
 
 func FileReader(name string, fname string) def.IReader {

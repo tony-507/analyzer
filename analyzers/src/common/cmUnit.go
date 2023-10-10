@@ -10,8 +10,12 @@ package common
  */
 
 type CmUnit interface {
-	GetBuf() interface{}
+	GetBuf() CmBuf
 	GetField(name string) interface{}
+}
+
+func GetBytesInBuf(unit CmUnit) []byte {
+	return unit.GetBuf().GetBuf()
 }
 
 /*
@@ -36,7 +40,7 @@ func MakeStatusUnit(id int, body CmBuf) *CmStatusUnit {
 }
 
 // Unused
-func (unit *CmStatusUnit) GetBuf() interface{} {
+func (unit *CmStatusUnit) GetBuf() CmBuf {
 	return unit.body
 }
 
@@ -51,17 +55,17 @@ func (unit *CmStatusUnit) GetField(name string) interface{} {
 
 // ====================     I/O     ====================
 type IOUnit struct {
-	Buf    interface{}
+	Buf    CmBuf
 	IoType int // input: [UNKNOWN, FILE], output: [UNKNOWN, JSON, CSV]
 	Id     int // Specify a receiver. If not -1, this is the name of receiver, else hardcoded for now
 }
 
-func MakeIOUnit(buf interface{}, ioType int, id int) *IOUnit {
+func MakeIOUnit(buf CmBuf, ioType int, id int) *IOUnit {
 	rv := IOUnit{Buf: buf, IoType: ioType, Id: id}
 	return &rv
 }
 
-func (unit *IOUnit) GetBuf() interface{} {
+func (unit *IOUnit) GetBuf() CmBuf {
 	return unit.Buf
 }
 
@@ -90,11 +94,11 @@ const (
 )
 
 type reqUnit struct {
-	buf     interface{}
+	buf     CmBuf
 	reqType WORKER_REQUEST
 }
 
-func (unit *reqUnit) GetBuf() interface{} {
+func (unit *reqUnit) GetBuf() CmBuf {
 	return unit.buf
 }
 
@@ -107,7 +111,8 @@ func (unit *reqUnit) GetField(name string) interface{} {
 	}
 }
 
-func MakeReqUnit(buf interface{}, reqType WORKER_REQUEST) *reqUnit {
+func MakeReqUnit(name string, reqType WORKER_REQUEST) *reqUnit {
+	buf := MakeSimpleBuf([]byte{})
 	rv := reqUnit{buf: buf, reqType: reqType}
 	return &rv
 }

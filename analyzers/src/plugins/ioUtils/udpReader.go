@@ -132,7 +132,7 @@ func (ur *udpReaderStruct) StopRecv() error {
 	return ur.conn.close()
 }
 
-func (ur *udpReaderStruct) DataAvailable(unit *common.IOUnit) bool {
+func (ur *udpReaderStruct) DataAvailable() (def.ParseResult, bool) {
 	if len(ur.bufferQueue) <= 1 {
 		udpBuf, err := ur.conn.read()
 
@@ -148,11 +148,7 @@ func (ur *udpReaderStruct) DataAvailable(unit *common.IOUnit) bool {
 	buf := ur.bufferQueue[0]
 	ur.bufferQueue = ur.bufferQueue[1:]
 
-	unit.IoType = 3
-	unit.Id = -1
-	unit.Buf = buf
-
-	return true
+	return buf, true
 }
 
 func udpReader(param *udpInputParam, name string) def.IReader {

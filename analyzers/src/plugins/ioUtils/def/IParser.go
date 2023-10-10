@@ -7,8 +7,9 @@ type IParser interface {
 }
 
 type ParseResult struct {
-	Buffer []byte
-	Fields map[string]int64
+	Buffer  []byte
+	Fields  map[string]int64
+	IsEmpty bool
 }
 
 func (res *ParseResult) GetBuffer() []byte {
@@ -18,6 +19,12 @@ func (res *ParseResult) GetBuffer() []byte {
 func (res *ParseResult) GetField(name string) (int64, bool) {
 	val, ok := res.Fields[name]
 	return val, ok
+}
+
+func EmptyResult() ParseResult {
+	return ParseResult{
+		IsEmpty: true,
+	}
 }
 
 func AssertIntEqual(name string, expected int, actual int) {

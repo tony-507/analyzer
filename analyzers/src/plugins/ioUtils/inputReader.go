@@ -132,16 +132,19 @@ func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
 func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
 	newUnit := common.IOUnit{}
-	if ir.param.maxInCnt != 0 && ir.impl.DataAvailable(&newUnit) {
-		if newUnit.Buf != nil {
+	res, ok := ir.impl.DataAvailable()
+	if ir.param.maxInCnt != 0 && ok {
+		if !res.IsEmpty {
 			ir.stat.outCnt += 1
 			ir.param.maxInCnt -= 1
-			res, ok := newUnit.GetBuf().(def.ParseResult)
-			if !ok {
-				panic("Wrong unit type from downstream receiver")
-			}
+
 			ir.processMetadata(&res)
-			newUnit.Buf = res.GetBuffer()
+
+			newUnit.IoType = 3
+			newUnit.Id = -1
+			cmBuf := common.MakeSimpleBuf(res.GetBuffer())
+			newUnit.Buf = cmBuf
+
 			ir.outputQueue = append(ir.outputQueue, &newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			common.Post_request(ir.callback, ir.name, reqUnit)
@@ -185,8 +188,7 @@ func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 	ir.param.skipCnt -= 1
 
 	if ir.rawDataFile != nil && rv != nil {
-		buf, _ := rv.GetBuf().([]byte)
-		ir.rawDataFile.Write(buf)
+		ir.rawDataFile.Write(common.GetBytesInBuf(rv))
 	}
 
 	return rv

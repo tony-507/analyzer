@@ -16,7 +16,7 @@ type ac3Handler struct {
 
 func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
-	cmBuf, _ := unit.GetBuf().(common.CmBuf)
+	cmBuf := unit.GetBuf()
 	size, ok := common.GetBufFieldAsInt(cmBuf, "size")
 	if !ok {
 		return nil

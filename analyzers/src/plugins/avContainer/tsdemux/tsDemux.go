@@ -79,55 +79,54 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	errMsg := ""
 
-	if cmBuf, isCmBuf := rv.GetBuf().(common.CmBuf); isCmBuf {
-		if progNum, ok := common.GetBufFieldAsInt(cmBuf, "progNum"); ok {
-			// Stamp PCR here
-			clk := m_pMux.control.updateSrcClk(progNum)
+	cmBuf := rv.GetBuf()
+	if progNum, ok := common.GetBufFieldAsInt(cmBuf, "progNum"); ok {
+		// Stamp PCR here
+		clk := m_pMux.control.updateSrcClk(progNum)
 
-			if curCnt, ok := common.GetBufFieldAsInt(cmBuf, "pktCnt"); ok {
-				pid, _ := rv.GetField("id").(int)
-				pcr, _ := clk.requestPcr(pid, curCnt)
-				cmBuf.SetField("pcr", pcr, false)
-				if dts, ok := common.GetBufFieldAsInt(cmBuf, "dts"); ok {
-					cmBuf.SetField("delay", dts-pcr/300, false)
+		if curCnt, ok := common.GetBufFieldAsInt(cmBuf, "pktCnt"); ok {
+			pid, _ := rv.GetField("id").(int)
+			pcr, _ := clk.requestPcr(pid, curCnt)
+			cmBuf.SetField("pcr", pcr, false)
+			if dts, ok := common.GetBufFieldAsInt(cmBuf, "dts"); ok {
+				cmBuf.SetField("delay", dts-pcr/300, false)
+			}
+			// Write output
+			if _, dirErr := os.Stat("output"); dirErr == nil {
+				// CSV
+				csvFileName := fmt.Sprintf("output/%d.csv", pid)
+				writeHead := false
+
+				if _, statErr := os.Stat(csvFileName); errors.Is(statErr, os.ErrNotExist) {
+					writeHead = true
 				}
-				// Write output
-				if _, dirErr := os.Stat("output"); dirErr == nil {
-					// CSV
-					csvFileName := fmt.Sprintf("output/%d.csv", pid)
-					writeHead := false
 
-					if _, statErr := os.Stat(csvFileName); errors.Is(statErr, os.ErrNotExist) {
-						writeHead = true
-					}
-
-					csvFile, openErr := os.OpenFile(csvFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-					if openErr != nil {
-						m_pMux.logger.Error("Cannot open %s: %s", csvFileName, openErr.Error())
-					}
-
-					if writeHead {
-						csvFile.WriteString(cmBuf.GetFieldAsString())
-					}
-					csvFile.WriteString(cmBuf.ToString())
-					csvFile.Close()
-
-					// Raw PES stream
-					rawBufFileName := fmt.Sprintf("output/%d.pes", pid)
-
-					rawBufFile, openErr := os.OpenFile(rawBufFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-					if openErr != nil {
-						m_pMux.logger.Error("Cannot open %s: %s", rawBufFileName, openErr.Error())
-					}
-					rawBufFile.Write(cmBuf.GetBuf())
-					rawBufFile.Close()
+				csvFile, openErr := os.OpenFile(csvFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if openErr != nil {
+					m_pMux.logger.Error("Cannot open %s: %s", csvFileName, openErr.Error())
 				}
-			} else {
-				errMsg = "Unable to get pktCnt"
+
+				if writeHead {
+					csvFile.WriteString(cmBuf.GetFieldAsString())
+				}
+				csvFile.WriteString(cmBuf.ToString())
+				csvFile.Close()
+
+				// Raw PES stream
+				rawBufFileName := fmt.Sprintf("output/%d.pes", pid)
+
+				rawBufFile, openErr := os.OpenFile(rawBufFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if openErr != nil {
+					m_pMux.logger.Error("Cannot open %s: %s", rawBufFileName, openErr.Error())
+				}
+				rawBufFile.Write(cmBuf.GetBuf())
+				rawBufFile.Close()
 			}
 		} else {
-			errMsg = "Unable to get progNum"
+			errMsg = "Unable to get pktCnt"
 		}
+	} else {
+		errMsg = "Unable to get progNum"
 	}
 
 	if errMsg != "" {
@@ -143,7 +142,7 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet
-	buf, _ := inUnit.GetBuf().([]byte)
+	buf := common.GetBytesInBuf(inUnit)
 	procErr := m_pMux.impl.processUnit(buf, m_pMux.control.getInputCount())
 	if procErr != nil {
 		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.control.getInputCount(), procErr)

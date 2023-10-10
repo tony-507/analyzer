@@ -48,7 +48,7 @@ func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) {
 	if unit == nil {
 		buf = 20
 	} else {
-		buf, _ = unit.GetBuf().(int)
+		buf = int(common.GetBytesInBuf(unit)[0])
 	}
 
 	dp.inCnt += buf
@@ -69,7 +69,7 @@ func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {
 }
 
 func (dp *DummyPlugin) FetchUnit() common.CmUnit {
-	rv := common.MakeIOUnit(dp.inCnt*10+dp.fetchCnt, 0, -1)
+	rv := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(dp.inCnt*10+dp.fetchCnt)}), 0, -1)
 	dp.logger.Info("fetchUnit called with unit %v", rv)
 	dp.fetchCnt += 1
 	return rv

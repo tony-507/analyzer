@@ -39,10 +39,7 @@ func TestIOUnitWithSimpleBuf(t *testing.T) {
 	// Test if *IOUnit implements CmUnit
 	var _ CmUnit = (*IOUnit)(unit)
 
-	extractedBuffer, isCmBuf := unit.GetBuf().(CmBuf)
-	if !isCmBuf {
-		panic(fmt.Sprintf("Unit buffer not CmBuf but %T", unit.GetBuf()))
-	}
+	extractedBuffer := unit.GetBuf()
 
 	extractedBuffer.SetField("dummy", 100, false)
 

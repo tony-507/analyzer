@@ -15,15 +15,12 @@ func TestPluginInterfaces(t *testing.T) {
 
 	})
 
-	inUnit := common.MakeIOUnit(2, 0, 0)
+	inUnit := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(2)}), 0, 0)
 	pg.impl.DeliverUnit(inUnit)
 
 	unit := pg.impl.FetchUnit()
 
-	rv, isInt := unit.GetBuf().(int)
-	if !isInt {
-		panic("return value is not an integer")
-	}
+	rv := int(common.GetBytesInBuf(unit)[0])
 	if rv != 20 {
 		panic(fmt.Sprintf("Expect return value 20, but got %d", rv))
 	}
@@ -47,9 +44,9 @@ func TestSimpleGraph(t *testing.T) {
 	w.runGraph()
 
 	unit := dummy3.impl.FetchUnit()
-	cnt, _ := unit.GetBuf().(int)
+	cnt := int(common.GetBytesInBuf(unit)[0])
 
-	assert.Equal(t, 20001, cnt, "Count should be 20001")
+	assert.Equal(t, 33, cnt, "Count should be 33 (20001 casted to byte)")
 }
 
 func TestGraphMultipleInput(t *testing.T) {
@@ -74,9 +71,9 @@ func TestGraphMultipleInput(t *testing.T) {
 	w.runGraph()
 
 	unit := dummy4.impl.FetchUnit()
-	cnt, _ := unit.GetBuf().(int)
+	cnt := int(common.GetBytesInBuf(unit)[0])
 
-	assert.Equal(t, 40002, cnt, "Count should be 40002")
+	assert.Equal(t, 66, cnt, "Count should be 66 (40002 casted to byte)")
 }
 
 func TestGraphMultipleOutput(t *testing.T) {
@@ -99,14 +96,14 @@ func TestGraphMultipleOutput(t *testing.T) {
 	w.runGraph()
 
 	unit1 := dummy3.impl.FetchUnit()
-	cnt1, _ := unit1.GetBuf().(int)
+	cnt1 := int(common.GetBytesInBuf(unit1)[0])
 
-	assert.Equal(t, 20001, cnt1, "First count should be 20001")
+	assert.Equal(t, 33, cnt1, "First count should be 33 (20001 casted to byte)")
 
 	unit2 := dummy4.impl.FetchUnit()
-	cnt2, _ := unit2.GetBuf().(int)
+	cnt2 := int(common.GetBytesInBuf(unit2)[0])
 
-	assert.Equal(t, 20001, cnt2, "Second count should be 20001")
+	assert.Equal(t, 33, cnt2, "Second count should be 33 (20001 casted to byte)")
 }
 
 func TestGraphBuilding(t *testing.T) {
