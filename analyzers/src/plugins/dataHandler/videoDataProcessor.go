@@ -6,10 +6,12 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
+	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
 
 type videoDataProcessorStruct struct {
 	videos []utils.VideoDataStruct
+	lastTC commonUtils.TimeCode
 	logger common.Log
 }
 
@@ -28,7 +30,12 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 		// Clear and display stored data
 		for _, storedData := range vp.videos[:10] {
 			if storedData.TimeCode.Frame != -1 {
-				vp.logger.Info("Timecode received at PTS %d -- %s", storedData.Pts, storedData.TimeCode.ToString())
+				// Currently assume 29.97 with drop frame
+				nextTc := commonUtils.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
+				if !storedData.TimeCode.Equals(&nextTc) {
+					vp.logger.Error("VITC jump detected: %s -> %s. Expecting %s", vp.lastTC.ToString(), storedData.TimeCode.ToString(), nextTc.ToString())
+				}
+				vp.lastTC = storedData.TimeCode
 			}
 		}
 		vp.videos = vp.videos[10:]
@@ -43,6 +50,7 @@ func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {}
 func videoDataProcessor() utils.DataProcessor {
 	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
+		lastTC: commonUtils.TimeCode{Frame: -1},
 		logger: common.CreateLogger("VideoDataProcessor"),
 	}
 }

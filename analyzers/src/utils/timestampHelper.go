@@ -26,6 +26,37 @@ func (tc *TimeCode) ToString() string {
 	return fmt.Sprintf("%02d:%02d:%02d:%02d", tc.Hour, tc.Minute, tc.Second, tc.Frame)
 }
 
+func (tc *TimeCode) Equals(other *TimeCode) bool {
+	return tc.Hour == other.Hour && tc.Minute == other.Minute && tc.Second == other.Second && tc.Frame == other.Frame
+}
+
+func GetNextTimeCode(curTc *TimeCode, fr_num int, fr_den int, dropFrame bool) TimeCode {
+	maxFrame := (fr_num + fr_den / 2) / fr_den - 1 // Adjustment may be slightly < 0.5
+	rv := *curTc
+
+	rv.Frame++
+	if curTc.Frame == maxFrame {
+		rv.Second++
+		rv.Frame = 0
+	}
+	if rv.Second == 60 {
+		rv.Minute++
+		rv.Second = 0
+	}
+	if rv.Minute == 60 {
+		rv.Hour++
+		rv.Minute = 0
+	}
+	if rv.Hour == 24 {
+		rv.Hour = 0
+	}
+	if dropFrame && rv.Frame <= 2 && rv.Second == 0 && rv.Minute % 10 > 0 {
+		rv.Frame = 2
+	}
+
+	return rv
+}
+
 func rtpTimestampToUtcInMs(rtp uint32, curUtcSec int64) (int64, error) {
 	if curUtcSec == -1 {
 		curUtcSec = time.Now().Unix()

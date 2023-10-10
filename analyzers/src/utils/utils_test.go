@@ -59,3 +59,22 @@ func TestConvert5994HzTimeCode(t *testing.T) {
 	tc := utcTimestampToTimeCode(uint64(realTimeInMs), 60000, 1001, 0, true)
 	assert.Equal(t, "04:47:55:27", tc.ToString())
 }
+
+func TestGetNextTimeCode(t *testing.T) {
+	tc := TimeCode{
+		Hour: 23,
+		Minute: 59,
+		Second: 59,
+		Frame: 29,
+	}
+	expected := TimeCode{
+		Hour: 0,
+		Minute: 0,
+		Second: 0,
+		Frame: 0,
+	}
+	assert.Equal(t, expected, GetNextTimeCode(&tc, 30000, 1001, true))
+
+	tc.Frame = 24
+	assert.Equal(t, expected, GetNextTimeCode(&tc, 25, 1, false))
+}
