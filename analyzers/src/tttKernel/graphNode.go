@@ -3,6 +3,7 @@ package tttKernel
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/tsdemux"
@@ -24,6 +25,7 @@ type graphNode struct {
 	m_state     _PLUGIN_STATE
 	children    []*graphNode
 	parent      []*graphNode
+	mtx         sync.Mutex
 }
 
 // Graph node control flow
@@ -34,6 +36,36 @@ func (node *graphNode) stopPlugin() {
 	for _, child := range node.children {
 		child.impl.EndSequence()
 	}
+}
+
+func (node *graphNode) printInfo(sb *strings.Builder) {
+	node.mtx.Lock()
+	node.impl.PrintInfo(sb)
+	node.mtx.Unlock()
+}
+
+func (node *graphNode) deliverUnit(unit common.CmUnit) {
+	node.mtx.Lock()
+	node.impl.DeliverUnit(unit)
+	node.mtx.Unlock()
+}
+
+func (node *graphNode) fetchUnit() common.CmUnit {
+	node.mtx.Lock()
+	defer node.mtx.Unlock()
+	return node.impl.FetchUnit()
+}
+
+func (node *graphNode) deliverStatus(status common.CmUnit) {
+	node.mtx.Lock()
+	node.impl.DeliverStatus(status)
+	node.mtx.Unlock()
+}
+
+func (node *graphNode) name() string {
+	node.mtx.Lock()
+	defer node.mtx.Unlock()
+	return node.impl.Name()
 }
 
 // Graph construction

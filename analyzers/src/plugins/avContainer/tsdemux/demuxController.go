@@ -38,9 +38,9 @@ func (dc *demuxController) printInfo(sb *strings.Builder) {
 	sb.WriteString(fmt.Sprintf("\tCurrent count: %d\n", dc.inputCnt))
 	sb.WriteString(fmt.Sprintf("\tisRunning: %v\n", dc.isRunning))
 	sb.WriteString(fmt.Sprintf("\tOutput queue length: %d\n", dc.outputQueueLen))
-	sb.WriteString("Packet statistics map:\n")
+	sb.WriteString("\tPacket statistics map:\n")
 	for pid, cnt := range dc.pktCntMap {
-		sb.WriteString(fmt.Sprintf("\t%3d: %7d\n", pid, cnt))
+		sb.WriteString(fmt.Sprintf("\t\t%3d: %7d\n", pid, cnt))
 	}
 	dc.mtx.Unlock()
 }

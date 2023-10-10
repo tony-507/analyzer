@@ -3,6 +3,8 @@ package tttKernel
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -23,19 +25,25 @@ type Worker struct {
 	isRunning      int
 	statusStore    map[int][]string // Map from msgId to an array of plugin names
 	reqChannel     chan workerRequest
+	wg             sync.WaitGroup
 }
 
 // Start ttt service
 func (w *Worker) startService(params []OverallParams) {
 	w.setGraph(buildGraph(params))
+
 	go w.runGraph()
 
-	for w.isRunning != 0 {
-	}
+	for w.isRunning != 0 {}
+
+	w.wg.Wait()
 }
 
 // Main function for running a graph
 func (w *Worker) runGraph() {
+	w.wg.Add(1)
+	defer w.wg.Done()
+
 	startTime := time.Now()
 	for _, node := range w.nodes {
 		node.impl.SetParameter(node.m_parameter)
@@ -48,7 +56,25 @@ func (w *Worker) runGraph() {
 	}
 	w.logger.Info("Start up delay: %dms", time.Now().Sub(startTime).Milliseconds())
 
+	go w.startDiagnostics()
+
 	w.handleRequests()
+}
+
+// Diagnostics
+func (w *Worker) startDiagnostics() {
+	w.wg.Add(1)
+	defer w.wg.Done()
+
+	for w.isRunning != 0 {
+		time.Sleep(10 * time.Second)
+		for _, node := range w.nodes {
+			var sb strings.Builder
+			sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
+			node.printInfo(&sb)
+			w.logger.Info(sb.String())
+		}
+	}
 }
 
 // Callback function
@@ -72,7 +98,7 @@ func (w *Worker) searchNode(name string, curPos *graphNode) *graphNode {
 		return nil
 	}
 
-	if name == curPos.impl.Name() {
+	if name == curPos.name() {
 		return curPos
 	}
 	if len(curPos.children) == 0 {
@@ -149,15 +175,15 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 
 	switch reqType {
 	case common.FETCH_REQUEST:
-		outputUnit := node.impl.FetchUnit()
+		outputUnit := node.fetchUnit()
 		for _, child := range node.children {
-			child.impl.DeliverUnit(outputUnit)
+			child.deliverUnit(outputUnit)
 		}
 	case common.DELIVER_REQUEST:
-		node.impl.DeliverUnit(nil)
+		node.deliverUnit(nil)
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
-		w.logger.Trace("Worker receives EOS from %s", node.impl.Name())
+		w.logger.Trace("Worker receives EOS from %s", node.name())
 		// Trigger EndSequence of children nodes
 		node.stopPlugin()
 	}
@@ -169,8 +195,8 @@ func (w *Worker) postStatus(unit common.CmUnit) {
 		if arr, hasKey := w.statusStore[id]; hasKey {
 			for _, name := range arr {
 				node := w.searchNode(name, nil)
-				w.logger.Info("Deliver a status to %s", node.impl.Name())
-				node.impl.DeliverStatus(unit)
+				w.logger.Info("Deliver a status to %s", node.name())
+				node.deliverStatus(unit)
 			}
 		}
 	}
@@ -195,12 +221,11 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 }
 
 func getWorker() Worker {
-	w := Worker{
+	return Worker{
 		isRunning:      0,
 		resourceLoader: common.CreateResourceLoader(),
 		logger:         common.CreateLogger("Worker"),
 		statusStore:    make(map[int][]string, 0),
 		reqChannel:     make(chan workerRequest, 50),
 	}
-	return w
 }

@@ -201,10 +201,10 @@ func (ir *inputReaderPlugin) Name() string {
 func (ir *inputReaderPlugin) PrintInfo(sb *strings.Builder) {
 	stat := ir.stat
 
-	sb.WriteString(fmt.Sprintf("Out count: %d\n", stat.outCnt))
+	sb.WriteString(fmt.Sprintf("\tOut count: %d\n", stat.outCnt))
 	if stat.prevTimestamp != -1 {
-		sb.WriteString(fmt.Sprintf("Prev timestamp: %d\n", stat.prevTimestamp))
-		sb.WriteString(fmt.Sprintf("Err count: %d", stat.errCount))
+		sb.WriteString(fmt.Sprintf("\tPrev timestamp: %d\n", stat.prevTimestamp))
+		sb.WriteString(fmt.Sprintf("\tErr count: %d", stat.errCount))
 	}
 }
 

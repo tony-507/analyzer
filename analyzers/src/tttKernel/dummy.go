@@ -1,6 +1,7 @@
 package tttKernel
 
 import (
+	"strings"
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -79,6 +80,8 @@ func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
 	dp.logger.Info("setCallback called")
 	dp.callback = callback
 }
+
+func (dp *DummyPlugin) PrintInfo(sb *strings.Builder) {}
 
 func (dp *DummyPlugin) Name() string {
 	return dp.name
