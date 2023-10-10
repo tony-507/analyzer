@@ -2,6 +2,7 @@ package dataHandler
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
@@ -12,7 +13,12 @@ type videoDataProcessorStruct struct {
 	logger common.Log
 }
 
-func (vp *videoDataProcessorStruct) process(cmBuf common.CmBuf, data *utils.VideoDataStruct) {
+func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *utils.ParsedData) {
+	if parsedData.GetType() != utils.PARSED_VIDEO {
+		return
+	}
+
+	data := parsedData.GetVideoData()
 	dts, _ := common.GetBufFieldAsInt(cmBuf, "dts")
 	pts, _ := common.GetBufFieldAsInt(cmBuf, "pts")
 	data.Dts = dts
@@ -32,8 +38,10 @@ func (vp *videoDataProcessorStruct) process(cmBuf common.CmBuf, data *utils.Vide
 	sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
 }
 
-func videoDataProcessor() videoDataProcessorStruct {
-	return videoDataProcessorStruct{
+func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {}
+
+func videoDataProcessor() utils.DataProcessor {
+	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
 		logger: common.CreateLogger("VideoDataProcessor"),
 	}

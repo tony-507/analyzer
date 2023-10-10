@@ -1,11 +1,20 @@
 package dataHandler
 
 import (
+	"strings"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 )
+
+/*
+ * Data flow: input -> data handlers -> data processors -> output
+ *
+ * Data handler handle input based on specs
+ * Data processor handles parsed data from data handler
+ */
 
 type DataHandlerFactoryPlugin struct {
 	logger     common.Log
@@ -14,7 +23,7 @@ type DataHandlerFactoryPlugin struct {
 	outputUnit []common.CmUnit
 	isRunning  bool
 	name       string
-	vp         videoDataProcessorStruct
+	processors []utils.DataProcessor
 }
 
 func (df *DataHandlerFactoryPlugin) SetCallback(callback common.RequestHandler) {
@@ -58,11 +67,7 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 		}
 
 		_, hasPid := df.handlers[pid]
-		field, hasField := cmBuf.GetField("streamType")
-		if !hasField {
-			return
-		}
-		dType, ok := field.(int)
+		dType, ok := common.GetBufFieldAsInt(cmBuf, "streamType")
 		if !ok {
 			return
 		}
@@ -81,8 +86,8 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
 		if h, hasHandle := df.handlers[pid]; hasHandle {
 			newData := utils.CreateParsedData()
 			h.Feed(unit, &newData)
-			if newData.GetType() == utils.PARSED_VIDEO {
-				df.vp.process(cmBuf, newData.GetVideoData())
+			for _, proc := range df.processors {
+				proc.Process(cmBuf, &newData)
 			}
 		}
 	}
@@ -110,6 +115,11 @@ func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
 		return rv
 	}
 }
+func (df *DataHandlerFactoryPlugin) PrintInfo(sb *strings.Builder) {
+	for _, proc := range df.processors {
+		proc.PrintInfo(sb)
+	}
+}
 
 func (df *DataHandlerFactoryPlugin) Name() string {
 	return df.name
@@ -118,7 +128,9 @@ func (df *DataHandlerFactoryPlugin) Name() string {
 func DataHandlerFactory(name string) common.IPlugin {
 	rv := DataHandlerFactoryPlugin{
 		name: name,
-		vp: videoDataProcessor(),
+		processors: []utils.DataProcessor{
+			videoDataProcessor(),
+		},
 	}
 	return &rv
 }
