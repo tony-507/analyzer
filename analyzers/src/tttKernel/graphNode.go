@@ -57,8 +57,6 @@ func getPluginByName(inputName string) *graphNode {
 	switch splitName[0] {
 	case "InputReader":
 		impl = ioUtils.InputReader(inputName)
-	case "OutputWriter":
-		impl = ioUtils.OutputWriter(inputName)
 	case "TsDemuxer":
 		impl = tsdemux.TsDemuxer(inputName)
 	case "DataHandler":
