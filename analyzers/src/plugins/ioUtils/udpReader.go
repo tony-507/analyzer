@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
@@ -96,9 +97,12 @@ func (s *sockConn) openMcast(a net.IP, port int) error {
 
 func (s *sockConn) read() ([]byte, error) {
 	buf := make([]byte, 10000)
+	setTimeoutErr := s.conn.SetDeadline(time.Now().Add(3 * time.Second))
+	if setTimeoutErr != nil {
+		return buf, setTimeoutErr
+	}
 	n, _, _, err := s.conn.ReadFrom(buf)
 	if err != nil {
-		s.logger.Fatal("Cannot read from UDP datagram")
 		return buf, err
 	}
 	return buf[:n], nil
@@ -137,7 +141,11 @@ func (ur *udpReaderStruct) DataAvailable() (def.ParseResult, bool) {
 		udpBuf, err := ur.conn.read()
 
 		if err != nil {
-			ur.logger.Error("Fail to read buffer: %s", err.Error())
+			msg := err.Error()
+			if strings.Contains(msg, "i/o timeout") {
+				panic(err)
+			}
+			ur.logger.Error("Fail to read buffer: %s", msg)
 		}
 
 		ur.udpCount += 1
