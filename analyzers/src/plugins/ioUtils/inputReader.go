@@ -15,6 +15,7 @@ import (
 type inputStat struct {
 	outCnt        int
 	prevTimestamp int64
+	prevTimecode  utils.TimeCode
 	errCount      int
 }
 
@@ -157,17 +158,19 @@ func (ir *inputReaderPlugin) start() {
 func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
+			nextTc := utils.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)
 			tc, err := utils.RtpTimestampToTimeCode(utils.MpegClk(timestamp) * utils.Clk90k, -1, 30000, 1001, false, 0)
-			if err != nil {
-				if ir.stat.errCount % 1000 == 0 {
-					ir.logger.Error("%s",err.Error())
-					ir.stat.errCount++
-				} else {
-					ir.stat.errCount = 0
-				}
+
+			// HACK: Cannot identify field and frame right now, so we skip the case for same timecode
+			if ir.stat.prevTimecode != tc && nextTc != tc {
+				ir.logger.Error("VITC jump detected: %s -> %s. Expected: %s", ir.stat.prevTimecode.ToString(), tc.ToString(), nextTc.ToString())
 			}
-			ir.logger.Info("New timestamp %d. Expected timecode: %s", timestamp, tc.ToString())
+			ir.logger.Info("%d -> %s", timestamp, tc.ToString())
 			ir.stat.prevTimestamp = timestamp
+			ir.stat.prevTimecode = tc
+			if err != nil {
+				ir.stat.errCount++
+			}
 		}
 	}
 }
@@ -202,9 +205,11 @@ func (ir *inputReaderPlugin) PrintInfo(sb *strings.Builder) {
 	stat := ir.stat
 
 	sb.WriteString(fmt.Sprintf("\tOut count: %d\n", stat.outCnt))
-	if stat.prevTimestamp != -1 {
-		sb.WriteString(fmt.Sprintf("\tPrev timestamp: %d\n", stat.prevTimestamp))
+	if stat.errCount != 0 {
+		sb.WriteString(fmt.Sprintf("\tErr timestamp: %d\n", stat.prevTimestamp))
+		sb.WriteString(fmt.Sprintf("\tErr timecode: %s\n", stat.prevTimecode.ToString()))
 		sb.WriteString(fmt.Sprintf("\tErr count: %d", stat.errCount))
+		stat.errCount = 0
 	}
 }
 
