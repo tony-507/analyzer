@@ -157,7 +157,7 @@ func (ir *inputReaderPlugin) start() {
 func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
-			tc, err := utils.RtpTimestampToTimeCode(uint32(timestamp), -1, 30000, 1001, false, 0)
+			tc, err := utils.RtpTimestampToTimeCode(utils.MpegClk(timestamp) * utils.Clk90k, -1, 30000, 1001, false, 0)
 			if err != nil {
 				if ir.stat.errCount % 1000 == 0 {
 					ir.logger.Error("%s",err.Error())

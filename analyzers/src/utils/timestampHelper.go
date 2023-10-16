@@ -3,15 +3,24 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"math"
 	"time"
 )
 
-var RTP_TIMESTAMP_LOOP_POINT uint32 = 4294967295
-var TIMESTAMP_DIFF_THRESHOLD uint32 = 60 * 90000
-var ONE_MINUTE_IN_MS int = 60 * 1000
-var ONE_HOUR_IN_MS int = 60 * ONE_MINUTE_IN_MS
-var ONE_DAY_IN_MS int = 24 * ONE_HOUR_IN_MS
+// All calculations are done with 27MHz clock
+
+var RTP_TIMESTAMP_LOOP_POINT = 4294967295 * Clk90k
+var TIMESTAMP_DIFF_THRESHOLD = 60 * Second
+
+type MpegClk int64
+
+const (
+	Clk27M MpegClk = 1
+	Clk90k         = 300 * Clk27M
+	Second         = MpegClk(27000000) * Clk27M
+	Minute         = 60 * Second
+	Hour           = 60 * Minute
+	Day            = 24 * Hour
+)
 
 type TimeCode struct {
 	Hour      int
@@ -57,41 +66,39 @@ func GetNextTimeCode(curTc *TimeCode, fr_num int, fr_den int, dropFrame bool) Ti
 	return rv
 }
 
-func rtpTimestampToUtcInMs(rtp uint32, curUtcSec int64) (int64, error) {
+func rtpTimestampToUtcInMs(rtp MpegClk, curUtcSec int64) (MpegClk, error) {
 	if curUtcSec == -1 {
 		curUtcSec = time.Now().Unix()
 	}
-	curUtc90k := curUtcSec * 90000
-	curRtp := uint32(curUtc90k % int64(RTP_TIMESTAMP_LOOP_POINT))
-	nLoop := curUtc90k / int64(RTP_TIMESTAMP_LOOP_POINT)
+	curUtc := MpegClk(curUtcSec) * Second
+	curRtp := curUtc % RTP_TIMESTAMP_LOOP_POINT
+	nLoop := int64(curUtc / RTP_TIMESTAMP_LOOP_POINT)
 
 	if RTP_TIMESTAMP_LOOP_POINT - rtp < TIMESTAMP_DIFF_THRESHOLD && curRtp < TIMESTAMP_DIFF_THRESHOLD {
 		nLoop--
 	} else if RTP_TIMESTAMP_LOOP_POINT - curRtp < TIMESTAMP_DIFF_THRESHOLD && rtp < TIMESTAMP_DIFF_THRESHOLD {
 		nLoop++
 	}
+	convertedUtc := MpegClk(nLoop) * RTP_TIMESTAMP_LOOP_POINT + rtp
 
-	convertedUtc90k := nLoop * int64(RTP_TIMESTAMP_LOOP_POINT) + int64(rtp)
-	convertedUtcMs := convertedUtc90k * 1000 / 90000
-	var err error
-
-	if math.Abs(float64(convertedUtc90k - curUtc90k)) > float64(TIMESTAMP_DIFF_THRESHOLD) {
-		err = errors.New(fmt.Sprintf("> 1 minute gap between actual UTC (%v ms) and converted UTC (%v ms)", curUtcSec * 1000, convertedUtcMs))
+	if convertedUtc - curUtc > TIMESTAMP_DIFF_THRESHOLD || curUtc - convertedUtc > TIMESTAMP_DIFF_THRESHOLD {
+		return convertedUtc, errors.New(fmt.Sprintf("> 1 minute gap between actual UTC (%v ms) and converted UTC (%v ms)", curUtcSec * 1000, int64(convertedUtc / 300 / 90)))
 	}
-	return int64(convertedUtcMs), err
+	return convertedUtc, nil
 }
 
-func getNDFTimeCode(realTimeInMs uint64, fr_num int, fr_den int, field bool) TimeCode {
-	timeOfDayInMs := realTimeInMs % uint64(ONE_DAY_IN_MS)
+func getNDFTimeCode(realTime MpegClk, fr_num int, fr_den int, field bool) TimeCode {
+	timeOfDay := realTime % Day
+	frameDuration := MpegClk(27000000 / fr_num * fr_den)
 	tc := TimeCode{
 		DropFrame: false,
 		Field: true,
 	}
 
-	tc.Hour = int(timeOfDayInMs) / ONE_HOUR_IN_MS
-	tc.Minute = (int(timeOfDayInMs) / ONE_MINUTE_IN_MS) % 60
-	tc.Second = (int(timeOfDayInMs) / 1000) % 60
-	tc.Frame = (int(timeOfDayInMs) % 1000) * fr_num / fr_den / 1000
+	tc.Hour = int(timeOfDay / Hour)
+	tc.Minute = int(timeOfDay / Minute % 60)
+	tc.Second = int(timeOfDay / Second % 60)
+	tc.Frame = int(timeOfDay % Second / frameDuration)
 	if field {
 		if tc.Frame % 2 == 0 {
 			tc.Field = false
@@ -148,60 +155,47 @@ func getDFTimeCodeFromNFrames(nFrames int64, fr_num int, fr_den int, field bool)
 	return tc
 }
 
-func computeLastSyncTimeInMs(realTimeInMs uint64, fr_num int, fr_den int, dailySyncTime int) uint64 {
-	var lastSyncTime uint64 = 0
+func computeLastSyncTime(realTime MpegClk, fr_num int, fr_den int, dailySyncTime MpegClk) MpegClk {
+	timeOfDay := realTime % Day
+	nHourInDay := timeOfDay / Hour
+	calendarDate := realTime - timeOfDay
 
-	timeOfDayInMs := realTimeInMs % uint64(ONE_DAY_IN_MS)
-	nHourInDay := timeOfDayInMs / uint64(ONE_HOUR_IN_MS)
-	calendarDateInMs := realTimeInMs - timeOfDayInMs
-
-	if (nHourInDay < uint64(dailySyncTime)) {
-		calendarDateInMs -= uint64(ONE_DAY_IN_MS)
+	if (nHourInDay < dailySyncTime) {
+		calendarDate -= Day
 	}
 
-	dailySyncTimeInMs := dailySyncTime * ONE_HOUR_IN_MS
-	lastSyncTime = calendarDateInMs + uint64(dailySyncTimeInMs)
-	if (nHourInDay < uint64(dailySyncTime)) {
-		lastSyncTime -= uint64(ONE_DAY_IN_MS)
+	rv := calendarDate + dailySyncTime
+	if (nHourInDay < dailySyncTime) {
+		rv -= Day
 	}
 
-	// Adjustment when close to next sync time
-	nextSyncTime := lastSyncTime + uint64(ONE_DAY_IN_MS)
-	if nextSyncTime - realTimeInMs < 100 {
-		nFrames := nextSyncTime * uint64(fr_num) / uint64(fr_den) / 1000
-		convertedTimeInMs := nFrames * uint64(fr_den) / uint64(fr_num)
-
-		if realTimeInMs >= convertedTimeInMs {
-			lastSyncTime = nextSyncTime
-		}
-	}
-
-	return lastSyncTime
+	return rv
 }
 
-func getDFTimeCode(realTimeInMs uint64, fr_num int, fr_den int, dailySyncTime int, field bool) TimeCode {
-	lastSyncTime := computeLastSyncTimeInMs(realTimeInMs, fr_num, fr_den, dailySyncTime)
+func getDFTimeCode(realTime MpegClk, fr_num int, fr_den int, dailySyncTime MpegClk, field bool) TimeCode {
+	frameDuration := MpegClk(27000000 / fr_num * fr_den)
+	lastSyncTime := computeLastSyncTime(realTime, fr_num, fr_den, dailySyncTime)
 
-	nFramesTilLastSync := lastSyncTime * uint64(fr_num) / uint64(fr_den) / 1000
-	nFramesSinceEpoch := realTimeInMs * uint64(fr_num) / uint64(fr_den) / 1000
+	nFramesTilLastSync := lastSyncTime / frameDuration
+	nFramesSinceEpoch := realTime / frameDuration
 	nFramesSinceLastSync := nFramesSinceEpoch - nFramesTilLastSync
 
 	tc := getDFTimeCodeFromNFrames(int64(nFramesSinceLastSync), fr_num, fr_den, field)
 
-	tc.Hour = (tc.Hour + dailySyncTime) % 24
+	tc.Hour = (tc.Hour + int(dailySyncTime)) % 24
 
 	return tc
 }
 
-func utcTimestampToTimeCode(realTimeInMs uint64, fr_num int, fr_den int, dailySyncTime int, field bool) TimeCode {
+func utcTimestampToTimeCode(realTime MpegClk, fr_num int, fr_den int, dailySyncTime MpegClk, field bool) TimeCode {
 	if fr_den == 1 {
-		return getNDFTimeCode(realTimeInMs, fr_num, fr_den, field)
+		return getNDFTimeCode(realTime, fr_num, fr_den, field)
 	}
-	return getDFTimeCode(realTimeInMs, fr_num, fr_den, dailySyncTime, field)
+	return getDFTimeCode(realTime, fr_num, fr_den, dailySyncTime, field)
 }
 
-func RtpTimestampToTimeCode(rtp uint32, curUtcSec int64, fr_num int, fr_den int, field bool, dailySyncTime int) (TimeCode, error) {
-	convertedUtcMs, err := rtpTimestampToUtcInMs(rtp, curUtcSec)
-	return utcTimestampToTimeCode(uint64(convertedUtcMs), fr_num, fr_den, dailySyncTime, field), err
+func RtpTimestampToTimeCode(rtp MpegClk, curUtcSec int64, fr_num int, fr_den int, field bool, dailySyncTimeInHour int) (TimeCode, error) {
+	convertedUtc, err := rtpTimestampToUtcInMs(rtp, curUtcSec)
+	return utcTimestampToTimeCode(convertedUtc, fr_num, fr_den, MpegClk(dailySyncTimeInHour) * Hour, field), err
 	
 }
