@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/utils"
 )
 
 type IDemuxCallback interface {
@@ -23,6 +23,7 @@ type IDemuxPipe interface {
 type tsDemuxerPlugin struct {
 	logger      common.Log
 	callback    common.RequestHandler
+	fileWriters map[string]map[int]utils.FileWriter
 	impl        IDemuxPipe       // Actual demuxing operation
 	control     *demuxController // Controller to handle demuxer internal state
 	isRunning   int              // Counting channels, similar to waitGroup
@@ -71,6 +72,15 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 
+	for _, writers := range m_pMux.fileWriters {
+		for _, writer := range writers {
+			err := writer.Close()
+			if err != nil {
+				m_pMux.logger.Error("Fail to close writer: %s", err.Error())
+			}
+		}
+	}
+
 	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
 	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
@@ -92,35 +102,35 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 				cmBuf.SetField("delay", dts-pcr/300, false)
 			}
 			// Write output
-			if _, dirErr := os.Stat("output"); dirErr == nil {
-				// CSV
-				csvFileName := fmt.Sprintf("output/%d.csv", pid)
-				writeHead := false
-
-				if _, statErr := os.Stat(csvFileName); errors.Is(statErr, os.ErrNotExist) {
-					writeHead = true
+			for _, fileType := range []string{"csv", "pes"} {
+				shouldWrite := true
+				if _, hasType := m_pMux.fileWriters[fileType]; !hasType {
+					m_pMux.fileWriters[fileType] = map[int]utils.FileWriter{}
 				}
-
-				csvFile, openErr := os.OpenFile(csvFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openErr != nil {
-					m_pMux.logger.Error("Cannot open %s: %s", csvFileName, openErr.Error())
+				if _, ok := m_pMux.fileWriters[fileType][pid]; !ok {
+					shouldWrite = false
+					outDir := "output"
+					fname := fmt.Sprintf("%d.%s", pid, fileType)
+					var fWriter utils.FileWriter
+					switch fileType {
+					case "csv":
+						fWriter = utils.CsvWriter(outDir, fname)
+					case "pes":
+						fWriter = utils.RawWriter(outDir, fname)
+					}
+					if fWriter != nil {
+						err := fWriter.Open()
+						if err != nil {
+							errMsg = fmt.Sprintf("Fail to open handler for %s: %s", fname, err.Error())
+						} else {
+							m_pMux.fileWriters[fileType][pid] = fWriter
+							shouldWrite = true
+						}
+					}
 				}
-
-				if writeHead {
-					csvFile.WriteString(cmBuf.GetFieldAsString())
+				if shouldWrite {
+					m_pMux.fileWriters[fileType][pid].Write(cmBuf)
 				}
-				csvFile.WriteString(cmBuf.ToString())
-				csvFile.Close()
-
-				// Raw PES stream
-				rawBufFileName := fmt.Sprintf("output/%d.pes", pid)
-
-				rawBufFile, openErr := os.OpenFile(rawBufFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openErr != nil {
-					m_pMux.logger.Error("Cannot open %s: %s", rawBufFileName, openErr.Error())
-				}
-				rawBufFile.Write(cmBuf.GetBuf())
-				rawBufFile.Close()
 			}
 		} else {
 			errMsg = "Unable to get pktCnt"
@@ -166,6 +176,7 @@ func (m_pMux *tsDemuxerPlugin) outputReady() {
 
 func TsDemuxer(name string) common.IPlugin {
 	rv := tsDemuxerPlugin{
+		fileWriters: map[string]map[int]utils.FileWriter{},
 		name: name,
 	}
 	return &rv
