@@ -55,6 +55,13 @@ func (d * VideoDataStruct) GetType() PARSED_TYPE {
 	return PARSED_VIDEO
 }
 
+func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
+	cmBuf := common.MakeSimpleBuf([]byte{})
+	cmBuf.SetField("pts", d.Pts, false)
+	cmBuf.SetField("timecode", d.TimeCode.ToString(), false)
+	return cmBuf
+}
+
 func VideoData() VideoDataStruct {
 	return VideoDataStruct{
 		TimeCode: utils.TimeCode{Frame: -1},

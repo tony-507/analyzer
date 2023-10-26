@@ -10,9 +10,18 @@ import (
 )
 
 type videoDataProcessorStruct struct {
-	videos []utils.VideoDataStruct
-	lastTC commonUtils.TimeCode
-	logger common.Log
+	videos   []utils.VideoDataStruct
+	lastTC   commonUtils.TimeCode
+	tcWriter commonUtils.FileWriter
+	logger   common.Log
+}
+
+func (vp *videoDataProcessorStruct) Start() error {
+	return vp.tcWriter.Open()
+}
+
+func (vp *videoDataProcessorStruct) Stop() error {
+	return vp.tcWriter.Close()
 }
 
 func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *utils.ParsedData) {
@@ -28,6 +37,7 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 
 	if len(vp.videos) == 20 {
 		// Clear and display stored data
+		sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
 		for _, storedData := range vp.videos[:10] {
 			if storedData.TimeCode.Frame != -1 {
 				// Currently assume 29.97 with drop frame
@@ -35,6 +45,7 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 				if !storedData.TimeCode.Equals(&nextTc) {
 					vp.logger.Error("VITC jump detected: %s -> %s. Expecting %s", vp.lastTC.ToString(), storedData.TimeCode.ToString(), nextTc.ToString())
 				}
+				vp.tcWriter.Write(storedData.ToCmBuf())
 				vp.lastTC = storedData.TimeCode
 			}
 		}
@@ -42,7 +53,6 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 	}
 
 	vp.videos = append(vp.videos, *data)
-	sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
 }
 
 func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {}
@@ -51,6 +61,7 @@ func videoDataProcessor() utils.DataProcessor {
 	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
 		lastTC: commonUtils.TimeCode{Frame: -1},
+		tcWriter: commonUtils.CsvWriter("output", "vitc.csv"),
 		logger: common.CreateLogger("VideoDataProcessor"),
 	}
 }

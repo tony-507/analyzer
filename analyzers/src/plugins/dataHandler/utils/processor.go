@@ -8,5 +8,7 @@ import (
 
 type DataProcessor interface {
 	PrintInfo(*strings.Builder)
+	Start() error
+	Stop() error
 	Process(common.CmBuf, *ParsedData)
 }

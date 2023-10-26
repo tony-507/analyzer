@@ -45,10 +45,16 @@ func (df *DataHandlerFactoryPlugin) _setup() {
 
 func (df *DataHandlerFactoryPlugin) StartSequence() {
 	df.logger.Info("Data handler factory is started")
+	for _, proc := range df.processors {
+		proc.Start()
+	}
 }
 
 func (df *DataHandlerFactoryPlugin) EndSequence() {
 	df.logger.Info("Data handler factory is stopped")
+	for _, proc := range df.processors {
+		proc.Stop()
+	}
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
 	common.Post_request(df.callback, df.name, eosUnit)
 }

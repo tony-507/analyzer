@@ -41,11 +41,14 @@ func (b *simpleBuf) ToString() string {
 		if b.jsonIgnore[idx] {
 			continue
 		}
-		val, isVal := datum.(int)
-		if !isVal {
-			panic("simpleBuf ToString: data is not an integer")
+		if val, isInt := datum.(int); isInt {
+			valArr = append(valArr, strconv.Itoa(val))
+			continue
 		}
-		valArr = append(valArr, strconv.Itoa(val))
+		if val, isStr := datum.(string); isStr {
+			valArr = append(valArr, val)
+			continue
+		}
 	}
 	rv := strings.Join(valArr, ",")
 	rv += "\n"
