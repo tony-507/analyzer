@@ -17,7 +17,7 @@ func TestRtpToUtc(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, int64(1695612767), int64(utc / 27000000))
+	assert.Equal(t, int64(1695612730), int64(utc / 27000000))
 }
 
 func TestRtpToUtcWithRtpPassesLoop(t *testing.T) {
@@ -27,7 +27,7 @@ func TestRtpToUtcWithRtpPassesLoop(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 + 10, int64(utc / 27000000))
+	assert.Equal(t, 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 + 10 - 37, int64(utc / 27000000))
 }
 
 func TestRtpToUtcWithUtcPassesLoop(t *testing.T) {
@@ -37,7 +37,7 @@ func TestRtpToUtcWithUtcPassesLoop(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 - 10, int64(utc / 27000000))
+	assert.Equal(t, 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 - 10 - 37, int64(utc / 27000000))
 }
 
 func TestConvert25HzTimeCode(t *testing.T) {

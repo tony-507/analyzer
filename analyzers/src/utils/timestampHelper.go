@@ -67,10 +67,11 @@ func GetNextTimeCode(curTc *TimeCode, fr_num int, fr_den int, dropFrame bool) Ti
 }
 
 func rtpTimestampToUtcInMs(rtp MpegClk, curUtcSec int64) (MpegClk, error) {
+	leapSec := 37 * Second
 	if curUtcSec == -1 {
 		curUtcSec = time.Now().Unix()
 	}
-	curUtc := MpegClk(curUtcSec) * Second
+	curUtc := MpegClk(curUtcSec) * Second - leapSec
 	curRtp := curUtc % RTP_TIMESTAMP_LOOP_POINT
 	nLoop := int64(curUtc / RTP_TIMESTAMP_LOOP_POINT)
 
@@ -79,7 +80,7 @@ func rtpTimestampToUtcInMs(rtp MpegClk, curUtcSec int64) (MpegClk, error) {
 	} else if RTP_TIMESTAMP_LOOP_POINT - curRtp < TIMESTAMP_DIFF_THRESHOLD && rtp < TIMESTAMP_DIFF_THRESHOLD {
 		nLoop++
 	}
-	convertedUtc := MpegClk(nLoop) * RTP_TIMESTAMP_LOOP_POINT + rtp
+	convertedUtc := MpegClk(nLoop) * RTP_TIMESTAMP_LOOP_POINT + rtp - leapSec
 
 	if convertedUtc - curUtc > TIMESTAMP_DIFF_THRESHOLD || curUtc - convertedUtc > TIMESTAMP_DIFF_THRESHOLD {
 		return convertedUtc, errors.New(fmt.Sprintf("> 1 minute gap between actual UTC (%v ms) and converted UTC (%v ms)", curUtcSec * 1000, int64(convertedUtc / 300 / 90)))
