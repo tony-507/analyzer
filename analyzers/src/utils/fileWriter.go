@@ -21,6 +21,9 @@ type CsvWriterStruct struct {
 }
 
 func (csv *CsvWriterStruct) Open() error {
+	if _, dirErr := os.Stat(csv.outDir); dirErr != nil {
+		return dirErr
+	}
 	fHandle, err := os.OpenFile(path.Join(csv.outDir, csv.fname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -41,20 +44,19 @@ func (csv *CsvWriterStruct) Write(cmBuf common.CmBuf) {
 }
 
 func (csv *CsvWriterStruct) Close() error {
+	if csv.fHandle == nil {
+		return nil
+	}
 	return csv.fHandle.Close()
 }
 
 func CsvWriter(outDir string, fname string) FileWriter {
-	if _, dirErr := os.Stat(outDir); dirErr == nil {
-		rv := &CsvWriterStruct{
-			fHandle: nil,
-			fname: fname,
-			hasHead: false,
-			outDir: outDir,
-		}
-		return rv
+	return &CsvWriterStruct{
+		fHandle: nil,
+		fname: fname,
+		hasHead: false,
+		outDir: outDir,
 	}
-	return nil
 }
 
 
@@ -65,6 +67,9 @@ type RawWriterStruct struct {
 }
 
 func (raw *RawWriterStruct) Open() error {
+	if _, dirErr := os.Stat(raw.outDir); dirErr != nil {
+		return dirErr
+	}
 	fHandle, err := os.OpenFile(path.Join(raw.outDir, raw.fname), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -81,17 +86,16 @@ func (raw *RawWriterStruct) Write(cmBuf common.CmBuf) {
 }
 
 func (raw *RawWriterStruct) Close() error {
+	if raw.fHandle == nil {
+		return nil
+	}
 	return raw.fHandle.Close()
 }
 
 func RawWriter(outDir string, fname string) FileWriter {
-	if _, dirErr := os.Stat(outDir); dirErr == nil {
-		rv := &RawWriterStruct{
-			fHandle: nil,
-			fname: fname,
-			outDir: outDir,
-		}
-		return rv
+	return &RawWriterStruct{
+		fHandle: nil,
+		fname: fname,
+		outDir: outDir,
 	}
-	return nil
 }

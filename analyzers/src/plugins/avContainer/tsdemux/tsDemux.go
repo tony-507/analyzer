@@ -65,18 +65,22 @@ func (m_pMux *tsDemuxerPlugin) _setup() {
 	m_pMux.isRunning = 0
 }
 
-func (m_pMux *tsDemuxerPlugin) StartSequence() {}
+func (m_pMux *tsDemuxerPlugin) StartSequence() {
+	for _, fileType := range []string{"csv", "pes"} {
+		m_pMux.fileWriters[fileType] = map[int]utils.FileWriter{}
+	}
+}
 
 func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
 	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 
-	for _, writers := range m_pMux.fileWriters {
-		for _, writer := range writers {
+	for fileType, writers := range m_pMux.fileWriters {
+		for pid, writer := range writers {
 			err := writer.Close()
 			if err != nil {
-				m_pMux.logger.Error("Fail to close writer: %s", err.Error())
+				m_pMux.logger.Error("Fail to close %s writer for pid %d: %s", fileType, pid, err.Error())
 			}
 		}
 	}
@@ -104,9 +108,6 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 			// Write output
 			for _, fileType := range []string{"csv", "pes"} {
 				shouldWrite := true
-				if _, hasType := m_pMux.fileWriters[fileType]; !hasType {
-					m_pMux.fileWriters[fileType] = map[int]utils.FileWriter{}
-				}
 				if _, ok := m_pMux.fileWriters[fileType][pid]; !ok {
 					shouldWrite = false
 					outDir := "output"
@@ -118,14 +119,11 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 					case "pes":
 						fWriter = utils.RawWriter(outDir, fname)
 					}
-					if fWriter != nil {
-						err := fWriter.Open()
-						if err != nil {
-							errMsg = fmt.Sprintf("Fail to open handler for %s: %s", fname, err.Error())
-						} else {
-							m_pMux.fileWriters[fileType][pid] = fWriter
-							shouldWrite = true
-						}
+					m_pMux.fileWriters[fileType][pid] = fWriter
+					if err := fWriter.Open(); err != nil {
+						m_pMux.logger.Warn("Fail to open handler for %s: %s", fname, err.Error())
+					} else {
+						shouldWrite = true
 					}
 				}
 				if shouldWrite {

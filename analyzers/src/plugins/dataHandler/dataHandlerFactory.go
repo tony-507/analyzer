@@ -46,7 +46,9 @@ func (df *DataHandlerFactoryPlugin) _setup() {
 func (df *DataHandlerFactoryPlugin) StartSequence() {
 	df.logger.Info("Data handler factory is started")
 	for _, proc := range df.processors {
-		proc.Start()
+		if err := proc.Start(); err != nil {
+			df.logger.Warn("Skip processing due to %s", err.Error())
+		}
 	}
 }
 
