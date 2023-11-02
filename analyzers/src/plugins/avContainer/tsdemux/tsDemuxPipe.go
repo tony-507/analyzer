@@ -216,6 +216,7 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
 	outUnit := common.MakeIOUnit(buf, 1, pid)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
+	m_pMux.control.outputUnitAdded()
 	m_pMux.callback.outputReady()
 }
 
