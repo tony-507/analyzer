@@ -66,15 +66,20 @@ func (w *Worker) startDiagnostics() {
 	w.wg.Add(1)
 	defer w.wg.Done()
 
+	timer := time.NewTimer(1 * time.Second)
 	for w.isRunning != 0 {
-		time.Sleep(10 * time.Second)
-		for _, node := range w.nodes {
-			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
-			node.printInfo(&sb)
-			w.logger.Info(sb.String())
-		}
+		go func() {
+			<-timer.C
+			for _, node := range w.nodes {
+				var sb strings.Builder
+				sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
+				node.printInfo(&sb)
+				w.logger.Info(sb.String())
+			}
+			timer.Reset(10 * time.Second)
+		}()
 	}
+	timer.Stop()
 }
 
 // Callback function
