@@ -52,6 +52,12 @@ type tttKernel struct {
 	description string
 }
 
+var AppVersion = "unknown"
+
+func Version() string {
+	return AppVersion
+}
+
 func ListApp(resourceDir string) {
 	fileInfo, err := ioutil.ReadDir(resourceDir)
 	if err != nil {

@@ -34,6 +34,8 @@ func main() {
 	switch os.Args[1] {
 	case "help":
 		showHelp()
+	case "version":
+		fmt.Println(tttKernel.Version())
 	case "ls":
 		tttKernel.ListApp(resourceDir)
 	case "app":
