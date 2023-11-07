@@ -6,29 +6,28 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
-func ParseWithParsers(protocols []def.PROTOCOL, rawBuf []byte) []def.ParseResult {
-	if len(protocols) == 1 {
-		return parseOnce(protocols[0], rawBuf)
+func ParseWithParsers(parsers []def.IParser, lastRes *def.ParseResult) []def.ParseResult {
+	rawBuf := lastRes.GetBuffer()
+	if len(parsers) == 1 {
+		return parsers[0].Parse(rawBuf)
 	}
 
-	prot := protocols[0]
+	parser := parsers[0]
 	res := []def.ParseResult{}
-	for _, item := range(parseOnce(prot, rawBuf)) {
+	for _, item := range(parser.Parse(rawBuf)) {
 		// TODO: Do not discard info from other protocols
-		res = append(res, ParseWithParsers(protocols[1:], item.GetBuffer())...)
+		res = append(res, ParseWithParsers(parsers[1:], &item)...)
 	}
 	return res
 }
 
-func parseOnce(protocol def.PROTOCOL, rawBuf []byte) []def.ParseResult {
-	var parser def.IParser
+func GetParser(protocol def.PROTOCOL) def.IParser {
 	switch protocol {
 	case def.PROT_TS:
-		parser = TsParser()
+		return TsParser()
 	case def.PROT_RTP:
-		parser = RtpParser()
+		return RtpParser()
 	default:
 		panic(fmt.Sprintf("Parser %v not supported", protocol))
 	}
-	return parser.Parse(rawBuf)
 }

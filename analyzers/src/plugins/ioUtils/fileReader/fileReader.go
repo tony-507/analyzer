@@ -74,7 +74,7 @@ func (fr *FileReaderStruct) worker() {
 			break
 		}
 		fr.mtx.Lock()
-		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Protocols, buf)...)
+		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Parsers, &def.ParseResult{Buffer: buf})...)
 		fr.mtx.Unlock()
 	}
 

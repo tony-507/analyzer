@@ -78,7 +78,7 @@ func TestRtpParser(t *testing.T) {
 		0x80, 0x60, 0xf2, 0xf6, 0xe4, 0x1a, 0xf0, 0x29, 0xab, 0xcd, 0xab, 0xcd,
 		0x01, 0x02, 0x03, 0x04, 0x05,
 	}
-	resList := protocol.ParseWithParsers([]def.PROTOCOL{def.PROT_RTP}, data)
+	resList := protocol.ParseWithParsers([]def.IParser{protocol.GetParser(def.PROT_RTP)}, &def.ParseResult{Buffer: data})
 	assert.Equal(t, 1, len(resList))
 
 	res := resList[0]
@@ -94,7 +94,7 @@ func TestParseWithParsers(t *testing.T) {
 			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
 		}
 	}
-	resList := protocol.ParseWithParsers([]def.PROTOCOL{def.PROT_TS, def.PROT_TS}, data)
+	resList := protocol.ParseWithParsers([]def.IParser{protocol.GetParser(def.PROT_TS), protocol.GetParser(def.PROT_TS)}, &def.ParseResult{Buffer: data})
 	for idx, res := range(resList) {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}

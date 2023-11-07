@@ -9,6 +9,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
+	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -33,6 +34,7 @@ type inputReaderPlugin struct {
 	outputQueue  []common.CmUnit
 	stat         inputStat
 	param        inputParam
+	parsers      []def.IParser
 	rawDataFile  *os.File
 }
 
@@ -105,16 +107,16 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.impl = udpReader(&param.UdpInput, ir.name)
 	}
 
-	prot_str := strings.Split(param.Protocols, ",")
-	protocols := make([]def.PROTOCOL, len(prot_str))
-	for idx, prot := range(prot_str) {
-		protocols[idx] = def.StringToProtocol(prot)
+	if (param.Protocols != "") {
+		for _, prot := range strings.Split(param.Protocols, ",") {
+			ir.parsers = append(ir.parsers, protocol.GetParser(def.StringToProtocol(prot)))
+		}
 	}
 
 	ir.logger.Info("%s reader created", srcType)
 
 	ir.impl.Setup(def.IReaderConfig{
-		Protocols: protocols,
+		Parsers: ir.parsers,
 	})
 }
 

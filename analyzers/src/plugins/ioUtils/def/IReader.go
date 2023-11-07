@@ -8,5 +8,5 @@ type IReader interface {
 }
 
 type IReaderConfig struct {
-	Protocols []PROTOCOL
+	Parsers []IParser
 }

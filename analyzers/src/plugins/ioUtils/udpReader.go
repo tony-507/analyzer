@@ -150,7 +150,7 @@ func (ur *udpReaderStruct) DataAvailable() (def.ParseResult, bool) {
 
 		ur.udpCount += 1
 
-		ur.bufferQueue = append(ur.bufferQueue, protocol.ParseWithParsers(ur.config.Protocols, udpBuf)...)
+		ur.bufferQueue = append(ur.bufferQueue, protocol.ParseWithParsers(ur.config.Parsers, &def.ParseResult{Buffer: udpBuf})...)
 	}
 
 	buf := ur.bufferQueue[0]
