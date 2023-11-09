@@ -67,7 +67,7 @@ func TestTsParser(t *testing.T) {
 			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
 		}
 	}
-	resList := parser.Parse(data)
+	resList := parser.Parse(&def.ParseResult{Buffer: data})
 	for idx, res := range(resList) {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}

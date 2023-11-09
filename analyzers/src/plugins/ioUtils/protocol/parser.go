@@ -7,14 +7,13 @@ import (
 )
 
 func ParseWithParsers(parsers []def.IParser, lastRes *def.ParseResult) []def.ParseResult {
-	rawBuf := lastRes.GetBuffer()
 	if len(parsers) == 1 {
-		return parsers[0].Parse(rawBuf)
+		return parsers[0].Parse(lastRes)
 	}
 
 	parser := parsers[0]
 	res := []def.ParseResult{}
-	for _, item := range(parser.Parse(rawBuf)) {
+	for _, item := range(parser.Parse(lastRes)) {
 		// TODO: Do not discard info from other protocols
 		res = append(res, ParseWithParsers(parsers[1:], &item)...)
 	}

@@ -3,7 +3,7 @@ package def
 import "fmt"
 
 type IParser interface {
-	Parse([]byte) []ParseResult // Parse given data
+	Parse(*ParseResult) []ParseResult // Parse given data
 }
 
 type ParseResult struct {

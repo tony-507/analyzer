@@ -9,7 +9,8 @@ type RtpProtocolParser struct {
 	logger common.Log
 }
 
-func (rtp *RtpProtocolParser) Parse(rawBuf []byte) []def.ParseResult {
+func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
+	rawBuf := data.GetBuffer()
 	res := make([]def.ParseResult, 1)
 	fields := make(map[string]int64)
 

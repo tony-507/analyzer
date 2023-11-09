@@ -14,7 +14,8 @@ type TsProtocolParser struct {
 	count    int
 }
 
-func (ts *TsProtocolParser) Parse(rawBuf []byte) []def.ParseResult {
+func (ts *TsProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
+	rawBuf := data.GetBuffer()
 	res := []def.ParseResult{}
 	nPackets := len(rawBuf) / TS_PKT_SIZE
 	for i := 0; i < nPackets; i++ {
