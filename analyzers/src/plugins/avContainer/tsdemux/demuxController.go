@@ -97,33 +97,6 @@ func (dc *demuxController) outputUnitFetched() {
 	dc.outputQueueLen -= 1
 }
 
-func (dc *demuxController) printSummary(duration int) {
-	sum := 0
-	rateSum := 0.0
-
-	// TS statistics
-
-	dataMsg := ""
-	for pid, cnt := range dc.pktCntMap {
-		rate := float64(cnt) * 1504 * 27000000 / float64(duration)
-		rateSum += rate
-		dataMsg += fmt.Sprintf("|%11d|%11d|%11.2f|%11.2f|\n", pid, cnt, rate, rate/1504)
-		sum += cnt
-	}
-
-	statMsg := "TS statistics:\n"
-	statMsg += fmt.Sprintf("TS duration: %fs\n", float64(duration)/27000000)
-	statMsg += "-------------------------------------------------\n"
-	statMsg += "|    pid    |   count   |  bitrate  | frequency |\n"
-	statMsg += "|-----------|-----------|-----------|-----------|\n"
-	statMsg += dataMsg
-	statMsg += "-------------------------------------------------\n"
-	statMsg += fmt.Sprintf("|%11s|%11d|%11.2f|%11s|\n", "", sum, rateSum, "")
-	statMsg += "-------------------------------------------------\n"
-
-	fmt.Println(statMsg)
-}
-
 func getControl() *demuxController {
 	rv := demuxController{
 		isRunning:  true,

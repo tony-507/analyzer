@@ -74,7 +74,6 @@ func (m_pMux *tsDemuxerPlugin) StartSequence() {
 func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
-	m_pMux.control.printSummary(m_pMux.impl.getDuration())
 
 	for fileType, writers := range m_pMux.fileWriters {
 		for pid, writer := range writers {
@@ -160,6 +159,7 @@ func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
 func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
 
 func (m_pMux *tsDemuxerPlugin) PrintInfo(sb *strings.Builder) {
+	sb.WriteString(fmt.Sprintf("\tDuration: %f", float64(m_pMux.impl.getDuration()) / 27000000))
 	m_pMux.control.printInfo(sb)
 }
 

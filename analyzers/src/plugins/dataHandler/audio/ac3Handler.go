@@ -8,6 +8,7 @@ import (
 )
 
 type ac3Handler struct {
+	logger     common.Log
 	pid        int
 	pesCnt     int
 	curPesSize int
@@ -26,7 +27,7 @@ func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 			h.curPesSize = size
 		}
 		if h.curPesSize != size {
-			fmt.Println(fmt.Sprintf("[%d] At PES packet #%d, PES packet size changes from %d to %d", h.pid, h.pesCnt, h.curPesSize, size))
+			h.logger.Info("[%d] At PES packet #%d, PES packet size changes from %d to %d", h.pid, h.pesCnt, h.curPesSize, size)
 			h.curPesSize = size
 		}
 	}
@@ -34,5 +35,11 @@ func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 }
 
 func AC3Handler(pid int) utils.DataHandler {
-	return &ac3Handler{pid: pid, pesCnt: 0, curPesSize: 0, bInit: false}
+	return &ac3Handler{
+		logger: common.CreateLogger(fmt.Sprintf("AC3_%d", pid)),
+		pid: pid,
+		pesCnt: 0,
+		curPesSize: 0,
+		bInit: false,
+	}
 }

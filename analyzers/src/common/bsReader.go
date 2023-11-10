@@ -82,14 +82,12 @@ func (br *BsReader) ReadBits(n int) int {
 }
 
 func (br *BsReader) PeekBits(n int) int {
-	// fmt.Println("Original:", br.pos, br.offset, n)
 	rv := br.ReadBits(n)
 	br.offset += n
 	for br.offset > 8 {
 		br.offset -= 8
 		br.pos -= 1
 	}
-	// fmt.Println("After:", br.pos, br.offset, n)
 	return rv
 }
 
