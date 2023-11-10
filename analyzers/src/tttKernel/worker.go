@@ -70,16 +70,21 @@ func (w *Worker) startDiagnostics() {
 	for w.isRunning != 0 {
 		go func() {
 			<-timer.C
-			for _, node := range w.nodes {
-				var sb strings.Builder
-				sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
-				node.printInfo(&sb)
-				w.logger.Info(sb.String())
-			}
+			w.printInfo()
 			timer.Reset(10 * time.Second)
 		}()
 	}
 	timer.Stop()
+	w.printInfo()
+}
+
+func (w *Worker) printInfo() {
+	for _, node := range w.nodes {
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
+		node.printInfo(&sb)
+		w.logger.Info(sb.String())
+	}
 }
 
 // Callback function
