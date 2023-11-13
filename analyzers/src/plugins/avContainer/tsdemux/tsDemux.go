@@ -145,7 +145,7 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit) {
+func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit, intputId string) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet

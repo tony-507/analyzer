@@ -61,7 +61,7 @@ func (df *DataHandlerFactoryPlugin) EndSequence() {
 	common.Post_request(df.callback, df.name, eosUnit)
 }
 
-func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit) {
+func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	if unit == nil {
 		return
 	}

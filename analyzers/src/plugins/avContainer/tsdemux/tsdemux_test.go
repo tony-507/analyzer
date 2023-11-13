@@ -24,7 +24,7 @@ func TestDemuxDeliverUnit(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		buf := common.MakeSimpleBuf([]byte{byte(i)})
 		dummy := common.MakeIOUnit(buf, 1, 0)
-		m_pMux.DeliverUnit(dummy)
+		m_pMux.DeliverUnit(dummy, "")
 	}
 }
 

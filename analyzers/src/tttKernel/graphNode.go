@@ -50,10 +50,10 @@ func (node *graphNode) printInfo(sb *strings.Builder) {
 	node.impl.PrintInfo(sb)
 }
 
-func (node *graphNode) deliverUnit(unit common.CmUnit) {
+func (node *graphNode) deliverUnit(unit common.CmUnit, inputId string) {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
-	node.impl.DeliverUnit(unit)
+	node.impl.DeliverUnit(unit, inputId)
 }
 
 func (node *graphNode) fetchUnit() common.CmUnit {

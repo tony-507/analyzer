@@ -200,10 +200,10 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 	case common.FETCH_REQUEST:
 		outputUnit := node.fetchUnit()
 		for _, child := range node.children {
-			child.deliverUnit(outputUnit)
+			child.deliverUnit(outputUnit, node.name())
 		}
 	case common.DELIVER_REQUEST:
-		node.deliverUnit(nil)
+		node.deliverUnit(nil, "worker")
 	case common.EOS_REQUEST:
 		w.isRunning -= 1
 		w.logger.Trace("Worker receives EOS from %s", node.name())

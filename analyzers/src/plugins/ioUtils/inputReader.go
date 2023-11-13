@@ -45,7 +45,7 @@ func (ir *inputReaderPlugin) StartSequence() {
 	if err != nil {
 		panic(err)
 	}
-	go ir.DeliverUnit(nil)
+	go ir.DeliverUnit(nil, "")
 }
 
 func (ir *inputReaderPlugin) EndSequence() {
@@ -122,7 +122,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 
 func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}
 
-func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit) {
+func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	if ir.isRunning {
 		ir.start()
 		reqUnit := common.MakeReqUnit(ir.name, common.DELIVER_REQUEST)

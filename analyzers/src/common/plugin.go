@@ -7,7 +7,7 @@ type IPlugin interface {
 	SetParameter(string)
 	SetResource(*ResourceLoader)
 	StartSequence()
-	DeliverUnit(CmUnit)
+	DeliverUnit(CmUnit, string)
 	DeliverStatus(CmUnit)
 	FetchUnit() CmUnit
 	EndSequence()

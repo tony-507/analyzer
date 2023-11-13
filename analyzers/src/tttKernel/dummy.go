@@ -28,7 +28,7 @@ func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {
 func (dp *DummyPlugin) StartSequence() {
 	dp.logger.Info("startSequence called")
 	if dp.role == 0 {
-		go dp.DeliverUnit(nil)
+		go dp.DeliverUnit(nil, "")
 	}
 }
 
@@ -38,7 +38,7 @@ func (dp *DummyPlugin) EndSequence() {
 	common.Post_request(dp.callback, dp.name, eosUnit)
 }
 
-func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit) {
+func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	dp.logger.Info("deliverUnit called with unit %v", unit)
 	// Ensure correct order of calling by suspending worker thread
 	if dp.role == 0 {

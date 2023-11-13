@@ -16,7 +16,7 @@ func TestPluginInterfaces(t *testing.T) {
 	})
 
 	inUnit := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(2)}), 0, 0)
-	pg.impl.DeliverUnit(inUnit)
+	pg.impl.DeliverUnit(inUnit, "")
 
 	unit := pg.impl.FetchUnit()
 
