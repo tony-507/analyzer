@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -97,6 +98,18 @@ func (br *BsReader) ReadAndAssertBits(n int, expected int, msg string) {
 		errMsg := fmt.Sprintf("%s. Expected %d got %d", msg, expected, read)
 		panic(errMsg)
 	}
+}
+
+func (br *BsReader) ReadExpGolomb() int {
+	// Exponential-Golomb coding
+	leadingZeroBits := 0
+	for {
+		if br.ReadBits(1) != 0 {
+			break
+		}
+		leadingZeroBits++
+	}
+	return int(math.Pow(2, float64(leadingZeroBits))) + br.ReadBits(leadingZeroBits) - 1
 }
 
 func getMask(n int) int {

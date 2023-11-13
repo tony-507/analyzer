@@ -78,16 +78,24 @@ func TestReadPcr(t *testing.T) {
 
 	val := r.ReadBits(33)
 	assert.Equal(t, val, 474857574, "value should be 474857574")
-
+	
 	assert.Equal(t, 4, r.GetPos(), "Reader is not reading at desired position")
 	assert.Equal(t, 7, r.GetOffset(), "Reader is not reading at desired offset")
 	assert.Equal(t, 2, len(r.GetRemainedBuffer()), "Reader remained buffer size incorrect")
-
+	
 	val = r.ReadBits(6)
 	assert.Equal(t, val, 63, "value should be 63")
-
+	
 	val = r.ReadBits(9)
 	assert.Equal(t, val, 17, "value should be 17")
+}
+
+func TestReadExpGolomb(t *testing.T) {
+	r := GetBufferReader([]byte{0b00010000, 0b11001010})
+	expected := []int{7, 2, 4}
+	for _, exp := range expected {
+		assert.Equal(t, exp, r.ReadExpGolomb())
+	}
 }
 
 func TestBsWriter(t *testing.T) {
