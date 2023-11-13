@@ -43,6 +43,7 @@ func (w *Worker) startService(params []OverallParams) {
 func (w *Worker) runGraph() {
 	w.wg.Add(1)
 	defer w.wg.Done()
+	defer w.StopGraph()
 
 	startTime := time.Now()
 	for _, node := range w.nodes {
@@ -61,6 +62,18 @@ func (w *Worker) runGraph() {
 	w.handleRequests()
 }
 
+func (w *Worker) StopGraph() {
+	if w.isRunning != 0 {
+		w.logger.Error("Force stop worker due to unexpected exception")
+		for _, pg := range w.nodes {
+			pg.stopPlugin()
+		}
+	}
+
+	w.printInfo()
+	w.isRunning = 0
+}
+
 // Diagnostics
 func (w *Worker) startDiagnostics() {
 	w.wg.Add(1)
@@ -75,10 +88,10 @@ func (w *Worker) startDiagnostics() {
 		}()
 	}
 	timer.Stop()
-	w.printInfo()
 }
 
 func (w *Worker) printInfo() {
+	w.logger.Info("Worker\n\tRunning nodes: %d", w.isRunning)
 	for _, node := range w.nodes {
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("Plugin: %s\n", node.name()))
@@ -90,7 +103,9 @@ func (w *Worker) printInfo() {
 // Callback function
 func (w *Worker) onRequestReceived(name string, reqType common.WORKER_REQUEST, obj interface{}) {
 	request := workerRequest{source: name, reqType: reqType, body: obj}
-	w.reqChannel <- request
+	if w.isRunning != 0 {
+		w.reqChannel <- request
+	}
 }
 
 // Depth-first search
@@ -160,9 +175,7 @@ func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, ob
 	case common.ERROR_REQUEST:
 		err, _ := obj.(error)
 		w.logger.Error("From %s: %s", name, err.Error())
-		for _, node := range w.nodes {
-			node.stopPlugin()
-		}
+		w.StopGraph()
 	default:
 		errMsg := fmt.Sprintf("Non-implemented request type %v", reqType)
 		w.logger.Error(errMsg)

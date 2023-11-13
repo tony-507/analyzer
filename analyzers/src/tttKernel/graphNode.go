@@ -32,22 +32,28 @@ type graphNode struct {
 func (node *graphNode) stopPlugin() {
 	if node.m_state == STOPPED {
 		return
+	} else {
+		node.mtx.Lock()
+		defer node.mtx.Unlock()
+		node.impl.EndSequence()
+		node.m_state = STOPPED
 	}
+
 	for _, child := range node.children {
-		child.impl.EndSequence()
+		child.stopPlugin()
 	}
 }
 
 func (node *graphNode) printInfo(sb *strings.Builder) {
 	node.mtx.Lock()
+	defer node.mtx.Unlock()
 	node.impl.PrintInfo(sb)
-	node.mtx.Unlock()
 }
 
 func (node *graphNode) deliverUnit(unit common.CmUnit) {
 	node.mtx.Lock()
+	defer node.mtx.Unlock()
 	node.impl.DeliverUnit(unit)
-	node.mtx.Unlock()
 }
 
 func (node *graphNode) fetchUnit() common.CmUnit {
@@ -58,8 +64,8 @@ func (node *graphNode) fetchUnit() common.CmUnit {
 
 func (node *graphNode) deliverStatus(status common.CmUnit) {
 	node.mtx.Lock()
+	defer node.mtx.Unlock()
 	node.impl.DeliverStatus(status)
-	node.mtx.Unlock()
 }
 
 func (node *graphNode) name() string {

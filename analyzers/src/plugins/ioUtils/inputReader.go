@@ -153,7 +153,9 @@ func (ir *inputReaderPlugin) start() {
 			common.Post_request(ir.callback, ir.name, reqUnit)
 		}
 	} else {
-		ir.EndSequence()
+		// Stop reader
+		eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+		common.Post_request(ir.callback, ir.name, eosUnit)
 	}
 }
 
