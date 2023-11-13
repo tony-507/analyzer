@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strconv"
+
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/utils"
 )
@@ -38,10 +40,10 @@ func CreateParsedData() ParsedData {
 type FRAME_TYPE int
 
 const (
-	UNKNOWN FRAME_TYPE = 0
-	I       FRAME_TYPE = 1
-	P       FRAME_TYPE = 2
-	B       FRAME_TYPE = 3
+	UNKNOWN_SLICE FRAME_TYPE = 0
+	I_SLICE       FRAME_TYPE = 1
+	P_SLICE       FRAME_TYPE = 2
+	B_SLICE       FRAME_TYPE = 3
 )
 
 type VideoDataStruct struct {
@@ -57,6 +59,7 @@ func (d * VideoDataStruct) GetType() PARSED_TYPE {
 
 func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
 	cmBuf := common.MakeSimpleBuf([]byte{})
+	cmBuf.SetField("type", strconv.Itoa(int(d.Type)), false)
 	cmBuf.SetField("pts", d.Pts, false)
 	cmBuf.SetField("timecode", d.TimeCode.ToString(), false)
 	return cmBuf
@@ -65,7 +68,7 @@ func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
 func VideoData() VideoDataStruct {
 	return VideoDataStruct{
 		TimeCode: utils.TimeCode{Frame: -1},
-		Type: UNKNOWN,
+		Type: UNKNOWN_SLICE,
 	}
 }
 

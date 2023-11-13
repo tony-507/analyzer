@@ -5,7 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/utils"
+	commonUtils "github.com/tony-507/analyzers/src/utils"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 
 func TestReadPicTiming(t *testing.T) {
@@ -21,7 +22,7 @@ func TestReadPicTiming(t *testing.T) {
 				CountingType: 0,
 				DiscontinuityFlag: false,
 				CntDroppedFlag: false,
-				Tc: utils.TimeCode{
+				Tc: commonUtils.TimeCode{
 					Hour: 0,
 					Minute: 5,
 					Second: 28,
@@ -34,4 +35,14 @@ func TestReadPicTiming(t *testing.T) {
 	assert.Equal(t, expectedPicTiming, picTiming)
 	assert.Equal(t, r.GetOffset(), 4)
 	assert.Equal(t, r.GetPos(), 8)
+}
+
+func TestReadSliceHeader(t *testing.T) {
+	rbsp := []byte{0x9e, 0x0e, 0x9f}
+	r := common.GetBufferReader(rbsp)
+	data := utils.CreateParsedData()
+	vData := data.GetVideoData()
+	readSliceHeader(&r, vData)
+
+	assert.Equal(t, utils.B_SLICE, vData.Type)
 }
