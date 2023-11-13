@@ -43,7 +43,7 @@ func TestSimpleGraph(t *testing.T) {
 
 	w.runGraph()
 
-	unit := dummy3.impl.FetchUnit()
+	unit := dummy3.fetchUnit()
 	cnt := int(common.GetBytesInBuf(unit)[0])
 
 	assert.Equal(t, 33, cnt, "Count should be 33 (20001 casted to byte)")
@@ -70,7 +70,7 @@ func TestGraphMultipleInput(t *testing.T) {
 
 	w.runGraph()
 
-	unit := dummy4.impl.FetchUnit()
+	unit := dummy4.fetchUnit()
 	cnt := int(common.GetBytesInBuf(unit)[0])
 
 	assert.Equal(t, 66, cnt, "Count should be 66 (40002 casted to byte)")
@@ -95,7 +95,7 @@ func TestGraphMultipleOutput(t *testing.T) {
 
 	w.runGraph()
 
-	unit1 := dummy3.impl.FetchUnit()
+	unit1 := dummy3.fetchUnit()
 	cnt1 := int(common.GetBytesInBuf(unit1)[0])
 
 	assert.Equal(t, 33, cnt1, "First count should be 33 (20001 casted to byte)")

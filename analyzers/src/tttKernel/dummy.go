@@ -2,7 +2,6 @@ package tttKernel
 
 import (
 	"strings"
-	"time"
 
 	"github.com/tony-507/analyzers/src/common"
 )
@@ -17,16 +16,11 @@ type DummyPlugin struct {
 	role     int // 0 represents a root, 1 represents non-root
 }
 
-func (dp *DummyPlugin) SetParameter(m_parameter string) {
-	dp.logger.Info("setParameter called")
-}
+func (dp *DummyPlugin) SetParameter(m_parameter string) {}
 
-func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {
-	dp.logger.Info("setResource called")
-}
+func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {}
 
 func (dp *DummyPlugin) StartSequence() {
-	dp.logger.Info("startSequence called")
 	if dp.role == 0 {
 		go dp.DeliverUnit(nil, "")
 	}
@@ -34,16 +28,14 @@ func (dp *DummyPlugin) StartSequence() {
 
 func (dp *DummyPlugin) EndSequence() {
 	dp.logger.Info("endSequence called")
-	eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-	common.Post_request(dp.callback, dp.name, eosUnit)
+	if dp.role != 0 {
+		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
+		common.Post_request(dp.callback, dp.name, eosUnit)
+	}
 }
 
 func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
-	dp.logger.Info("deliverUnit called with unit %v", unit)
 	// Ensure correct order of calling by suspending worker thread
-	if dp.role == 0 {
-		time.Sleep(time.Second)
-	}
 
 	buf := 0
 	if unit == nil {
@@ -51,6 +43,7 @@ func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	} else {
 		buf = int(common.GetBytesInBuf(unit)[0])
 	}
+	dp.logger.Info("deliverUnit called with buffer %d", buf)
 
 	dp.inCnt += buf
 
@@ -65,19 +58,17 @@ func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	}
 }
 
-func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {
-	dp.logger.Info("deliverStatus called with status %v", unit)
-}
+func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {}
 
 func (dp *DummyPlugin) FetchUnit() common.CmUnit {
-	rv := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(dp.inCnt*10+dp.fetchCnt)}), 0, -1)
-	dp.logger.Info("fetchUnit called with unit %v", rv)
+	val := dp.inCnt * 10 + dp.fetchCnt
+	rv := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(val)}), 0, -1)
+	dp.logger.Info("fetchUnit called with data %d", val)
 	dp.fetchCnt += 1
 	return rv
 }
 
 func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
-	dp.logger.Info("setCallback called")
 	dp.callback = callback
 }
 

@@ -40,7 +40,7 @@ func (node *graphNode) stopPlugin() {
 	}
 
 	for _, child := range node.children {
-		child.stopPlugin()
+		child.impl.EndSequence()
 	}
 }
 
