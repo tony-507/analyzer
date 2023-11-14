@@ -32,5 +32,3 @@ func setupInputMonitor() inputMonitor {
 
 	return tsMon
 }
-
-var inputMon inputMonitor = setupInputMonitor()

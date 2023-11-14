@@ -13,6 +13,7 @@ type tsDemuxPipe struct {
 	logger          common.Log
 	callback        IDemuxCallback
 	control         *demuxController // Controller from demuxer
+	inputMon        inputMonitor
 	dataStructs     map[int]model.DataStruct
 	programRecords  map[int]int // PAT
 	streamRecords   map[int]int // Stream pid => stream type
@@ -74,7 +75,7 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 		return fieldErr
 	}
 
-	inputMon.checkTsHeader(pid, afc, cc, pktCnt)
+	m_pMux.inputMon.checkTsHeader(pid, afc, cc, pktCnt)
 
 	pcr := -1
 
@@ -349,6 +350,7 @@ func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string
 		callback: callback,
 		control: control,
 		logger: common.CreateLogger(name),
+		inputMon: setupInputMonitor(),
 	}
 	rv._setup()
 	return rv
