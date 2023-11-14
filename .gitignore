@@ -1,5 +1,7 @@
 build-tools
 build-local.sh
+# Test assets. Too large to commit to GitHub
+/analyzers/test/resources/assets/
 # Output files
 /analyzers/build/
 /analyzers/test/output/
