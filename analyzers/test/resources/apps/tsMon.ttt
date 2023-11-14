@@ -1,0 +1,55 @@
+// Basic TS monitor for demo purpose
+
+input = #InputReader_1;
+
+if $f1;
+    input.Source = _SOURCE_FILE;
+    input.FileInput.Fname = $f1;
+end;
+
+if $addr1;
+    input.Source = _SOURCE_UDP;
+    input.UdpInput.Address = $addr1;
+    input.UdpInput.Itf = $itf;
+end;
+
+input.SkipCnt = $skipCnt | 0;
+input.MaxInCnt = $maxInCnt | 0;
+input.Protocols = TS;
+
+demuxer = #TsDemuxer_1;
+demuxer.Mode = $demuxMode | _DEMUX_FULL;
+
+dh = #DataHandler_1;
+
+input2 = #InputReader_2;
+
+if $f2;
+    input2.Source = _SOURCE_FILE;
+    input2.FileInput.Fname = $f2;
+end;
+
+if $addr2;
+    input2.Source = _SOURCE_UDP;
+    input2.UdpInput.Address = $addr2;
+    input2.UdpInput.Itf = $itf;
+end;
+
+input2.SkipCnt = $skipCnt | 0;
+input2.MaxInCnt = $maxInCnt | 0;
+input2.Protocols = TS;
+
+d2 = #TsDemuxer_2;
+d2.Mode = $demuxMode | _DEMUX_FULL;
+
+dh2 = #DataHandler_2;
+
+mon = #OutputMonitor_1;
+
+link(input, demuxer);
+link(demuxer, dh);
+link(dh, mon);
+
+link(input2, d2);
+link(d2, dh2);
+link(dh2, mon);

@@ -9,6 +9,7 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/avContainer/tsdemux"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils"
+	"github.com/tony-507/analyzers/src/plugins/monitor"
 )
 
 // A plugin serves as a graph node of operation graph
@@ -99,6 +100,8 @@ func getPluginByName(inputName string) *graphNode {
 		impl = tsdemux.TsDemuxer(inputName)
 	case "DataHandler":
 		impl = dataHandler.DataHandlerFactory(inputName)
+	case "OutputMonitor":
+		impl = monitor.OutputMonitor(inputName)
 	case "Dummy":
 		role := 1
 		if splitName[1] == "root" {

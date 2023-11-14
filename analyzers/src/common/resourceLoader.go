@@ -9,7 +9,8 @@ type Resource struct {
 }
 
 type ResourceLoader struct {
-	resource Resource
+	IsRedundancyEnabled bool
+	resource            Resource
 }
 
 func (r *ResourceLoader) Query(path string, key interface{}) string {
@@ -178,5 +179,8 @@ func CreateResourceLoader() ResourceLoader {
 
 	resource := Resource{StreamType: streamType}
 
-	return ResourceLoader{resource: resource}
+	return ResourceLoader{
+		IsRedundancyEnabled: false,
+		resource: resource,
+	}
 }

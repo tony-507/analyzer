@@ -5,6 +5,7 @@ go 1.17
 require github.com/stretchr/testify v1.8.1
 
 require (
+	github.com/buger/goterm v1.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jstemmer/go-junit-report v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

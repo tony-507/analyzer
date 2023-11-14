@@ -3,6 +3,7 @@ package tttKernel
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -46,6 +47,11 @@ func (w *Worker) runGraph() {
 	defer w.StopGraph()
 
 	startTime := time.Now()
+	if w.resourceLoader.IsRedundancyEnabled {
+		w.logger.Info("Redundancy monitor is enabled. Output directory would be deleted")
+		os.RemoveAll("output")
+	}
+
 	for _, node := range w.nodes {
 		node.impl.SetParameter(node.m_parameter)
 	}
@@ -230,6 +236,9 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 	// Recursively set callback for nodes
 	for _, node := range w.nodes {
 		node.impl.SetCallback(w.onRequestReceived)
+		if strings.Contains(node.name(), "Monitor") {
+			w.resourceLoader.IsRedundancyEnabled = true
+		}
 	}
 
 	isRunning := 0
