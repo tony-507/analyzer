@@ -40,6 +40,7 @@ func TestStartApp(t *testing.T) {
 		"resources/testCases/ASCENT_editCap.json",
 		"resources/testCases/AdSmart.json",
 		"resources/testCases/AdSmart_pcap_tsa.json",
+		"resources/testCases/EBPTimeCode_tsMon.json",
 	}
 
 	for _, spec := range specs {
@@ -62,6 +63,7 @@ func TestStartApp(t *testing.T) {
 
 		for _, app := range tc.App {
 			outFolder := getOutputDir() + "/output/" + caseName + "/" + app + "/"
+			noOutput := false
 			testName := caseName + "_" + app
 			t.Run(testName, func(t *testing.T) {
 				setupLogging(outFolder)
@@ -81,6 +83,11 @@ func TestStartApp(t *testing.T) {
 						"-o", outFolder,
 						"--maxInCnt", "50",
 					}
+				case "tsMon":
+					args = []string{
+						"-f1", inFile,
+					}
+					noOutput = true
 				default:
 					panic(fmt.Sprintf("Unknown app: %s", app))
 				}
@@ -88,6 +95,10 @@ func TestStartApp(t *testing.T) {
 				// Run app
 				fmt.Println("Running app")
 				tttKernel.StartApp("./resources/apps/", app, args)
+
+				if noOutput {
+					return
+				}
 
 				// Move output files to outFolder
 				entries, readErr := os.ReadDir("output")

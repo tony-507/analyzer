@@ -1,0 +1,5 @@
+{
+	"source": "EBPTimeCode.ts",
+	"app": ["tsMon"],
+	"expected": {}
+}
