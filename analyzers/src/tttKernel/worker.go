@@ -87,13 +87,10 @@ func (w *Worker) startDiagnostics() {
 
 	timer := time.NewTimer(1 * time.Second)
 	for w.isRunning != 0 {
-		go func() {
-			<-timer.C
-			w.printInfo()
-			timer.Reset(10 * time.Second)
-		}()
+		timer.Reset(10 * time.Second)
+		<-timer.C
+		w.printInfo()
 	}
-	timer.Stop()
 }
 
 func (w *Worker) printInfo() {
