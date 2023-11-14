@@ -52,6 +52,10 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 		vp.videos = vp.videos[10:]
 	}
 
+	if data.TimeCode.Frame != -1 && data.Type == utils.I_SLICE {
+		cmBuf.SetField("timecode", data.TimeCode.ToString(), false)
+	}
+
 	vp.videos = append(vp.videos, *data)
 }
 
