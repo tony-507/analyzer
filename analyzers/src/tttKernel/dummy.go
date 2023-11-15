@@ -8,7 +8,7 @@ import (
 )
 
 // This file stores some dummy struct for testing
-type DummyPlugin struct {
+type dummyPlugin struct {
 	logger   logging.Log
 	inCnt    int
 	fetchCnt int
@@ -17,17 +17,17 @@ type DummyPlugin struct {
 	role     int // 0 represents a root, 1 represents non-root
 }
 
-func (dp *DummyPlugin) SetParameter(m_parameter string) {}
+func (dp *dummyPlugin) SetParameter(m_parameter string) {}
 
-func (dp *DummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {}
+func (dp *dummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {}
 
-func (dp *DummyPlugin) StartSequence() {
+func (dp *dummyPlugin) StartSequence() {
 	if dp.role == 0 {
 		go dp.DeliverUnit(nil, "")
 	}
 }
 
-func (dp *DummyPlugin) EndSequence() {
+func (dp *dummyPlugin) EndSequence() {
 	dp.logger.Info("endSequence called")
 	if dp.role != 0 {
 		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
@@ -35,7 +35,7 @@ func (dp *DummyPlugin) EndSequence() {
 	}
 }
 
-func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
+func (dp *dummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	// Ensure correct order of calling by suspending worker thread
 
 	buf := 0
@@ -59,9 +59,9 @@ func (dp *DummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	}
 }
 
-func (dp *DummyPlugin) DeliverStatus(unit common.CmUnit) {}
+func (dp *dummyPlugin) DeliverStatus(unit common.CmUnit) {}
 
-func (dp *DummyPlugin) FetchUnit() common.CmUnit {
+func (dp *dummyPlugin) FetchUnit() common.CmUnit {
 	val := dp.inCnt * 10 + dp.fetchCnt
 	rv := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(val)}), 0, -1)
 	dp.logger.Info("fetchUnit called with data %d", val)
@@ -69,17 +69,17 @@ func (dp *DummyPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (dp *DummyPlugin) SetCallback(callback common.RequestHandler) {
+func (dp *dummyPlugin) SetCallback(callback common.RequestHandler) {
 	dp.callback = callback
 }
 
-func (dp *DummyPlugin) PrintInfo(sb *strings.Builder) {}
+func (dp *dummyPlugin) PrintInfo(sb *strings.Builder) {}
 
-func (dp *DummyPlugin) Name() string {
+func (dp *dummyPlugin) Name() string {
 	return dp.name
 }
 
-func Dummy(name string, role int) common.IPlugin {
-	rv := DummyPlugin{name: name, logger: logging.CreateLogger(name), role: role}
+func dummy(name string, role int) common.IPlugin {
+	rv := dummyPlugin{name: name, logger: logging.CreateLogger(name), role: role}
 	return &rv
 }

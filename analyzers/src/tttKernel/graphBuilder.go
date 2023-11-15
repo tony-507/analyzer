@@ -3,6 +3,7 @@ package tttKernel
 import (
 	"fmt"
 
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 )
 
@@ -24,7 +25,7 @@ func ConstructOverallParam(name string, params string, children []string) Overal
 }
 
 // Construct graph from parameters and run the graph
-func buildGraph(params []OverallParams) []*graphNode {
+func buildGraph(params []OverallParams, selectPlugin func(string) common.IPlugin) []*graphNode {
 	logger := logging.CreateLogger("Worker")
 	nodeList := []*graphNode{}
 
@@ -50,7 +51,7 @@ func buildGraph(params []OverallParams) []*graphNode {
 			}
 		}
 		if !bExist {
-			tmp := getPluginByName(param.pluginName)
+			tmp := getPluginByName(param.pluginName, selectPlugin)
 			pg = tmp
 
 			nodeList = append(nodeList, pg)
@@ -71,7 +72,7 @@ func buildGraph(params []OverallParams) []*graphNode {
 				}
 			}
 			if !bExist {
-				tmp := getPluginByName(childName)
+				tmp := getPluginByName(childName, selectPlugin)
 				createdPlugin = append(createdPlugin, tmp)
 				nodeList = append(nodeList, tmp)
 				addPath(pg, []*graphNode{tmp})

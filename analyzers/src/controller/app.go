@@ -86,7 +86,7 @@ func StartApp(resourceDir string, appName string, input []string) {
 		}
 	}
 
-	provider.StartService(pluginParams)
+	provider.StartService(pluginParams, selectPlugin)
 }
 
 func getKernel() tttController {

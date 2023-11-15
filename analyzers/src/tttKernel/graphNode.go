@@ -1,15 +1,10 @@
 package tttKernel
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/plugins/avContainer/tsdemux"
-	"github.com/tony-507/analyzers/src/plugins/dataHandler"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils"
-	"github.com/tony-507/analyzers/src/plugins/monitor"
 )
 
 // A plugin serves as a graph node of operation graph
@@ -83,37 +78,12 @@ func addPath(parent *graphNode, children []*graphNode) {
 	}
 }
 
-func getPluginByName(inputName string) *graphNode {
+func getPluginByName(inputName string, selectPlugin func(string) common.IPlugin) *graphNode {
 	// Deduce the type of plugin by name
-	splitName := strings.Split(inputName, "_")
-	rv := &graphNode{
+	return &graphNode{
 		children: make([]*graphNode, 0),
 		parent: make([]*graphNode, 0),
 		m_state: RUNNING,
+		impl: selectPlugin(inputName),
 	}
-	var impl common.IPlugin
-
-	switch splitName[0] {
-	case "InputReader":
-		impl = ioUtils.InputReader(inputName)
-	case "TsDemuxer":
-		impl = tsdemux.TsDemuxer(inputName)
-	case "DataHandler":
-		impl = dataHandler.DataHandlerFactory(inputName)
-	case "OutputMonitor":
-		impl = monitor.OutputMonitor(inputName)
-	case "Dummy":
-		role := 1
-		if splitName[1] == "root" {
-			role = 0
-		}
-		impl = Dummy(inputName, role)
-	default:
-		msg := fmt.Sprintf("Unknown plugin name: %s", inputName)
-		panic(msg)
-	}
-
-	rv.impl = impl
-
-	return rv
 }

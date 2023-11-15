@@ -3,14 +3,24 @@ package tttKernel
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
 )
 
+func dummySelector(inputName string) common.IPlugin {
+	splitName := strings.Split(inputName, "_")
+	role := 1
+	if splitName[1] == "root" {
+		role = 0
+	}
+	return dummy(inputName, role)
+}
+
 func TestPluginInterfaces(t *testing.T) {
-	pg := getPluginByName("Dummy_1")
+	pg := getPluginByName("Dummy_1", dummySelector)
 	pg.impl.SetCallback(func(string, common.WORKER_REQUEST, interface{}) {
 
 	})
@@ -28,9 +38,9 @@ func TestPluginInterfaces(t *testing.T) {
 
 func TestSimpleGraph(t *testing.T) {
 	// Declare here to prevent dangling pointer
-	dummy1 := getPluginByName("Dummy_root")
-	dummy2 := getPluginByName("Dummy_2")
-	dummy3 := getPluginByName("Dummy_3")
+	dummy1 := getPluginByName("Dummy_root", dummySelector)
+	dummy2 := getPluginByName("Dummy_2", dummySelector)
+	dummy3 := getPluginByName("Dummy_3", dummySelector)
 
 	nodes := []*graphNode{dummy1, dummy2, dummy3}
 
@@ -51,10 +61,10 @@ func TestSimpleGraph(t *testing.T) {
 
 func TestGraphMultipleInput(t *testing.T) {
 	// Declare here to prevent dangling pointer
-	dummy1 := getPluginByName("Dummy_root")
-	dummy2 := getPluginByName("Dummy_2")
-	dummy3 := getPluginByName("Dummy_3")
-	dummy4 := getPluginByName("Dummy_4")
+	dummy1 := getPluginByName("Dummy_root", dummySelector)
+	dummy2 := getPluginByName("Dummy_2", dummySelector)
+	dummy3 := getPluginByName("Dummy_3", dummySelector)
+	dummy4 := getPluginByName("Dummy_4", dummySelector)
 
 	nodes := []*graphNode{dummy1, dummy2, dummy3, dummy4}
 	//   -> 2
@@ -78,10 +88,10 @@ func TestGraphMultipleInput(t *testing.T) {
 
 func TestGraphMultipleOutput(t *testing.T) {
 	// Declare here to prevent dangling pointer
-	dummy1 := getPluginByName("Dummy_root")
-	dummy2 := getPluginByName("Dummy_2")
-	dummy3 := getPluginByName("Dummy_3")
-	dummy4 := getPluginByName("Dummy_4")
+	dummy1 := getPluginByName("Dummy_root", dummySelector)
+	dummy2 := getPluginByName("Dummy_2", dummySelector)
+	dummy3 := getPluginByName("Dummy_3", dummySelector)
+	dummy4 := getPluginByName("Dummy_4", dummySelector)
 
 	nodeList := []*graphNode{dummy1, dummy2, dummy3, dummy4}
 	//        -> 3
@@ -113,7 +123,7 @@ func TestGraphBuilding(t *testing.T) {
 	dummyParam2 := ConstructOverallParam("Dummy_2", "{}", []string{"Dummy_3"})
 	dummyParam3 := ConstructOverallParam("Dummy_3", "{}", []string{})
 
-	builtOutput := buildGraph([]OverallParams{dummyParam1, dummyParam2, dummyParam3})
+	builtOutput := buildGraph([]OverallParams{dummyParam1, dummyParam2, dummyParam3}, dummySelector)
 
 	// Check each node
 	for idx, pg := range builtOutput {

@@ -17,7 +17,7 @@ build_app() {
 	# Need relative to project base directory
 	BUILD_TAG=$(date -u '+%Y_%m_%d_%H_%M_%S')
 	go build \
-		-ldflags "-X github.com/tony-507/analyzers/src/tttKernel.AppVersion=$BUILD_TAG" \
+		-ldflags "-X github.com/tony-507/analyzers/src/controller.AppVersion=$BUILD_TAG" \
 		-o $buildDir/bin/ ./cmd/...
 
 	cd ..
