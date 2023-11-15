@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type _VARTYPE int
@@ -45,7 +45,7 @@ func (v *scriptVar) getAttributeStr() string {
 
 // Migration in progress
 type tttKernel struct {
-	logger      common.Log
+	logger      logging.Log
 	aliasMap    map[string]string
 	edgeMap     map[string][]string
 	variables   []*scriptVar
@@ -90,7 +90,7 @@ func StartApp(resourceDir string, appName string, input []string) {
 
 func getKernel() tttKernel {
 	return tttKernel{
-		logger:    common.CreateLogger("Controller"),
+		logger:    logging.CreateLogger("Controller"),
 		aliasMap:  map[string]string{},
 		edgeMap:   map[string][]string{},
 		variables: []*scriptVar{},

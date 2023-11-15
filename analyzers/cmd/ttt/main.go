@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 func setupLogging(appDir string) {
-	common.SetLoggingProperty("level", "trace")
-	common.SetLoggingProperty("prefix", "[%l]")
-	common.SetLoggingProperty("logDir", appDir+"/ttt"+"_"+time.Now().Format("2006_01_02_15_04_05"))
+	logging.SetLoggingProperty("level", "trace")
+	logging.SetLoggingProperty("prefix", "[%l]")
+	logging.SetLoggingProperty("logDir", appDir+"/ttt"+"_"+time.Now().Format("2006_01_02_15_04_05"))
 }
 
 func showHelp() {

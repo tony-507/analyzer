@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -21,7 +22,7 @@ type IDemuxPipe interface {
 }
 
 type tsDemuxerPlugin struct {
-	logger      common.Log
+	logger      logging.Log
 	callback    common.RequestHandler
 	fileWriters map[string]map[int]utils.FileWriter
 	impl        IDemuxPipe       // Actual demuxing operation
@@ -61,7 +62,7 @@ func (m_pMux *tsDemuxerPlugin) SetResource(resourceLoader *common.ResourceLoader
 }
 
 func (m_pMux *tsDemuxerPlugin) _setup() {
-	m_pMux.logger = common.CreateLogger(m_pMux.name)
+	m_pMux.logger = logging.CreateLogger(m_pMux.name)
 	m_pMux.isRunning = 0
 }
 

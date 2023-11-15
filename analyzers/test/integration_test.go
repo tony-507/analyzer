@@ -12,16 +12,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/test/schema"
 	"github.com/tony-507/analyzers/test/validator"
 )
 
 func setupLogging(appDir string) {
-	common.SetLoggingProperty("level", "trace")
-	common.SetLoggingProperty("prefix", "[%l]")
-	common.SetLoggingProperty("logDir", appDir+"logs")
+	logging.SetLoggingProperty("level", "trace")
+	logging.SetLoggingProperty("prefix", "[%l]")
+	logging.SetLoggingProperty("logDir", appDir+"logs")
 }
 
 func getOutputDir() string {

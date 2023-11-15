@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
@@ -17,7 +18,7 @@ import (
  */
 
 type DataHandlerFactoryPlugin struct {
-	logger     common.Log
+	logger     logging.Log
 	callback   common.RequestHandler
 	handlers   map[int]utils.DataHandler
 	outputUnit []common.CmUnit
@@ -37,7 +38,7 @@ func (df *DataHandlerFactoryPlugin) SetParameter(m_parameter string) {
 func (df *DataHandlerFactoryPlugin) SetResource(loader *common.ResourceLoader) {}
 
 func (df *DataHandlerFactoryPlugin) _setup() {
-	df.logger = common.CreateLogger(df.name)
+	df.logger = logging.CreateLogger(df.name)
 	df.handlers = map[int]utils.DataHandler{}
 	df.outputUnit = []common.CmUnit{}
 	df.isRunning = true

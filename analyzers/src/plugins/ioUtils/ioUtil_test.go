@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
@@ -20,7 +21,7 @@ func TestReaderSetParameter(t *testing.T) {
 
 
 	for _, param := range specs {
-		fr := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
+		fr := inputReaderPlugin{name: "dummy", logger: logging.CreateLogger("dummy")}
 		fr.SetParameter(param)
 
 		_, isFileReader := fr.impl.(*fileReader.FileReaderStruct)
@@ -39,7 +40,7 @@ func TestReaderDeliverUnit(t *testing.T) {
 	expectedDeliverCnt := []int{5, 5, 2}
 
 	for idx, param := range specs {
-		ir := inputReaderPlugin{name: "dummy", logger: common.CreateLogger("dummy")}
+		ir := inputReaderPlugin{name: "dummy", logger: logging.CreateLogger("dummy")}
 		ir.SetParameter(param)
 
 		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {

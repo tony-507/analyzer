@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
@@ -30,7 +31,7 @@ type inputReaderPlugin struct {
 	callback     common.RequestHandler
 	impl         def.IReader
 	isRunning    bool
-	logger       common.Log
+	logger       logging.Log
 	outputQueue  []common.CmUnit
 	stat         inputStat
 	param        inputParam
@@ -220,7 +221,7 @@ func (ir *inputReaderPlugin) PrintInfo(sb *strings.Builder) {
 func InputReader(name string) common.IPlugin {
 	rv := inputReaderPlugin{
 		name: name,
-		logger: common.CreateLogger(name),
+		logger: logging.CreateLogger(name),
 		stat: inputStat{
 			outCnt: 0,
 			prevTimestamp: -1,

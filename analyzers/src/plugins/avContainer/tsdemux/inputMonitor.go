@@ -1,7 +1,7 @@
 package tsdemux
 
 import (
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 // A struct that monitors the input source
 // It looks for error in headers
 type inputMonitor struct {
-	logger common.Log
+	logger logging.Log
 	ccMap  map[int]int // pid -> cc
 }
 
@@ -28,7 +28,7 @@ func (tm *inputMonitor) checkTsHeader(pid int, afc int, cc int, pktCnt int) {
 }
 
 func setupInputMonitor() inputMonitor {
-	tsMon := inputMonitor{ccMap: map[int]int{}, logger: common.CreateLogger("inputMonitor")}
+	tsMon := inputMonitor{ccMap: map[int]int{}, logger: logging.CreateLogger("inputMonitor")}
 
 	return tsMon
 }

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 func getOutputDir() string {
@@ -29,7 +29,7 @@ func TestReadPcapPacket(t *testing.T) {
 	data = append(data, ipv4Data...)
 	data = append(data, udpData...)
 
-	logger := common.CreateLogger("Dummy")
+	logger := logging.CreateLogger("Dummy")
 
 	pcap := pcapPacket(false)
 	pcap.parseHeader(data, logger)
@@ -68,7 +68,7 @@ func TestReadPcapPacket(t *testing.T) {
 
 func TestReadPcapFile(t *testing.T) {
 	fname := ASSET_DIR + "adSmart.pcap"
-	logger := common.CreateLogger("Dummy")
+	logger := logging.CreateLogger("Dummy")
 	handle, err := os.Open(fname)
 	f := pcapFile(handle, logger)
 	pcap, _ := f.(*pcapFileStruct)

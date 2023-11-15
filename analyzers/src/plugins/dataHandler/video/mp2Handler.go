@@ -5,6 +5,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 
@@ -24,7 +25,7 @@ const (
 )
 
 type mpeg2Handler struct {
-	logger common.Log
+	logger logging.Log
 	pid    int
 	pesCnt int
 	bInit  bool
@@ -67,5 +68,5 @@ func (h *mpeg2Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error
 }
 
 func MPEG2VideoHandler(pid int) utils.DataHandler {
-	return &mpeg2Handler{logger: common.CreateLogger(fmt.Sprintf("MP2_%d", pid)), pid: pid, pesCnt: 0, bInit: false}
+	return &mpeg2Handler{logger: logging.CreateLogger(fmt.Sprintf("MP2_%d", pid)), pid: pid, pesCnt: 0, bInit: false}
 }

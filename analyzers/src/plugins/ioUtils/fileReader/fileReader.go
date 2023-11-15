@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
@@ -23,7 +23,7 @@ type fileHandler interface {
 }
 
 type FileReaderStruct struct {
-	logger      common.Log
+	logger      logging.Log
 	fname       string
 	fHandle     *os.File
 	config      def.IReaderConfig
@@ -107,7 +107,7 @@ func (fr *FileReaderStruct) DataAvailable() (def.ParseResult, bool) {
 
 func FileReader(name string, fname string) def.IReader {
 	rv := &FileReaderStruct{
-		logger: common.CreateLogger(name),
+		logger: logging.CreateLogger(name),
 		fname: fname,
 		config: def.IReaderConfig{},
 		bufferQueue: []def.ParseResult{},

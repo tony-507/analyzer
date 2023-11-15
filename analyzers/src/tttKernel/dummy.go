@@ -4,11 +4,12 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 // This file stores some dummy struct for testing
 type DummyPlugin struct {
-	logger   common.Log
+	logger   logging.Log
 	inCnt    int
 	fetchCnt int
 	callback common.RequestHandler
@@ -79,6 +80,6 @@ func (dp *DummyPlugin) Name() string {
 }
 
 func Dummy(name string, role int) common.IPlugin {
-	rv := DummyPlugin{name: name, logger: common.CreateLogger(name), role: role}
+	rv := DummyPlugin{name: name, logger: logging.CreateLogger(name), role: role}
 	return &rv
 }

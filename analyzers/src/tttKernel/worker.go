@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type workerRequest struct {
@@ -20,7 +21,7 @@ type workerRequest struct {
 // A worker runs a graph to provide a service
 // Assumption: The graph does not contain any cyclic subgraph
 type Worker struct {
-	logger         common.Log
+	logger         logging.Log
 	nodes          []*graphNode
 	resourceLoader common.ResourceLoader
 	isRunning      int
@@ -253,7 +254,7 @@ func getWorker() Worker {
 	return Worker{
 		isRunning:      0,
 		resourceLoader: common.CreateResourceLoader(),
-		logger:         common.CreateLogger("Worker"),
+		logger:         logging.CreateLogger("Worker"),
 		statusStore:    make(map[int][]string, 0),
 		reqChannel:     make(chan workerRequest, 50),
 	}

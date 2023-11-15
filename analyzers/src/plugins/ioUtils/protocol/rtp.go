@@ -1,13 +1,13 @@
 package protocol
 
 import (
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type RtpProtocolParser struct {
-	logger common.Log
+	logger logging.Log
 }
 
 func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
@@ -50,6 +50,6 @@ func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 
 func RtpParser() def.IParser {
 	return &RtpProtocolParser{
-		logger: common.CreateLogger("RTP"),
+		logger: logging.CreateLogger("RTP"),
 	}
 }

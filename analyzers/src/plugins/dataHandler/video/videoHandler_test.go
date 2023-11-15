@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
 )
@@ -20,7 +21,7 @@ func TestReadMultipleNal(t *testing.T) {
 		0x09, 0xB5, 0x00, 0x31, 0x44, 0x54, 0x47, 0x31, 0x41, 0xF8, 0x80,
 	}
 	handle := h264Handler{
-		logger: common.CreateLogger("test"),
+		logger: logging.CreateLogger("test"),
 		inCnt: 0,
 		sqp: h264.CreateSequenceParameterSet(),
 	}
@@ -42,7 +43,7 @@ func TestReadMultipleSei(t *testing.T) {
 		0x04, 0x09, 0xB5, 0x00, 0x31, 0x44, 0x54, 0x47, 0x31, 0x41, 0xF8, 0x80,
 	}
 	handle := h264Handler{
-		logger: common.CreateLogger("test"),
+		logger: logging.CreateLogger("test"),
 		inCnt: 0,
 		sqp: h264.CreateSequenceParameterSet(),
 	}

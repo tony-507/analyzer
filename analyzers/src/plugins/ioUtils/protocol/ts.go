@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
@@ -10,7 +10,7 @@ const (
 )
 
 type TsProtocolParser struct {
-	logger   common.Log
+	logger   logging.Log
 	count    int
 }
 
@@ -29,5 +29,5 @@ func (ts *TsProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 }
 
 func TsParser() def.IParser {
-	return &TsProtocolParser{logger: common.CreateLogger("TsParser")}
+	return &TsProtocolParser{logger: logging.CreateLogger("TsParser")}
 }

@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common"
 	tio "github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type dataPacketStruct interface {
-	parseHeader([]byte, common.Log)
-	setPayload([]byte, common.Log)
+	parseHeader([]byte, logging.Log)
+	setPayload([]byte, logging.Log)
 	getPayload() interface{}
 }
 
@@ -31,7 +31,7 @@ func udpPacket() *udpPacketStruct {
 	return &udpPacketStruct{}
 }
 
-func (p *udpPacketStruct) parseHeader(buf []byte, logger common.Log) {
+func (p *udpPacketStruct) parseHeader(buf []byte, logger logging.Log) {
 	r := tio.GetBufferReader(buf)
 	p.srcPort = r.ReadBits(16)
 	p.dstPort = r.ReadBits(16)
@@ -40,7 +40,7 @@ func (p *udpPacketStruct) parseHeader(buf []byte, logger common.Log) {
 	p.setPayload(r.GetRemainedBuffer(), logger)
 }
 
-func (p *udpPacketStruct) setPayload(buf []byte, logger common.Log) {
+func (p *udpPacketStruct) setPayload(buf []byte, logger logging.Log) {
 	p.payload = buf
 }
 
@@ -61,7 +61,7 @@ func ipv4Packet() *ipv4PacketStruct {
 	return &ipv4PacketStruct{}
 }
 
-func (p *ipv4PacketStruct) parseHeader(buf []byte, logger common.Log) {
+func (p *ipv4PacketStruct) parseHeader(buf []byte, logger logging.Log) {
 	r := tio.GetBufferReader(buf)
 	version := r.ReadBits(4)
 	if version != 4 {
@@ -80,7 +80,7 @@ func (p *ipv4PacketStruct) parseHeader(buf []byte, logger common.Log) {
 	p.setPayload(r.GetRemainedBuffer(), logger)
 }
 
-func (p *ipv4PacketStruct) setPayload(buf []byte, logger common.Log) {
+func (p *ipv4PacketStruct) setPayload(buf []byte, logger logging.Log) {
 	p.payload = udpPacket()
 	p.payload.parseHeader(buf, logger)
 }
@@ -100,7 +100,7 @@ func ethernetPacket() *ethernetPacketStruct {
 	return &ethernetPacketStruct{}
 }
 
-func (p *ethernetPacketStruct) parseHeader(buf []byte, logger common.Log) {
+func (p *ethernetPacketStruct) parseHeader(buf []byte, logger logging.Log) {
 	r := tio.GetBufferReader(buf)
 	p.dstMAC = strings.Join([]string{r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1)}, ":")
 	p.srcMAC = strings.Join([]string{r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1)}, ":")
@@ -108,7 +108,7 @@ func (p *ethernetPacketStruct) parseHeader(buf []byte, logger common.Log) {
 	p.setPayload(r.GetRemainedBuffer(), logger)
 }
 
-func (p *ethernetPacketStruct) setPayload(buf []byte, logger common.Log) {
+func (p *ethernetPacketStruct) setPayload(buf []byte, logger logging.Log) {
 	if p.etherType == 0x0800 {
 		p.payload = ipv4Packet()
 	} else {
@@ -134,7 +134,7 @@ func pcapPacket(isBigEndian bool) *pcapPacketStruct {
 	return &pcapPacketStruct{isBigEndian: isBigEndian}
 }
 
-func (p *pcapPacketStruct) parseHeader(buf []byte, logger common.Log) {
+func (p *pcapPacketStruct) parseHeader(buf []byte, logger logging.Log) {
 	r := tio.GetBufferReader(buf)
 	if p.isBigEndian {
 		p.sec = r.ReadBits(32)
@@ -149,7 +149,7 @@ func (p *pcapPacketStruct) parseHeader(buf []byte, logger common.Log) {
 	}
 }
 
-func (p *pcapPacketStruct) setPayload(buf []byte, logger common.Log) {
+func (p *pcapPacketStruct) setPayload(buf []byte, logger logging.Log) {
 	p.payload = ethernetPacket()
 	p.payload.parseHeader(buf, logger)
 }
@@ -159,7 +159,7 @@ func (p *pcapPacketStruct) getPayload() interface{} {
 }
 
 type pcapFileStruct struct {
-	logger        common.Log
+	logger        logging.Log
 	fHandle       *os.File
 	isBigEndian   bool
 	useNanoSec    bool
@@ -291,7 +291,7 @@ func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, error) {
 	return buf, nil
 }
 
-func pcapFile(handle *os.File, logger common.Log) fileHandler {
+func pcapFile(handle *os.File, logger logging.Log) fileHandler {
 	rv := pcapFileStruct{}
 	rv.fHandle = handle
 	rv.bufferQueue = make([][]byte, 0)

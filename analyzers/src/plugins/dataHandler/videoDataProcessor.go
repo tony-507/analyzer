@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
@@ -13,7 +14,7 @@ type videoDataProcessorStruct struct {
 	videos   []utils.VideoDataStruct
 	lastTC   commonUtils.TimeCode
 	tcWriter commonUtils.FileWriter
-	logger   common.Log
+	logger   logging.Log
 }
 
 func (vp *videoDataProcessorStruct) Start() error {
@@ -66,6 +67,6 @@ func videoDataProcessor() utils.DataProcessor {
 		videos: make([]utils.VideoDataStruct, 0, 20),
 		lastTC: commonUtils.TimeCode{Frame: -1},
 		tcWriter: commonUtils.CsvWriter("output", "vitc.csv"),
-		logger: common.CreateLogger("VideoDataProcessor"),
+		logger: logging.CreateLogger("VideoDataProcessor"),
 	}
 }

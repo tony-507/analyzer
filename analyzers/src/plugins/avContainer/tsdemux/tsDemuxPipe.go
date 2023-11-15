@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
 )
 
 type tsDemuxPipe struct {
-	logger          common.Log
+	logger          logging.Log
 	callback        IDemuxCallback
 	control         *demuxController // Controller from demuxer
 	inputMon        inputMonitor
@@ -349,7 +350,7 @@ func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string
 	rv := tsDemuxPipe{
 		callback: callback,
 		control: control,
-		logger: common.CreateLogger(name),
+		logger: logging.CreateLogger(name),
 		inputMon: setupInputMonitor(),
 	}
 	rv._setup()

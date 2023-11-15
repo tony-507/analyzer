@@ -5,6 +5,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
 )
@@ -14,7 +15,7 @@ const (
 )
 
 type h264Handler struct{
-	logger common.Log
+	logger logging.Log
 	inCnt int
 	sqp    h264.SequenceParameterSet
 }
@@ -133,7 +134,7 @@ func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error 
 
 func H264VideoHandler(pid int) utils.DataHandler {
 	return &h264Handler{
-		logger: common.CreateLogger(fmt.Sprintf("H264_%d", pid)),
+		logger: logging.CreateLogger(fmt.Sprintf("H264_%d", pid)),
 		inCnt: 0,
 		sqp: h264.CreateSequenceParameterSet(),
 	}

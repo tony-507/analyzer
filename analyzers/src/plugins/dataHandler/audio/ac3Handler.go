@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 
 type ac3Handler struct {
-	logger     common.Log
+	logger     logging.Log
 	pid        int
 	pesCnt     int
 	curPesSize int
@@ -36,7 +37,7 @@ func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 
 func AC3Handler(pid int) utils.DataHandler {
 	return &ac3Handler{
-		logger: common.CreateLogger(fmt.Sprintf("AC3_%d", pid)),
+		logger: logging.CreateLogger(fmt.Sprintf("AC3_%d", pid)),
 		pid: pid,
 		pesCnt: 0,
 		curPesSize: 0,

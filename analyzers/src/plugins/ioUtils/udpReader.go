@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 	"golang.org/x/net/ipv4"
@@ -17,7 +17,7 @@ import (
 
 // Assume UDP protocol
 type sockConn struct {
-	logger  common.Log
+	logger  logging.Log
 	address string
 	port    string
 	itf     string
@@ -108,12 +108,12 @@ func (s *sockConn) read() ([]byte, error) {
 	return buf[:n], nil
 }
 
-func socketConnection(logger common.Log, address string, port string, itf string) *sockConn {
+func socketConnection(logger logging.Log, address string, port string, itf string) *sockConn {
 	return &sockConn{logger: logger, address: address, port: port, itf: itf, conn: nil}
 }
 
 type udpReaderStruct struct {
-	logger      common.Log
+	logger      logging.Log
 	address     string
 	port        string
 	itf         string
@@ -164,7 +164,7 @@ func udpReader(param *udpInputParam, name string) def.IReader {
 	rv.conn = nil
 	rv.udpCount = 0
 
-	rv.logger = common.CreateLogger(name)
+	rv.logger = logging.CreateLogger(name)
 	rv.bufferQueue = make([]def.ParseResult, 0)
 
 	tmp := strings.Split(param.Address, ":")

@@ -3,7 +3,7 @@ package tttKernel
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type OverallParams struct {
@@ -25,7 +25,7 @@ func constructOverallParam(name string, params string, children []string) Overal
 
 // Construct graph from parameters and run the graph
 func buildGraph(params []OverallParams) []*graphNode {
-	logger := common.CreateLogger("Worker")
+	logger := logging.CreateLogger("Worker")
 	nodeList := []*graphNode{}
 
 	createdPlugin := make([]*graphNode, 0)

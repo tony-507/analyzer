@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type outputMonitorPlugin struct {
-	logger   common.Log
+	logger   logging.Log
 	callback common.RequestHandler
 	monitor  monitor
 	name     string
@@ -54,7 +55,7 @@ func (rm *outputMonitorPlugin) Name() string {
 
 func OutputMonitor(name string) common.IPlugin {
 	return &outputMonitorPlugin{
-		logger: common.CreateLogger("OutputMonitor"),
+		logger: logging.CreateLogger("OutputMonitor"),
 		name: name,
 		monitor: newMonitor(),
 	}

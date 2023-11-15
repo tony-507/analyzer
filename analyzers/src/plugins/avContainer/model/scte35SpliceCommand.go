@@ -1,11 +1,11 @@
 package model
 
 import (
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/common/logging"
 )
 
-var logger common.Log
+var logger logging.Log
 
 type Splice_command interface {
 	GetSplicePTS() []int
