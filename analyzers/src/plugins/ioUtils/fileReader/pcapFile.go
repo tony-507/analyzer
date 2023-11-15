@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
+	tio "github.com/tony-507/analyzers/src/common/io"
 )
 
 type dataPacketStruct interface {
@@ -31,7 +32,7 @@ func udpPacket() *udpPacketStruct {
 }
 
 func (p *udpPacketStruct) parseHeader(buf []byte, logger common.Log) {
-	r := common.GetBufferReader(buf)
+	r := tio.GetBufferReader(buf)
 	p.srcPort = r.ReadBits(16)
 	p.dstPort = r.ReadBits(16)
 	p.length = r.ReadBits(16)
@@ -61,7 +62,7 @@ func ipv4Packet() *ipv4PacketStruct {
 }
 
 func (p *ipv4PacketStruct) parseHeader(buf []byte, logger common.Log) {
-	r := common.GetBufferReader(buf)
+	r := tio.GetBufferReader(buf)
 	version := r.ReadBits(4)
 	if version != 4 {
 		logger.Error("Internet protocol version is not 4 but %d", version)
@@ -100,7 +101,7 @@ func ethernetPacket() *ethernetPacketStruct {
 }
 
 func (p *ethernetPacketStruct) parseHeader(buf []byte, logger common.Log) {
-	r := common.GetBufferReader(buf)
+	r := tio.GetBufferReader(buf)
 	p.dstMAC = strings.Join([]string{r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1)}, ":")
 	p.srcMAC = strings.Join([]string{r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1), r.ReadHex(1)}, ":")
 	p.etherType = r.ReadBits(16)
@@ -134,7 +135,7 @@ func pcapPacket(isBigEndian bool) *pcapPacketStruct {
 }
 
 func (p *pcapPacketStruct) parseHeader(buf []byte, logger common.Log) {
-	r := common.GetBufferReader(buf)
+	r := tio.GetBufferReader(buf)
 	if p.isBigEndian {
 		p.sec = r.ReadBits(32)
 		p.msec = r.ReadBits(32)
@@ -175,7 +176,7 @@ func (pcap *pcapFileStruct) close() {
 func (pcap *pcapFileStruct) parseHeader() error {
 	buf := make([]byte, 24)
 	pcap.fHandle.Read(buf)
-	r := common.GetBufferReader(buf)
+	r := tio.GetBufferReader(buf)
 	// Determine structure from magic number
 	firstByte := r.ReadBits(8)
 	switch firstByte {

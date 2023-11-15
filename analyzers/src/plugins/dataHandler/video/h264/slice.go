@@ -1,15 +1,15 @@
 package h264
 
 import (
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 
-func ReadSlice(r *common.BsReader, data *utils.VideoDataStruct) {
+func ReadSlice(r *io.BsReader, data *utils.VideoDataStruct) {
 	readSliceHeader(r, data)
 }
 
-func readSliceHeader(r *common.BsReader, data *utils.VideoDataStruct) {
+func readSliceHeader(r *io.BsReader, data *utils.VideoDataStruct) {
 	r.ReadExpGolomb() // first_mb_in_slice
 	slice_type := r.ReadExpGolomb()
 

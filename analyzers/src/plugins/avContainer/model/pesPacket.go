@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type pesPacketStruct struct {
@@ -18,7 +19,7 @@ type pesPacketStruct struct {
 
 func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 	buf := inBuf[:6]
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	p.header = common.MakeSimpleBuf(buf)
 
 	p.header.SetField("pktCnt", pktCnt, false)
@@ -63,7 +64,7 @@ func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 }
 
 func (p *pesPacketStruct) readOptionalHeader(buf []byte) (int, error) {
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 
 	// Begin reading
 	if r.ReadBits(2) != 2 {

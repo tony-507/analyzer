@@ -1,7 +1,7 @@
 package h264
 
 import (
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -18,7 +18,7 @@ type PicClock struct {
 	Tc utils.TimeCode
 }
 
-func ParsePicTiming(r *common.BsReader, sequenceParameterSet SequenceParameterSet) PicTiming {
+func ParsePicTiming(r *io.BsReader, sequenceParameterSet SequenceParameterSet) PicTiming {
 	picTiming := PicTiming{}
 	cpbDpbDelaysPresentFlag := false
 	if sequenceParameterSet.Vui.BPresent {

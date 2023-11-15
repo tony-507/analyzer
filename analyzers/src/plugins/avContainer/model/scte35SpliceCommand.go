@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 var logger common.Log
@@ -88,7 +89,7 @@ type Break_duration struct {
 	Duration   int
 }
 
-func readSpliceSchedule(r *common.BsReader) Splice_schedule {
+func readSpliceSchedule(r *io.BsReader) Splice_schedule {
 	spliceCnt := (*r).ReadBits(8)
 	spliceEvents := []Splice_event{}
 
@@ -100,7 +101,7 @@ func readSpliceSchedule(r *common.BsReader) Splice_schedule {
 	return Splice_schedule{SpliceCnt: spliceCnt, SpliceEvents: spliceEvents}
 }
 
-func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) Splice_event {
+func readSpliceEvent(r *io.BsReader, isSpliceInsert bool) Splice_event {
 	spliceEventId := (*r).ReadBits(32)
 	spliceEventCancelIdr := (*r).ReadBits(1) != 0
 
@@ -156,18 +157,18 @@ func readSpliceEvent(r *common.BsReader, isSpliceInsert bool) Splice_event {
 	}
 }
 
-func readTimeSignal(r *common.BsReader) Time_signal {
+func readTimeSignal(r *io.BsReader) Time_signal {
 	spliceTime := readSpliceTime(r, true)
 	return Time_signal{SpliceTime: spliceTime}
 }
 
-func readPrivateCommand(r *common.BsReader) Private_command {
+func readPrivateCommand(r *io.BsReader) Private_command {
 	identifier := (*r).ReadChar(32)
 
 	return Private_command{Identifier: identifier, PrivateBytes: (*r).ReadHex(len((*r).GetRemainedBuffer()))}
 }
 
-func readSpliceTime(r *common.BsReader, isSpliceTime bool) int {
+func readSpliceTime(r *io.BsReader, isSpliceTime bool) int {
 	if isSpliceTime {
 		flag := (*r).ReadBits(1) != 0
 		if flag {
@@ -182,7 +183,7 @@ func readSpliceTime(r *common.BsReader, isSpliceTime bool) int {
 	return -1
 }
 
-func readBreakDuration(r *common.BsReader) Break_duration {
+func readBreakDuration(r *io.BsReader) Break_duration {
 	autoReturn := (*r).ReadBits(1) != 0
 	(*r).ReadBits(6)
 	duration := (*r).ReadBits(33)

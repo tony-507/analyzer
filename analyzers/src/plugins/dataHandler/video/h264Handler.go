@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
 )
@@ -19,7 +20,7 @@ type h264Handler struct{
 }
 
 // 7.3.1
-func (h *h264Handler) readNalUnit(r *common.BsReader, data *utils.VideoDataStruct) {
+func (h *h264Handler) readNalUnit(r *io.BsReader, data *utils.VideoDataStruct) {
 	r.ReadBits(1) // forbidden_zero_bit
 	r.ReadBits(2) // nal_ref_idc
 	nal_unit_type := r.ReadBits(5)
@@ -58,7 +59,7 @@ func (h *h264Handler) readNalUnit(r *common.BsReader, data *utils.VideoDataStruc
 }
 
 func (h *h264Handler) readSEI(rbsp []byte, data *utils.VideoDataStruct) {
-	r := common.GetBufferReader(rbsp)
+	r := io.GetBufferReader(rbsp)
 	// Last byte is rbsp_trailing_bits
 	for len(r.GetRemainedBuffer()) > 1 {
 		payloadType := 0
@@ -92,14 +93,14 @@ func (h *h264Handler) readSEI(rbsp []byte, data *utils.VideoDataStruct) {
 	}
 }
 
-func (h *h264Handler) isLeadingOrTrailingZeros(r *common.BsReader) bool {
+func (h *h264Handler) isLeadingOrTrailingZeros(r *io.BsReader) bool {
 	return (len(r.GetRemainedBuffer()) > 4 && r.PeekBits(32) != _H264_START_CODE_PREFIX) &&
 	(len(r.GetRemainedBuffer()) > 3 && r.PeekBits(24) != _H264_START_CODE_PREFIX)
 }
 
 func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	buf := common.GetBytesInBuf(unit)
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	nalCnt := 0
 	data := newData.GetVideoData()
 

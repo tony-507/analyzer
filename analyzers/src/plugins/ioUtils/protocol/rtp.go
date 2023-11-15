@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
@@ -14,7 +15,7 @@ func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 	res := make([]def.ParseResult, 1)
 	fields := make(map[string]int64)
 
-	r := common.GetBufferReader(rawBuf)
+	r := io.GetBufferReader(rawBuf)
 	// RTP header
 	def.AssertIntEqual("version", 2, r.ReadBits(2))
 	bPad := r.ReadBits(1) != 0

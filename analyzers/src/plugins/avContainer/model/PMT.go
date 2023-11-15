@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type Descriptor struct {
@@ -67,7 +68,7 @@ func (p *PmtStruct) Serialize() []byte {
 
 func (p *PmtStruct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	p.header = common.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
 		return errors.New("Section syntax indicator of PMT is not set to 1")
@@ -89,7 +90,7 @@ func (p *PmtStruct) setBuffer(inBuf []byte) error {
 }
 
 func (p *PmtStruct) Process() error {
-	r := common.GetBufferReader(p.payload)
+	r := io.GetBufferReader(p.payload)
 	remainedLen := p.sectionLen
 
 	progNum := r.ReadBits(16)
@@ -186,7 +187,7 @@ func PmtTable(manager PsiManager, pktCnt int, buf []byte) (DataStruct, error) {
 	return rv, err
 }
 
-func _readDescriptor(r *common.BsReader, l *int) Descriptor {
+func _readDescriptor(r *io.BsReader, l *int) Descriptor {
 	Tag := (*r).ReadBits(8)
 	descLen := (*r).ReadBits(8)
 	Content := ""

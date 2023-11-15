@@ -1,6 +1,8 @@
 package h264
 
-import "github.com/tony-507/analyzers/src/common"
+import (
+	"github.com/tony-507/analyzers/src/common/io"
+)
 
 type SequenceParameterSet struct {
 	Id      int
@@ -26,7 +28,7 @@ type HrdParameters struct {
 
 func ParseSequenceParameterSet(rbsp []byte) SequenceParameterSet {
 	sqp := CreateSequenceParameterSet()
-	r := common.GetBufferReader(rbsp)
+	r := io.GetBufferReader(rbsp)
 
 	sqp.Profile = r.ReadBits(8)
 	r.ReadBits(1) // constraint_set0_flag

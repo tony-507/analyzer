@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type patStruct struct {
@@ -30,7 +31,7 @@ type PatSchema struct {
 
 func (p *patStruct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	p.header = common.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
 		return errors.New("Section syntax indicator of PAT is not set to 1")
@@ -53,7 +54,7 @@ func (p *patStruct) setBuffer(inBuf []byte) error {
 
 func (p *patStruct) Process() error {
 	remainedLen := p.sectionLen
-	r := common.GetBufferReader(p.payload)
+	r := io.GetBufferReader(p.payload)
 
 	r.ReadBits(16) // Table Id extension
 	if r.ReadBits(2) != 3 {

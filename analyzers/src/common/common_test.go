@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 func TestSimpleBufOverwriteField(t *testing.T) {
@@ -62,19 +63,19 @@ func TestIOUnitWithSimpleBuf(t *testing.T) {
 }
 
 func TestReadHex(t *testing.T) {
-	r := GetBufferReader([]byte{0x45, 0x4E, 0x47})
+	r := io.GetBufferReader([]byte{0x45, 0x4E, 0x47})
 	assert.Equal(t, 3, r.GetSize(), "Reader buffer size incorrect")
 	assert.Equal(t, "45 4e 47", r.ReadHex(3), "Output not equal")
 }
 
 func TestReadChar(t *testing.T) {
-	r := GetBufferReader([]byte{0x45, 0x4E, 0x47})
+	r := io.GetBufferReader([]byte{0x45, 0x4E, 0x47})
 	assert.Equal(t, "ENG", r.ReadChar(3), "Output not equal")
 }
 
 func TestReadPcr(t *testing.T) {
 	buf := []byte{0x0e, 0x26, 0xe0, 0x33, 0x7e, 0x11}
-	r := GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 
 	val := r.ReadBits(33)
 	assert.Equal(t, val, 474857574, "value should be 474857574")
@@ -91,7 +92,7 @@ func TestReadPcr(t *testing.T) {
 }
 
 func TestReadExpGolomb(t *testing.T) {
-	r := GetBufferReader([]byte{0b00010000, 0b11001010})
+	r := io.GetBufferReader([]byte{0b00010000, 0b11001010})
 	expected := []int{7, 2, 4}
 	for _, exp := range expected {
 		assert.Equal(t, exp, r.ReadExpGolomb())
@@ -99,7 +100,7 @@ func TestReadExpGolomb(t *testing.T) {
 }
 
 func TestBsWriter(t *testing.T) {
-	writer := GetBufferWriter(9)
+	writer := io.GetBufferWriter(9)
 
 	writer.WriteByte(0x47)
 	writer.Write(0, 1)

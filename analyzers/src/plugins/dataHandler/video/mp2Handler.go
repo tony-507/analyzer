@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 
@@ -29,7 +30,7 @@ type mpeg2Handler struct {
 	bInit  bool
 }
 
-func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
+func (h *mpeg2Handler) readSequenceHeader(r *io.BsReader) {
 	hSize := r.ReadBits(12)
 	vSize := r.ReadBits(12)
 	aspectRatio := r.ReadBits(4)
@@ -56,7 +57,7 @@ func (h *mpeg2Handler) readSequenceHeader(r *common.BsReader) {
 func (h *mpeg2Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
 	buf := common.GetBytesInBuf(unit)
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 
 	nextBits := r.ReadBits(32)
 	if nextBits == int(_SEQUENCE_HEADER) {

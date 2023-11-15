@@ -1,4 +1,4 @@
-package common
+package io
 
 type BsWriter struct {
 	buf    []byte

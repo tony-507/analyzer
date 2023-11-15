@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
-	commonUtils "github.com/tony-507/analyzers/src/utils"
+	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
+	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
 
 func TestReadPicTiming(t *testing.T) {
 	rbsp := []byte{0x1b, 0x00, 0x02, 0xb9, 0x16, 0x00, 0x00, 0x00, 0x08}
-	r := common.GetBufferReader(rbsp)
+	r := io.GetBufferReader(rbsp)
 	sequenceParameterSet := CreateSequenceParameterSet()
 	sequenceParameterSet.Vui.PicStructPresentFlag = true
 	expectedPicTiming := PicTiming{
@@ -39,7 +39,7 @@ func TestReadPicTiming(t *testing.T) {
 
 func TestReadSliceHeader(t *testing.T) {
 	rbsp := []byte{0x9e, 0x0e, 0x9f}
-	r := common.GetBufferReader(rbsp)
+	r := io.GetBufferReader(rbsp)
 	data := utils.CreateParsedData()
 	vData := data.GetVideoData()
 	readSliceHeader(&r, vData)

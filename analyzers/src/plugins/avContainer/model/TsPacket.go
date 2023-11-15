@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type tsPacketStruct struct {
@@ -16,7 +17,7 @@ type tsPacketStruct struct {
 
 func (p *tsPacketStruct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:4]
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	if r.ReadBits(8) != 0x47 {
 		return errors.New("TS sync byte not match")
 	}
@@ -49,7 +50,7 @@ func (p *tsPacketStruct) setBuffer(inBuf []byte) error {
 }
 
 func (p *tsPacketStruct) readAdaptationField(inBuf []byte) (int, error) {
-	r := common.GetBufferReader(inBuf)
+	r := io.GetBufferReader(inBuf)
 
 	afLen := r.ReadBits(8)
 	if afLen == 0 {

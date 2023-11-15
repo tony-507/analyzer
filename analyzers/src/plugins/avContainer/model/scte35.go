@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type scte35Struct struct {
@@ -59,7 +60,7 @@ func (s *scte35Struct) Serialize() []byte {
 
 func (s *scte35Struct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
-	r := common.GetBufferReader(buf)
+	r := io.GetBufferReader(buf)
 	s.header = common.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 0 {
 		return errors.New("Section syntax indicator of SCTE-35 splice info section is not set to 0")
@@ -77,7 +78,7 @@ func (s *scte35Struct) setBuffer(inBuf []byte) error {
 
 func (s *scte35Struct) Process() error {
 	schema := &Scte35Schema{}
-	r := common.GetBufferReader(s.payload)
+	r := io.GetBufferReader(s.payload)
 
 	if r.ReadBits(8) != 0 {
 		return errors.New("SCTE-35 protocol version is not 0")
