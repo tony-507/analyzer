@@ -1,4 +1,4 @@
-package tttKernel
+package controller
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type _VARTYPE int
@@ -44,7 +45,7 @@ func (v *scriptVar) getAttributeStr() string {
 }
 
 // Migration in progress
-type tttKernel struct {
+type tttController struct {
 	logger      logging.Log
 	aliasMap    map[string]string
 	edgeMap     map[string][]string
@@ -76,20 +77,20 @@ func StartApp(resourceDir string, appName string, input []string) {
 
 	ctrl.buildParams(getApp(resourceDir, appName), input, -1)
 
-	provider := getWorker()
+	provider := tttKernel.NewWorker()
 
-	pluginParams := make([]OverallParams, 0)
+	pluginParams := make([]tttKernel.OverallParams, 0)
 	for _, v := range ctrl.variables {
 		if v.varType == _VAR_PLUGIN {
-			pluginParams = append(pluginParams, constructOverallParam(v.value, v.getAttributeStr(), ctrl.edgeMap[v.name]))
+			pluginParams = append(pluginParams, tttKernel.ConstructOverallParam(v.value, v.getAttributeStr(), ctrl.edgeMap[v.name]))
 		}
 	}
 
-	provider.startService(pluginParams)
+	provider.StartService(pluginParams)
 }
 
-func getKernel() tttKernel {
-	return tttKernel{
+func getKernel() tttController {
+	return tttController{
 		logger:    logging.CreateLogger("Controller"),
 		aliasMap:  map[string]string{},
 		edgeMap:   map[string][]string{},
@@ -119,7 +120,7 @@ func getApp(resourceDir string, appName string) string {
 }
 
 // Read from script and input to prepare plugins and the respective parameters
-func (ctrl *tttKernel) buildParams(script string, input []string, lim int) {
+func (ctrl *tttController) buildParams(script string, input []string, lim int) {
 	if lim < 0 {
 		lim = 99999
 	}
@@ -257,11 +258,11 @@ func (ctrl *tttKernel) buildParams(script string, input []string, lim int) {
 	}
 }
 
-func (ctrl *tttKernel) handleAliasing(alias string, orig string) {
+func (ctrl *tttController) handleAliasing(alias string, orig string) {
 	ctrl.aliasMap[alias] = orig
 }
 
-func (ctrl *tttKernel) getVariable(components []string, createIfNeeded bool) *scriptVar {
+func (ctrl *tttController) getVariable(components []string, createIfNeeded bool) *scriptVar {
 	depth := len(components)
 	curArrPtr := &ctrl.variables
 	var match *scriptVar
@@ -289,7 +290,7 @@ func (ctrl *tttKernel) getVariable(components []string, createIfNeeded bool) *sc
 	return match
 }
 
-func (ctrl *tttKernel) getValueFromArgs(input []string, opt string, def string) string {
+func (ctrl *tttController) getValueFromArgs(input []string, opt string, def string) string {
 	for idx, param := range input {
 		firstChar := []rune(param)[0]
 		if firstChar == '-' {
@@ -305,7 +306,7 @@ func (ctrl *tttKernel) getValueFromArgs(input []string, opt string, def string) 
 	return def
 }
 
-func (ctrl *tttKernel) getValueFromName(name string) string {
+func (ctrl *tttController) getValueFromName(name string) string {
 	for _, v := range ctrl.variables {
 		if v.name == name {
 			return v.value
@@ -317,7 +318,7 @@ func (ctrl *tttKernel) getValueFromName(name string) string {
 // Determine if RHS is another variable
 // If yes, return value of the variable (no recursion)
 // else, return the string itself
-func (ctrl *tttKernel) resolveRHS(rhs string) string {
+func (ctrl *tttController) resolveRHS(rhs string) string {
 	if x := ctrl.getValueFromName(rhs); x != "" {
 		return x
 	}

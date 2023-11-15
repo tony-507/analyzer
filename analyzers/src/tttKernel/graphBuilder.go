@@ -19,7 +19,7 @@ func (param OverallParams) toString() string {
 	return str
 }
 
-func constructOverallParam(name string, params string, children []string) OverallParams {
+func ConstructOverallParam(name string, params string, children []string) OverallParams {
 	return OverallParams{pluginName: name, pluginParam: params, children: children}
 }
 

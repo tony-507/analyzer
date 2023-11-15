@@ -31,7 +31,7 @@ type Worker struct {
 }
 
 // Start ttt service
-func (w *Worker) startService(params []OverallParams) {
+func (w *Worker) StartService(params []OverallParams) {
 	w.setGraph(buildGraph(params))
 
 	go w.runGraph()
@@ -250,7 +250,7 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 	w.isRunning = isRunning
 }
 
-func getWorker() Worker {
+func NewWorker() Worker {
 	return Worker{
 		isRunning:      0,
 		resourceLoader: common.CreateResourceLoader(),

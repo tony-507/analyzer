@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common/logging"
-	"github.com/tony-507/analyzers/src/tttKernel"
+	"github.com/tony-507/analyzers/src/controller"
 )
 
 func setupLogging(appDir string) {
@@ -35,15 +35,15 @@ func main() {
 	case "help":
 		showHelp()
 	case "version":
-		fmt.Println(tttKernel.Version())
+		fmt.Println(controller.Version())
 	case "ls":
-		tttKernel.ListApp(resourceDir)
+		controller.ListApp(resourceDir)
 	case "app":
 		params := make([]string, 0)
 		if len(os.Args) > 3 {
 			params = os.Args[3:]
 		}
-		tttKernel.StartApp(resourceDir, os.Args[2], params)
+		controller.StartApp(resourceDir, os.Args[2], params)
 	default:
 		showHelp()
 	}

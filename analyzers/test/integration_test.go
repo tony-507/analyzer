@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/tony-507/analyzers/src/common/logging"
-	"github.com/tony-507/analyzers/src/tttKernel"
+	"github.com/tony-507/analyzers/src/controller"
 	"github.com/tony-507/analyzers/test/schema"
 	"github.com/tony-507/analyzers/test/validator"
 )
@@ -31,7 +31,7 @@ func getOutputDir() string {
 
 // TODO How to validate?
 func TestListApp(t *testing.T) {
-	tttKernel.ListApp("./resources/apps/")
+	controller.ListApp("./resources/apps/")
 }
 
 func TestStartApp(t *testing.T) {
@@ -94,7 +94,7 @@ func TestStartApp(t *testing.T) {
 
 				// Run app
 				fmt.Println("Running app")
-				tttKernel.StartApp("./resources/apps/", app, args)
+				controller.StartApp("./resources/apps/", app, args)
 
 				if noOutput {
 					return
