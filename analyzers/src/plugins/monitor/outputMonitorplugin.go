@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -17,7 +18,13 @@ func (rm *outputMonitorPlugin) SetCallback(callback common.RequestHandler) {
 	rm.callback = callback
 }
 
-func (rm *outputMonitorPlugin) SetParameter(string) {}
+func (rm *outputMonitorPlugin) SetParameter(paramStr string) {
+	var param OutputMonitorParam
+	if err := json.Unmarshal([]byte(paramStr), &param); err != nil {
+		panic(err)
+	}
+	rm.monitor.setParameter(&param)
+}
 
 func (rm *outputMonitorPlugin) SetResource(*common.ResourceLoader) {}
 

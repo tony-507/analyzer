@@ -25,6 +25,11 @@ func TestMonitorHeading(t *testing.T) {
 	buf2.SetField("timecode", tc.ToString(), false)
 	unit2 := common.MakeIOUnit(buf2, -1, -1)
 
+	m.setParameter(&OutputMonitorParam{
+		Redundancy: &impl.RedundancyParam{
+			TimeRef: impl.Vitc,
+		},
+	})
 	m.start()
 	m.feed(unit1, "abc")
 	m.feed(unit2, "def")
@@ -34,8 +39,12 @@ func TestMonitorHeading(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("|%15s|%15s|%15s|%15s", "PTS_1", "VITC_1", "PTS_2", "VITC_2"), m.heading)
 }
 
-func TestRedundancyMonitorDisplay(t *testing.T) {
-	rm := impl.GetRedundancyMonitor()
+func TestRedundancyMonitorVitcMode(t *testing.T) {
+	rm := impl.GetRedundancyMonitor(
+		&impl.RedundancyParam{
+			TimeRef: impl.Vitc,
+		},
+	)
 
 	pts1 := 1234567
 	tc1 := utils.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
@@ -55,7 +64,7 @@ func TestRedundancyMonitorDisplay(t *testing.T) {
 		buf2.SetField("timecode", tc2.ToString(), false)
 		unit2 := common.MakeIOUnit(buf2, -1, -1)
 
-		expected = append(expected, fmt.Sprintf("|%15d|%15s|%15d|%15s|", pts1, tc1.ToString(), pts2, tc2.ToString()))
+		expected = append([]string{fmt.Sprintf("|%15d|%15s|%15d|%15s|", pts1, tc1.ToString(), pts2, tc2.ToString())}, expected...)
 
 		rm.Feed(unit1, "abc")
 		rm.Feed(unit2, "def")
@@ -64,6 +73,38 @@ func TestRedundancyMonitorDisplay(t *testing.T) {
 		tc1 = utils.GetNextTimeCode(&tc1, 30000, 1001, true)
 		pts2 += 3003
 		tc2 = utils.GetNextTimeCode(&tc2, 30000, 1001, true)
+	}
+	assert.Equal(t, expected, rm.GetDisplayData())
+}
+
+func TestRedundancyMonitorPtsMode(t *testing.T) {
+	rm := impl.GetRedundancyMonitor(
+		&impl.RedundancyParam{
+			TimeRef: impl.Pts,
+		},
+	)
+
+	pts1 := 1234567
+	pts2 := 2234567
+
+	expected := []string{}
+
+	for i := 0; i < 10; i++ {
+		buf1 := common.MakeSimpleBuf([]byte{})
+		buf1.SetField("pts", pts1, false)
+		unit1 := common.MakeIOUnit(buf1, -1, -1)
+
+		buf2 := common.MakeSimpleBuf([]byte{})
+		buf2.SetField("pts", pts2, false)
+		unit2 := common.MakeIOUnit(buf2, -1, -1)
+
+		expected = append([]string{fmt.Sprintf("|%15d|%15d|", pts1, pts2)}, expected...)
+
+		rm.Feed(unit1, "abc")
+		rm.Feed(unit2, "def")
+
+		pts1 += 3003
+		pts2 += 3003
 	}
 	assert.Equal(t, expected, rm.GetDisplayData())
 }

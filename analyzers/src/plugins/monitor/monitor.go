@@ -28,9 +28,17 @@ type monitor struct {
 	stat         monitorStat
 }
 
+func (m *monitor) setParameter(param *OutputMonitorParam) {
+	if param.Redundancy != nil {
+		m.impl = impl.GetRedundancyMonitor(param.Redundancy)
+	}
+}
+
 func (m *monitor) start() {
 	m.isRunning = true
-	m.impl = impl.GetRedundancyMonitor()
+	if m.impl == nil {
+		panic("MonitorImpl not set")
+	}
 	m.displayTimer = time.NewTimer(_SLEEP_DURATION)
 
 	go m.worker()

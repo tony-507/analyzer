@@ -10,6 +10,7 @@ var _MONITOR_QUEUE_SIZE = 10
 
 type redundancyMonitor struct {
 	dataQueues map[string][]common.CmUnit
+	timeReference redundancyTimeRef
 }
 
 func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
@@ -18,8 +19,10 @@ func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 		rm.dataQueues[inputId] = make([]common.CmUnit, _MONITOR_QUEUE_SIZE)
 	}
 
-	if _, hasTimeCode := common.GetBufFieldAsString(unit.GetBuf(), "timecode"); !hasTimeCode {
-		return
+	if rm.timeReference == Vitc {
+		if _, hasTimeCode := common.GetBufFieldAsString(unit.GetBuf(), "timecode"); !hasTimeCode {
+			return
+		}
 	}
 
 	if len(rm.dataQueues[inputId]) == _MONITOR_QUEUE_SIZE {
@@ -30,7 +33,11 @@ func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 }
 
 func (rm *redundancyMonitor) GetFields() []string {
-	return []string{"PTS", "VITC"}
+	if rm.timeReference == Vitc {
+		return []string{"PTS", "VITC"}
+	} else {
+		return []string{"PTS"}
+	}
 }
 
 func (rm *redundancyMonitor) HasInputId(inputId string) bool {
@@ -54,8 +61,11 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 				continue
 			}
 			pts, _ := common.GetBufFieldAsInt(datum.GetBuf(), "pts")
-			tc, _ := common.GetBufFieldAsString(datum.GetBuf(), "timecode")
-			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d|%15s", pts, tc)
+			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d", pts)
+			if rm.timeReference == Vitc {
+				tc, _ := common.GetBufFieldAsString(datum.GetBuf(), "timecode")
+				res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15s", tc)
+			}
 		}
 	}
 
@@ -66,8 +76,9 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 	return res
 }
 
-func GetRedundancyMonitor() MonitorImpl {
+func GetRedundancyMonitor(param *RedundancyParam) MonitorImpl {
 	return &redundancyMonitor{
 		dataQueues: map[string][]common.CmUnit{},
+		timeReference: param.TimeRef,
 	}
 }
