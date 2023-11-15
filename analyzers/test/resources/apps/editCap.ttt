@@ -2,9 +2,6 @@
 
 input = #InputReader_1;
 
-alias(file, f);
-alias(output, o);
-
 if $f;
     input.Source = _SOURCE_FILE;
     input.FileInput.Fname = $f;

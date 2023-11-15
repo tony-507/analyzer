@@ -45,6 +45,7 @@ d2.Mode = $demuxMode | _DEMUX_FULL;
 dh2 = #DataHandler_2;
 
 mon = #OutputMonitor_1;
+mon.Redundancy.TimeRef = vitc;
 
 link(input, demuxer);
 link(demuxer, dh);
