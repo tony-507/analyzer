@@ -73,7 +73,8 @@ func (m *monitor) worker() {
 
 func (m *monitor) getOutputMsg() string {
 	sepStr := fmt.Sprintf(colors.Reset + "%s\n", strings.Repeat(colors.Reset + "-", len(m.heading) + 1))
-	msg := sepStr
+	msg := fmt.Sprintf("Current time: %s\n", time.Now().UTC().Format("15:04:05.000000"))
+	msg += sepStr
 	msg += m.heading + "|\n"
 	msg += sepStr
 
