@@ -55,11 +55,11 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 			}
 			pts, _ := common.GetBufFieldAsInt(datum.GetBuf(), "pts")
 			tc, _ := common.GetBufFieldAsString(datum.GetBuf(), "timecode")
-			res[idx] += fmt.Sprintf("|%15d|%15s", pts, tc)
+			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d|%15s", pts, tc)
 		}
 	}
 
-	for i, _ := range res {
+	for i := range res {
 		res[i] += "|"
 	}
 

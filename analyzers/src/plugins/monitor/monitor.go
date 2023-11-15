@@ -72,7 +72,8 @@ func (m *monitor) worker() {
 }
 
 func (m *monitor) getOutputMsg() string {
-	sepStr := fmt.Sprintf(colors.Reset + "%s\n", strings.Repeat(colors.Reset + "-", len(m.heading) + 1))
+	lineLen := len(m.heading) + 1
+	sepStr := fmt.Sprintf(colors.Reset + "%s\n", strings.Repeat(colors.Reset + "-", lineLen))
 	msg := fmt.Sprintf("Current time: %s\n", time.Now().UTC().Format("15:04:05.000000"))
 	msg += sepStr
 	msg += m.heading + "|\n"
@@ -82,6 +83,10 @@ func (m *monitor) getOutputMsg() string {
 	defer m.mtx.Unlock()
 
 	for _, body := range m.impl.GetDisplayData() {
+		if len(body) < lineLen {
+			// Hide empty row
+			continue
+		}
 		msg += body + "\n"
 		msg += sepStr
 	}
