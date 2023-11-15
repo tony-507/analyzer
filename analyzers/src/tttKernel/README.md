@@ -14,7 +14,7 @@ One just needs to provide the ttt script as well as the input arguments in order
 
 This module does not support dynamic library loading. If one would like to add a customised plugin, please add an entry in graphNode.go to allow kernel to get the plugin.
 
-The plugin needs to inherit the interface common.IPlugin.
+The plugin needs to inherit the interface IPlugin.
 
 ## ttt Scripting Syntax
 

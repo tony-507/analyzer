@@ -16,7 +16,7 @@ const (
 )
 
 type graphNode struct {
-	impl        common.IPlugin
+	impl        IPlugin
 	m_parameter string // Store plugin parameters
 	m_state     _PLUGIN_STATE
 	children    []*graphNode
@@ -78,7 +78,7 @@ func addPath(parent *graphNode, children []*graphNode) {
 	}
 }
 
-func getPluginByName(inputName string, selectPlugin func(string) common.IPlugin) *graphNode {
+func getPluginByName(inputName string, selectPlugin func(string) IPlugin) *graphNode {
 	// Deduce the type of plugin by name
 	return &graphNode{
 		children: make([]*graphNode, 0),

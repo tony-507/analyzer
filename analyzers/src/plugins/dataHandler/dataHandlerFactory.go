@@ -8,6 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 /*
@@ -132,7 +133,7 @@ func (df *DataHandlerFactoryPlugin) Name() string {
 	return df.name
 }
 
-func DataHandlerFactory(name string) common.IPlugin {
+func DataHandlerFactory(name string) tttKernel.IPlugin {
 	rv := DataHandlerFactoryPlugin{
 		name: name,
 		processors: []utils.DataProcessor{

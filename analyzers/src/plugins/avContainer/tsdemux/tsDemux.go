@@ -8,6 +8,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -173,7 +174,7 @@ func (m_pMux *tsDemuxerPlugin) outputReady() {
 	common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
 }
 
-func TsDemuxer(name string) common.IPlugin {
+func TsDemuxer(name string) tttKernel.IPlugin {
 	rv := tsDemuxerPlugin{
 		fileWriters: map[string]map[int]utils.FileWriter{},
 		name: name,

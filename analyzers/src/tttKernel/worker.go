@@ -31,7 +31,7 @@ type Worker struct {
 }
 
 // Start ttt service
-func (w *Worker) StartService(params []OverallParams, selectPlugin func(string) common.IPlugin) {
+func (w *Worker) StartService(params []OverallParams, selectPlugin func(string) IPlugin) {
 	w.setGraph(buildGraph(params, selectPlugin))
 
 	go w.runGraph()

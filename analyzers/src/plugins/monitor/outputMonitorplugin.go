@@ -6,6 +6,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type outputMonitorPlugin struct {
@@ -53,7 +54,7 @@ func (rm *outputMonitorPlugin) Name() string {
 	return rm.name
 }
 
-func OutputMonitor(name string) common.IPlugin {
+func OutputMonitor(name string) tttKernel.IPlugin {
 	return &outputMonitorPlugin{
 		logger: logging.CreateLogger("OutputMonitor"),
 		name: name,

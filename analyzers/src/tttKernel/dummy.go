@@ -79,7 +79,7 @@ func (dp *dummyPlugin) Name() string {
 	return dp.name
 }
 
-func dummy(name string, role int) common.IPlugin {
+func dummy(name string, role int) IPlugin {
 	rv := dummyPlugin{name: name, logger: logging.CreateLogger(name), role: role}
 	return &rv
 }

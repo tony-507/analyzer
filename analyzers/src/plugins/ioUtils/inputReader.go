@@ -11,6 +11,7 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -218,7 +219,7 @@ func (ir *inputReaderPlugin) PrintInfo(sb *strings.Builder) {
 	}
 }
 
-func InputReader(name string) common.IPlugin {
+func InputReader(name string) tttKernel.IPlugin {
 	rv := inputReaderPlugin{
 		name: name,
 		logger: logging.CreateLogger(name),

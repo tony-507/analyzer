@@ -10,7 +10,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 )
 
-func dummySelector(inputName string) common.IPlugin {
+func dummySelector(inputName string) IPlugin {
 	splitName := strings.Split(inputName, "_")
 	role := 1
 	if splitName[1] == "root" {
