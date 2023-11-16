@@ -20,7 +20,7 @@ type monitorStat struct {
 
 type monitor struct {
 	isRunning    bool
-	displayTimer *time.Timer
+	ctrlChan     chan struct{}
 	mtx          sync.Mutex
 	wg           sync.WaitGroup
 	heading      string
@@ -39,7 +39,6 @@ func (m *monitor) start() {
 	if m.impl == nil {
 		panic("MonitorImpl not set")
 	}
-	m.displayTimer = time.NewTimer(_SLEEP_DURATION)
 
 	go m.worker()
 }
@@ -68,15 +67,16 @@ func (m *monitor) worker() {
 	defer m.wg.Done()
 
 	for m.isRunning {
-		m.displayTimer.Reset(_SLEEP_DURATION)
-		<-m.displayTimer.C
-
-		tm.Clear()
-		tm.MoveCursor(1, 1)
-		tm.Println(m.getOutputMsg())
-		tm.Flush()
+		select {
+		case <-time.After(_SLEEP_DURATION):
+			tm.Clear()
+			tm.MoveCursor(1, 1)
+			tm.Println(m.getOutputMsg())
+			tm.Flush()
+		case <-m.ctrlChan:
+			break
+		}
 	}
-	m.displayTimer.Stop()
 }
 
 func (m *monitor) getOutputMsg() string {
@@ -105,7 +105,7 @@ func (m *monitor) getOutputMsg() string {
 func newMonitor() monitor {
 	return monitor{
 		isRunning: false,
-		displayTimer: nil,
+		ctrlChan: make(chan struct{}),
 		impl: nil,
 		heading: "",
 		stat: monitorStat{

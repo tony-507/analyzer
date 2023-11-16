@@ -22,11 +22,12 @@ type workerRequest struct {
 // Assumption: The graph does not contain any cyclic subgraph
 type Worker struct {
 	logger         logging.Log
-	nodes          []*graphNode
-	resourceLoader common.ResourceLoader
 	isRunning      int
-	statusStore    map[int][]string // Map from msgId to an array of plugin names
+	routineChan    chan struct{}
+	nodes          []*graphNode
 	reqChannel     chan workerRequest
+	resourceLoader common.ResourceLoader
+	statusStore    map[int][]string // Map from msgId to an array of plugin names
 	wg             sync.WaitGroup
 }
 
@@ -76,6 +77,7 @@ func (w *Worker) StopGraph() {
 			pg.stopPlugin()
 		}
 	}
+	w.routineChan <- struct{}{}
 
 	w.printInfo()
 	w.isRunning = 0
@@ -86,11 +88,13 @@ func (w *Worker) startDiagnostics() {
 	w.wg.Add(1)
 	defer w.wg.Done()
 
-	timer := time.NewTimer(1 * time.Second)
 	for w.isRunning != 0 {
-		timer.Reset(10 * time.Second)
-		<-timer.C
-		w.printInfo()
+		select {
+		case <-time.After(10 * time.Second):
+			w.printInfo()
+		case <-w.routineChan:
+			break
+		}
 	}
 }
 
@@ -252,10 +256,11 @@ func (w *Worker) setGraph(nodeList []*graphNode) {
 
 func NewWorker() Worker {
 	return Worker{
-		isRunning:      0,
-		resourceLoader: common.CreateResourceLoader(),
 		logger:         logging.CreateLogger("Worker"),
-		statusStore:    make(map[int][]string, 0),
+		isRunning:      0,
+		routineChan:    make(chan struct{}),
 		reqChannel:     make(chan workerRequest, 50),
+		resourceLoader: common.CreateResourceLoader(),
+		statusStore:    make(map[int][]string, 0),
 	}
 }
