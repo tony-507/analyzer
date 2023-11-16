@@ -92,15 +92,24 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId stri
 			df.handlers[pid] = audio.AC3Handler(pid)
 		}
 	}
+
+	var newUnit common.CmUnit = nil
+
 	if h, hasHandle := df.handlers[pid]; hasHandle {
 		newData := utils.CreateParsedData()
 		h.Feed(unit, &newData)
+		switch newData.GetType() {
+		case utils.PARSED_VIDEO:
+			newUnit = common.NewMediaUnit(cmBuf, common.VIDEO_UNIT)
+		default:
+			newUnit = common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
+		}
 		for _, proc := range df.processors {
-			proc.Process(cmBuf, &newData)
+			proc.Process(newUnit, &newData)
 		}
 	}
 
-	df.outputUnit = append(df.outputUnit, unit)
+	df.outputUnit = append(df.outputUnit, newUnit)
 
 	// Directly output the unit
 	reqUnit := common.MakeReqUnit(df.name, common.FETCH_REQUEST)

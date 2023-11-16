@@ -10,5 +10,5 @@ type DataProcessor interface {
 	PrintInfo(*strings.Builder)
 	Start() error
 	Stop() error
-	Process(common.CmBuf, *ParsedData)
+	Process(common.CmUnit, *ParsedData)
 }

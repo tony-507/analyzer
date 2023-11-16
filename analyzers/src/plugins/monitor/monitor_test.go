@@ -17,13 +17,17 @@ func TestMonitorHeading(t *testing.T) {
 
 	buf1 := common.MakeSimpleBuf([]byte{})
 	buf1.SetField("pts", pts, false)
-	buf1.SetField("timecode", tc.ToString(), false)
-	unit1 := common.MakeIOUnit(buf1, -1, -1)
+	unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
+	vmd1 := unit1.GetVideoData()
+	vmd1.Type = common.I_SLICE
+	vmd1.Tc = common.TimeCode(tc)
 
 	buf2 := common.MakeSimpleBuf([]byte{})
 	buf2.SetField("pts", pts, false)
-	buf2.SetField("timecode", tc.ToString(), false)
-	unit2 := common.MakeIOUnit(buf2, -1, -1)
+	unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
+	vmd2 := unit2.GetVideoData()
+	vmd2.Type = common.I_SLICE
+	vmd2.Tc = common.TimeCode(tc)
 
 	m.setParameter(&OutputMonitorParam{
 		Redundancy: &impl.RedundancyParam{
@@ -56,13 +60,17 @@ func TestRedundancyMonitorVitcMode(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		buf1 := common.MakeSimpleBuf([]byte{})
 		buf1.SetField("pts", pts1, false)
-		buf1.SetField("timecode", tc1.ToString(), false)
-		unit1 := common.MakeIOUnit(buf1, -1, -1)
+		unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
+		vmd1 := unit1.GetVideoData()
+		vmd1.Type = common.I_SLICE
+		vmd1.Tc = common.TimeCode(tc1)
 
 		buf2 := common.MakeSimpleBuf([]byte{})
 		buf2.SetField("pts", pts2, false)
-		buf2.SetField("timecode", tc2.ToString(), false)
-		unit2 := common.MakeIOUnit(buf2, -1, -1)
+		unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
+		vmd2 := unit2.GetVideoData()
+		vmd2.Type = common.I_SLICE
+		vmd2.Tc = common.TimeCode(tc2)
 
 		expected = append([]string{fmt.Sprintf("|%15d|%15s|%15d|%15s|", pts1, tc1.ToString(), pts2, tc2.ToString())}, expected...)
 
@@ -92,11 +100,15 @@ func TestRedundancyMonitorPtsMode(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		buf1 := common.MakeSimpleBuf([]byte{})
 		buf1.SetField("pts", pts1, false)
-		unit1 := common.MakeIOUnit(buf1, -1, -1)
+		unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
+		vmd1 := unit1.GetVideoData()
+		vmd1.Type = common.I_SLICE
 
 		buf2 := common.MakeSimpleBuf([]byte{})
 		buf2.SetField("pts", pts2, false)
-		unit2 := common.MakeIOUnit(buf2, -1, -1)
+		unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
+		vmd2 := unit2.GetVideoData()
+		vmd2.Type = common.I_SLICE
 
 		expected = append([]string{fmt.Sprintf("|%15d|%15d|", pts1, pts2)}, expected...)
 

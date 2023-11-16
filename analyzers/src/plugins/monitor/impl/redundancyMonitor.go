@@ -9,26 +9,31 @@ import (
 var _MONITOR_QUEUE_SIZE = 10
 
 type redundancyMonitor struct {
-	dataQueues map[string][]common.CmUnit
+	dataQueues map[string][]*common.MediaUnit
 	timeReference redundancyTimeRef
 }
 
 func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 	// Ensure input id is added to the map
 	if !rm.HasInputId(inputId) {
-		rm.dataQueues[inputId] = make([]common.CmUnit, _MONITOR_QUEUE_SIZE)
+		rm.dataQueues[inputId] = make([]*common.MediaUnit, _MONITOR_QUEUE_SIZE)
 	}
-
-	if rm.timeReference == Vitc {
-		if _, hasTimeCode := common.GetBufFieldAsString(unit.GetBuf(), "timecode"); !hasTimeCode {
-			return
-		}
+	vUnit, ok := unit.(*common.MediaUnit)
+	if !ok {
+		return
+	}
+	vmd := vUnit.GetVideoData()
+	if vmd.Type != common.I_SLICE {
+		return
+	}
+	if rm.timeReference == Vitc && vmd.Tc.IsEmpty() {
+		return
 	}
 
 	if len(rm.dataQueues[inputId]) == _MONITOR_QUEUE_SIZE {
-		rm.dataQueues[inputId] = append(rm.dataQueues[inputId][1:], unit)
+		rm.dataQueues[inputId] = append(rm.dataQueues[inputId][1:], vUnit)
 	} else {
-		rm.dataQueues[inputId] = append(rm.dataQueues[inputId], unit)
+		rm.dataQueues[inputId] = append(rm.dataQueues[inputId], vUnit)
 	}
 }
 
@@ -60,10 +65,11 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 			if datum == nil {
 				continue
 			}
+			vmd := datum.GetVideoData()
 			pts, _ := common.GetBufFieldAsInt(datum.GetBuf(), "pts")
 			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d", pts)
 			if rm.timeReference == Vitc {
-				tc, _ := common.GetBufFieldAsString(datum.GetBuf(), "timecode")
+				tc := vmd.Tc.ToString()
 				res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15s", tc)
 			}
 		}
@@ -78,7 +84,7 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 
 func GetRedundancyMonitor(param *RedundancyParam) MonitorImpl {
 	return &redundancyMonitor{
-		dataQueues: map[string][]common.CmUnit{},
+		dataQueues: map[string][]*common.MediaUnit{},
 		timeReference: param.TimeRef,
 	}
 }

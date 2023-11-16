@@ -25,10 +25,13 @@ func (vp *videoDataProcessorStruct) Stop() error {
 	return vp.tcWriter.Close()
 }
 
-func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *utils.ParsedData) {
+func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *utils.ParsedData) {
 	if parsedData.GetType() != utils.PARSED_VIDEO {
 		return
 	}
+	cmBuf := unit.GetBuf()
+	vUnit, _ := unit.(*common.MediaUnit)
+	vmd := vUnit.GetVideoData()
 
 	data := parsedData.GetVideoData()
 	dts, _ := common.GetBufFieldAsInt(cmBuf, "dts")
@@ -53,9 +56,8 @@ func (vp *videoDataProcessorStruct) Process(cmBuf common.CmBuf, parsedData *util
 		vp.videos = vp.videos[10:]
 	}
 
-	if data.TimeCode.Frame != -1 && data.Type == utils.I_SLICE {
-		cmBuf.SetField("timecode", data.TimeCode.ToString(), false)
-	}
+	vmd.Type = common.FRAME_TYPE(data.Type)
+	vmd.Tc = common.TimeCode(data.TimeCode)
 
 	vp.videos = append(vp.videos, *data)
 }
