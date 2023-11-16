@@ -28,7 +28,7 @@ func (rm *outputMonitorPlugin) SetParameter(paramStr string) {
 	rm.monitor.setParameter(&param)
 }
 
-func (rm *outputMonitorPlugin) SetResource(*common.ResourceLoader) {}
+func (rm *outputMonitorPlugin) SetResource(*tttKernel.ResourceLoader) {}
 
 func (rm *outputMonitorPlugin) StartSequence() {
 	rm.monitor.start()

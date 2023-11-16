@@ -36,7 +36,7 @@ func (df *DataHandlerFactoryPlugin) SetParameter(m_parameter string) {
 	df._setup()
 }
 
-func (df *DataHandlerFactoryPlugin) SetResource(loader *common.ResourceLoader) {}
+func (df *DataHandlerFactoryPlugin) SetResource(loader *tttKernel.ResourceLoader) {}
 
 func (df *DataHandlerFactoryPlugin) _setup() {
 	df.logger = logging.CreateLogger(df.name)

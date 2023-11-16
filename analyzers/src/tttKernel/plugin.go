@@ -9,7 +9,7 @@ import (
 type IPlugin interface {
 	SetCallback(RequestHandler)
 	SetParameter(string)
-	SetResource(*common.ResourceLoader)
+	SetResource(*ResourceLoader)
 	StartSequence()
 	DeliverUnit(common.CmUnit, string)
 	DeliverStatus(common.CmUnit)

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 // Stream type conversion helper
@@ -29,7 +29,7 @@ type demuxController struct {
 	outputQueueLen int
 	progClkMap     map[int]*programSrcClk // progNum -> srcClk
 	pktCntMap      map[int]int            // pid -> # of packets
-	resourceLoader *common.ResourceLoader
+	resourceLoader *tttKernel.ResourceLoader
 	mtx            sync.Mutex
 }
 
@@ -77,7 +77,7 @@ func (dc *demuxController) updateSrcClk(progNum int) *programSrcClk {
 	return dc.progClkMap[progNum]
 }
 
-func (dc *demuxController) setResource(resourceLoader *common.ResourceLoader) {
+func (dc *demuxController) setResource(resourceLoader *tttKernel.ResourceLoader) {
 	dc.resourceLoader = resourceLoader
 }
 

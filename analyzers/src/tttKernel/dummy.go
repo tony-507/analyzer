@@ -19,7 +19,7 @@ type dummyPlugin struct {
 
 func (dp *dummyPlugin) SetParameter(m_parameter string) {}
 
-func (dp *dummyPlugin) SetResource(resourceLoader *common.ResourceLoader) {}
+func (dp *dummyPlugin) SetResource(resourceLoader *ResourceLoader) {}
 
 func (dp *dummyPlugin) StartSequence() {
 	if dp.role == 0 {

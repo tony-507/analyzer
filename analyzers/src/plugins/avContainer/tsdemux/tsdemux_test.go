@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type dummyCallback struct {}
@@ -126,7 +127,7 @@ func TestPesParsedOnceReady(t *testing.T) {
 
 	control := getControl()
 	dc := dummyCallback{}
-	r := common.CreateResourceLoader()
+	r := tttKernel.CreateResourceLoader()
 	control.setResource(&r)
 	impl := getDemuxPipe(&dc, control, "Dummy")
 

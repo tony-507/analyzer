@@ -26,7 +26,7 @@ type Worker struct {
 	routineChan    chan struct{}
 	nodes          []*graphNode
 	reqChannel     chan workerRequest
-	resourceLoader common.ResourceLoader
+	resourceLoader ResourceLoader
 	statusStore    map[int][]string // Map from msgId to an array of plugin names
 	wg             sync.WaitGroup
 }
@@ -260,7 +260,7 @@ func NewWorker() Worker {
 		isRunning:      0,
 		routineChan:    make(chan struct{}),
 		reqChannel:     make(chan workerRequest, 50),
-		resourceLoader: common.CreateResourceLoader(),
+		resourceLoader: CreateResourceLoader(),
 		statusStore:    make(map[int][]string, 0),
 	}
 }

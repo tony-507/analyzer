@@ -58,7 +58,7 @@ func (m_pMux *tsDemuxerPlugin) SetParameter(m_parameter string) {
 	m_pMux._setup()
 }
 
-func (m_pMux *tsDemuxerPlugin) SetResource(resourceLoader *common.ResourceLoader) {
+func (m_pMux *tsDemuxerPlugin) SetResource(resourceLoader *tttKernel.ResourceLoader) {
 	m_pMux.control.setResource(resourceLoader)
 }
 

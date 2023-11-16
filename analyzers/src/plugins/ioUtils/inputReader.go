@@ -122,7 +122,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 	})
 }
 
-func (ir *inputReaderPlugin) SetResource(loader *common.ResourceLoader) {}
+func (ir *inputReaderPlugin) SetResource(loader *tttKernel.ResourceLoader) {}
 
 func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	if ir.isRunning {
