@@ -29,7 +29,7 @@ type inputParam struct {
 
 type inputReaderPlugin struct {
 	name         string
-	callback     common.RequestHandler
+	callback     tttKernel.RequestHandler
 	impl         def.IReader
 	isRunning    bool
 	logger       logging.Log
@@ -62,10 +62,10 @@ func (ir *inputReaderPlugin) EndSequence() {
 		ir.rawDataFile.Close()
 	}
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-	common.Post_request(ir.callback, ir.name, eosUnit)
+	tttKernel.Post_request(ir.callback, ir.name, eosUnit)
 }
 
-func (ir *inputReaderPlugin) SetCallback(callback common.RequestHandler) {
+func (ir *inputReaderPlugin) SetCallback(callback tttKernel.RequestHandler) {
 	ir.callback = callback
 }
 
@@ -128,7 +128,7 @@ func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	if ir.isRunning {
 		ir.start()
 		reqUnit := common.MakeReqUnit(ir.name, common.DELIVER_REQUEST)
-		common.Post_request(ir.callback, ir.name, reqUnit)
+		tttKernel.Post_request(ir.callback, ir.name, reqUnit)
 	}
 }
 
@@ -152,12 +152,12 @@ func (ir *inputReaderPlugin) start() {
 
 			ir.outputQueue = append(ir.outputQueue, &newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
-			common.Post_request(ir.callback, ir.name, reqUnit)
+			tttKernel.Post_request(ir.callback, ir.name, reqUnit)
 		}
 	} else {
 		// Stop reader
 		eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
-		common.Post_request(ir.callback, ir.name, eosUnit)
+		tttKernel.Post_request(ir.callback, ir.name, eosUnit)
 	}
 }
 

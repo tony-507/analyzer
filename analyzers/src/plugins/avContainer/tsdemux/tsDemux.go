@@ -24,7 +24,7 @@ type IDemuxPipe interface {
 
 type tsDemuxerPlugin struct {
 	logger      logging.Log
-	callback    common.RequestHandler
+	callback    tttKernel.RequestHandler
 	fileWriters map[string]map[int]utils.FileWriter
 	impl        IDemuxPipe       // Actual demuxing operation
 	control     *demuxController // Controller to handle demuxer internal state
@@ -32,7 +32,7 @@ type tsDemuxerPlugin struct {
 	name        string
 }
 
-func (m_pMux *tsDemuxerPlugin) SetCallback(callback common.RequestHandler) {
+func (m_pMux *tsDemuxerPlugin) SetCallback(callback tttKernel.RequestHandler) {
 	m_pMux.callback = callback
 }
 
@@ -87,7 +87,7 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	}
 
 	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
-	common.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
+	tttKernel.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
 
 func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
@@ -139,7 +139,7 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	}
 
 	if errMsg != "" {
-		common.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxerPlugin::FetchUnit] %s.", errMsg)))
+		tttKernel.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxerPlugin::FetchUnit] %s.", errMsg)))
 	}
 
 	m_pMux.control.outputUnitFetched()
@@ -171,7 +171,7 @@ func (m_pMux *tsDemuxerPlugin) Name() string {
 
 func (m_pMux *tsDemuxerPlugin) outputReady() {
 	reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
-	common.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
+	tttKernel.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
 }
 
 func TsDemuxer(name string) tttKernel.IPlugin {

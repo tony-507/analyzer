@@ -7,7 +7,7 @@ import (
 )
 
 type IPlugin interface {
-	SetCallback(common.RequestHandler)
+	SetCallback(RequestHandler)
 	SetParameter(string)
 	SetResource(*common.ResourceLoader)
 	StartSequence()

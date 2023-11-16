@@ -20,7 +20,7 @@ import (
 
 type DataHandlerFactoryPlugin struct {
 	logger     logging.Log
-	callback   common.RequestHandler
+	callback   tttKernel.RequestHandler
 	handlers   map[int]utils.DataHandler
 	outputUnit []common.CmUnit
 	isRunning  bool
@@ -28,7 +28,7 @@ type DataHandlerFactoryPlugin struct {
 	processors []utils.DataProcessor
 }
 
-func (df *DataHandlerFactoryPlugin) SetCallback(callback common.RequestHandler) {
+func (df *DataHandlerFactoryPlugin) SetCallback(callback tttKernel.RequestHandler) {
 	df.callback = callback
 }
 
@@ -60,7 +60,7 @@ func (df *DataHandlerFactoryPlugin) EndSequence() {
 		proc.Stop()
 	}
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
-	common.Post_request(df.callback, df.name, eosUnit)
+	tttKernel.Post_request(df.callback, df.name, eosUnit)
 }
 
 func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
@@ -104,7 +104,7 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId stri
 
 	// Directly output the unit
 	reqUnit := common.MakeReqUnit(df.name, common.FETCH_REQUEST)
-	common.Post_request(df.callback, df.name, reqUnit)
+	tttKernel.Post_request(df.callback, df.name, reqUnit)
 }
 
 func (df *DataHandlerFactoryPlugin) DeliverStatus(unit common.CmUnit) {}

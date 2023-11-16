@@ -12,7 +12,7 @@ type dummyPlugin struct {
 	logger   logging.Log
 	inCnt    int
 	fetchCnt int
-	callback common.RequestHandler
+	callback RequestHandler
 	name     string
 	role     int // 0 represents a root, 1 represents non-root
 }
@@ -31,7 +31,7 @@ func (dp *dummyPlugin) EndSequence() {
 	dp.logger.Info("endSequence called")
 	if dp.role != 0 {
 		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-		common.Post_request(dp.callback, dp.name, eosUnit)
+		Post_request(dp.callback, dp.name, eosUnit)
 	}
 }
 
@@ -50,12 +50,12 @@ func (dp *dummyPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 
 	if buf > 10 {
 		reqUnit := common.MakeReqUnit(dp.name, common.FETCH_REQUEST)
-		common.Post_request(dp.callback, dp.name, reqUnit)
+		Post_request(dp.callback, dp.name, reqUnit)
 	}
 
 	if dp.role == 0 {
 		eosUnit := common.MakeReqUnit(dp.name, common.EOS_REQUEST)
-		common.Post_request(dp.callback, dp.name, eosUnit)
+		Post_request(dp.callback, dp.name, eosUnit)
 	}
 }
 
@@ -69,7 +69,7 @@ func (dp *dummyPlugin) FetchUnit() common.CmUnit {
 	return rv
 }
 
-func (dp *dummyPlugin) SetCallback(callback common.RequestHandler) {
+func (dp *dummyPlugin) SetCallback(callback RequestHandler) {
 	dp.callback = callback
 }
 

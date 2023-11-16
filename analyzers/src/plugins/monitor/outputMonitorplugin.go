@@ -11,12 +11,12 @@ import (
 
 type outputMonitorPlugin struct {
 	logger   logging.Log
-	callback common.RequestHandler
+	callback tttKernel.RequestHandler
 	monitor  monitor
 	name     string
 }
 
-func (rm *outputMonitorPlugin) SetCallback(callback common.RequestHandler) {
+func (rm *outputMonitorPlugin) SetCallback(callback tttKernel.RequestHandler) {
 	rm.callback = callback
 }
 
