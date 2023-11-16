@@ -4,70 +4,49 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 func TestDeclareVarInScript(t *testing.T) {
 	script := "x = $x; x.a = $yes;"
 	input := []string{"--yes", "bye", "-x", "hi"}
-	ctrl := tttController{
-		logger:    logging.CreateLogger("Controller"),
-		variables: []*scriptVar{},
-		edgeMap:   map[string][]string{},
-		aliasMap:  map[string]string{},
-	}
+	ctrl := newController()
 
-	ctrl.buildParams(script, input, -1)
+	ctrl.parser.buildParams(script, input, -1)
 
-	assert.Equal(t, "x", ctrl.variables[0].name, "Name of x is not x")
-	assert.Equal(t, "hi", ctrl.variables[0].value, "Value of x is not hi")
-	assert.Equal(t, "a", ctrl.variables[0].attributes[0].name, "Name of x.a is not a")
-	assert.Equal(t, "bye", ctrl.variables[0].attributes[0].value, "Value of x.a is not bye")
+	assert.Equal(t, "x", ctrl.parser.variables[0].name, "Name of x is not x")
+	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Value of x is not hi")
+	assert.Equal(t, "a", ctrl.parser.variables[0].attributes[0].name, "Name of x.a is not a")
+	assert.Equal(t, "bye", ctrl.parser.variables[0].attributes[0].value, "Value of x.a is not bye")
 }
 
 func TestSetAlias(t *testing.T) {
 	script := "alias(test, x); x = $x;"
 	input := []string{"--test", "hi"}
-	ctrl := tttController{
-		logger:    logging.CreateLogger("Controller"),
-		variables: []*scriptVar{},
-		edgeMap:   map[string][]string{},
-		aliasMap:  map[string]string{},
-	}
+	ctrl := newController()
 
-	ctrl.buildParams(script, input, -1)
+	ctrl.parser.buildParams(script, input, -1)
 
-	assert.Equal(t, "hi", ctrl.variables[0].value, "Value of x is not hi")
+	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Value of x is not hi")
 }
 
 func TestRunNestedConditional(t *testing.T) {
 	script := "if $x; x = $x; if $y; x = $y; end; end;"
 	input := []string{"-x", "hi", "-y", "bye"}
-	ctrl := tttController{
-		logger:    logging.CreateLogger("Controller"),
-		variables: []*scriptVar{},
-		edgeMap:   map[string][]string{},
-		aliasMap:  map[string]string{},
-	}
+	ctrl := newController()
 
-	ctrl.buildParams(script, input, -1)
+	ctrl.parser.buildParams(script, input, -1)
 
-	assert.Equal(t, "bye", ctrl.variables[0].value, "Nested conditional fails")
+	assert.Equal(t, "bye", ctrl.parser.variables[0].value, "Nested conditional fails")
 }
 
 func TestRunPartialNestedConditional(t *testing.T) {
 	script := "if $x; x = $x; if $y; x = $y; end; end;"
 	input := []string{"-x", "hi"}
-	ctrl := tttController{
-		logger:    logging.CreateLogger("Controller"),
-		variables: []*scriptVar{},
-		edgeMap:   map[string][]string{},
-		aliasMap:  map[string]string{},
-	}
+	ctrl := newController()
 
-	ctrl.buildParams(script, input, -1)
+	ctrl.parser.buildParams(script, input, -1)
 
-	assert.Equal(t, "hi", ctrl.variables[0].value, "Nested conditional fails")
+	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Nested conditional fails")
 }
 
 func TestGetEmptyAttributeString(t *testing.T) {
