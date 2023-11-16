@@ -34,6 +34,7 @@ func buildGraph(params []OverallParams, selectPlugin func(string) IPlugin) []*gr
 	for _, param := range params {
 		paramStr += param.toString()
 	}
+	logger.Trace("%s", paramStr)
 
 	/*
 		Note that, unlike in C, it's perfectly OK to return the address of a local variable;
@@ -78,15 +79,6 @@ func buildGraph(params []OverallParams, selectPlugin func(string) IPlugin) []*gr
 			}
 		}
 	}
-
-	statMsg := fmt.Sprintf("Start running graph:\n")
-	for _, node := range nodeList {
-		statMsg += "\n\tName: " + node.impl.Name()
-		statMsg += fmt.Sprintf("\n\tParameters: %v", node.m_parameter)
-		statMsg += fmt.Sprintf("\n\tOutput: %v", node.children)
-		statMsg += "\n"
-	}
-	logger.Trace(statMsg)
 
 	return nodeList
 }
