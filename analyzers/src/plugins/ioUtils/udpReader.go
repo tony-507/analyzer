@@ -21,6 +21,7 @@ type sockConn struct {
 	address string
 	port    string
 	itf     string
+	timeout int
 	conn    *ipv4.PacketConn
 }
 
@@ -97,7 +98,7 @@ func (s *sockConn) openMcast(a net.IP, port int) error {
 
 func (s *sockConn) read() ([]byte, error) {
 	buf := make([]byte, 10000)
-	setTimeoutErr := s.conn.SetDeadline(time.Now().Add(3 * time.Second))
+	setTimeoutErr := s.conn.SetDeadline(time.Now().Add(time.Duration(s.timeout) * time.Second))
 	if setTimeoutErr != nil {
 		return buf, setTimeoutErr
 	}
@@ -108,8 +109,15 @@ func (s *sockConn) read() ([]byte, error) {
 	return buf[:n], nil
 }
 
-func socketConnection(logger logging.Log, address string, port string, itf string) *sockConn {
-	return &sockConn{logger: logger, address: address, port: port, itf: itf, conn: nil}
+func socketConnection(logger logging.Log, address string, port string, itf string, timeout int) *sockConn {
+	return &sockConn{
+		logger: logger,
+		address: address,
+		port: port,
+		itf: itf,
+		conn: nil,
+		timeout: timeout,
+	}
 }
 
 type udpReaderStruct struct {
@@ -117,6 +125,7 @@ type udpReaderStruct struct {
 	address     string
 	port        string
 	itf         string
+	timeout     int
 	conn        *sockConn
 	bufferQueue []def.ParseResult
 	udpCount    int
@@ -124,7 +133,7 @@ type udpReaderStruct struct {
 }
 
 func (ur *udpReaderStruct) Setup(config def.IReaderConfig) {
-	ur.conn = socketConnection(ur.logger, ur.address, ur.port, ur.itf)
+	ur.conn = socketConnection(ur.logger, ur.address, ur.port, ur.itf, ur.timeout)
 	ur.config = config
 }
 
@@ -171,6 +180,11 @@ func udpReader(param *udpInputParam, name string) def.IReader {
 	rv.address = tmp[0]
 	rv.port = tmp[1]
 	rv.itf = param.Itf
+	if param.Timeout > 0 {
+		rv.timeout = param.Timeout
+	} else {
+		rv.timeout = 3
+	}
 
 	return &rv
 }
