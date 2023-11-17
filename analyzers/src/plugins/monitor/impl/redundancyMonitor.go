@@ -26,9 +26,6 @@ func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 	if vmd.Type != common.I_SLICE {
 		return
 	}
-	if rm.timeReference == Vitc && vmd.Tc.IsEmpty() {
-		return
-	}
 
 	if len(rm.dataQueues[inputId]) == _MONITOR_QUEUE_SIZE {
 		rm.dataQueues[inputId] = append(rm.dataQueues[inputId][1:], vUnit)
@@ -69,7 +66,10 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 			pts, _ := common.GetBufFieldAsInt(datum.GetBuf(), "pts")
 			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d", pts)
 			if rm.timeReference == Vitc {
-				tc := vmd.Tc.ToString()
+				tc := ""
+				if !vmd.Tc.IsEmpty() {
+					tc = vmd.Tc.ToString()
+				}
 				res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15s", tc)
 			}
 		}

@@ -39,10 +39,10 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 	data.Dts = dts
 	data.Pts = pts
 
-	if len(vp.videos) == 20 {
-		// Clear and display stored data
+	if data.Type == utils.I_SLICE {
+		// Sort data when we reach an I slice
 		sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
-		for _, storedData := range vp.videos[:10] {
+		for _, storedData := range vp.videos {
 			if storedData.TimeCode.Frame != -1 {
 				// Currently assume 29.97 with drop frame
 				nextTc := commonUtils.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
@@ -53,11 +53,13 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 				vp.lastTC = storedData.TimeCode
 			}
 		}
-		vp.videos = vp.videos[10:]
+		vp.videos = []utils.VideoDataStruct{}
 	}
 
 	vmd.Type = common.FRAME_TYPE(data.Type)
-	vmd.Tc = common.TimeCode(data.TimeCode)
+	if data.TimeCode.Frame != -1 {
+		vmd.Tc = common.TimeCode(data.TimeCode)
+	}
 
 	vp.videos = append(vp.videos, *data)
 }
