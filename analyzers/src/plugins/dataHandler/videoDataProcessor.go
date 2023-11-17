@@ -12,7 +12,7 @@ import (
 
 type videoDataProcessorStruct struct {
 	videos   []utils.VideoDataStruct
-	lastTC   commonUtils.TimeCode
+	lastTC   common.TimeCode
 	tcWriter commonUtils.FileWriter
 	logger   logging.Log
 }
@@ -43,7 +43,7 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 		// Sort data when we reach an I slice
 		sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
 		for _, storedData := range vp.videos {
-			if storedData.TimeCode.Frame != -1 {
+			if !storedData.TimeCode.IsEmpty() {
 				// Currently assume 29.97 with drop frame
 				nextTc := commonUtils.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
 				if !storedData.TimeCode.Equals(&nextTc) {
@@ -57,9 +57,7 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 	}
 
 	vmd.Type = common.FRAME_TYPE(data.Type)
-	if data.TimeCode.Frame != -1 {
-		vmd.Tc = common.TimeCode(data.TimeCode)
-	}
+	vmd.Tc = data.TimeCode
 
 	vp.videos = append(vp.videos, *data)
 }
@@ -69,7 +67,7 @@ func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {}
 func videoDataProcessor() utils.DataProcessor {
 	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
-		lastTC: commonUtils.TimeCode{Frame: -1},
+		lastTC: common.NewTimeCode(),
 		tcWriter: commonUtils.CsvWriter("output", "vitc.csv"),
 		logger: logging.CreateLogger("VideoDataProcessor"),
 	}

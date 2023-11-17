@@ -13,21 +13,21 @@ import (
 func TestMonitorHeading(t *testing.T) {
 	m := newMonitor()
 	pts := 1234567
-	tc := utils.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
+	tc := common.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
 
 	buf1 := common.MakeSimpleBuf([]byte{})
 	buf1.SetField("pts", pts, false)
 	unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
 	vmd1 := unit1.GetVideoData()
 	vmd1.Type = common.I_SLICE
-	vmd1.Tc = common.TimeCode(tc)
+	vmd1.Tc = tc
 
 	buf2 := common.MakeSimpleBuf([]byte{})
 	buf2.SetField("pts", pts, false)
 	unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
 	vmd2 := unit2.GetVideoData()
 	vmd2.Type = common.I_SLICE
-	vmd2.Tc = common.TimeCode(tc)
+	vmd2.Tc = tc
 
 	m.setParameter(&OutputMonitorParam{
 		Redundancy: &impl.RedundancyParam{
@@ -51,9 +51,9 @@ func TestRedundancyMonitorVitcMode(t *testing.T) {
 	)
 
 	pts1 := 1234567
-	tc1 := utils.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
+	tc1 := common.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
 	pts2 := 2234567
-	tc2 := utils.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 6}
+	tc2 := common.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 6}
 
 	expected := []string{}
 
@@ -63,14 +63,14 @@ func TestRedundancyMonitorVitcMode(t *testing.T) {
 		unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
 		vmd1 := unit1.GetVideoData()
 		vmd1.Type = common.I_SLICE
-		vmd1.Tc = common.TimeCode(tc1)
+		vmd1.Tc = tc1
 
 		buf2 := common.MakeSimpleBuf([]byte{})
 		buf2.SetField("pts", pts2, false)
 		unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
 		vmd2 := unit2.GetVideoData()
 		vmd2.Type = common.I_SLICE
-		vmd2.Tc = common.TimeCode(tc2)
+		vmd2.Tc = tc2
 
 		expected = append([]string{fmt.Sprintf("|%15d|%15s|%15d|%15s|", pts1, tc1.ToString(), pts2, tc2.ToString())}, expected...)
 

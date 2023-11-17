@@ -4,16 +4,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/clock"
 )
 
-func msToMpegClk(ms int) MpegClk {
-	return MpegClk(ms * 90) * Clk90k
+func msToMpegClk(ms int) clock.MpegClk {
+	return clock.MpegClk(ms * 90) * clock.Clk90k
 }
 
 func TestRtpToUtc(t *testing.T) {
 	rtp := 666100238
 	curUtc := 1695612755
-	utc, err := rtpTimestampToUtcInMs(MpegClk(rtp) * Clk90k, int64(curUtc))
+	utc, err := rtpTimestampToUtcInMs(clock.MpegClk(rtp) * clock.Clk90k, int64(curUtc))
 	if err != nil {
 		panic(err)
 	}
@@ -23,7 +25,7 @@ func TestRtpToUtc(t *testing.T) {
 func TestRtpToUtcWithRtpPassesLoop(t *testing.T) {
 	rtp := 10 * 90000
 	curUtc := 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 - 10
-	utc, err := rtpTimestampToUtcInMs(MpegClk(rtp) * Clk90k, curUtc)
+	utc, err := rtpTimestampToUtcInMs(clock.MpegClk(rtp) * clock.Clk90k, curUtc)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +33,7 @@ func TestRtpToUtcWithRtpPassesLoop(t *testing.T) {
 }
 
 func TestRtpToUtcWithUtcPassesLoop(t *testing.T) {
-	rtp := RTP_TIMESTAMP_LOOP_POINT - 10 * Second
+	rtp := RTP_TIMESTAMP_LOOP_POINT - 10 * clock.Second
 	curUtc := 12345 * int64(RTP_TIMESTAMP_LOOP_POINT) / 90000 + 10
 	utc, err := rtpTimestampToUtcInMs(rtp, curUtc)
 	if err != nil {
@@ -65,13 +67,13 @@ func TestConvert5994HzTimeCode(t *testing.T) {
 }
 
 func TestGetNextTimeCode(t *testing.T) {
-	tc := TimeCode{
+	tc := common.TimeCode{
 		Hour: 23,
 		Minute: 59,
 		Second: 59,
 		Frame: 29,
 	}
-	expected := TimeCode{
+	expected := common.TimeCode{
 		Hour: 0,
 		Minute: 0,
 		Second: 0,

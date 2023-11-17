@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/common/clock"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
@@ -18,7 +19,7 @@ import (
 type inputStat struct {
 	outCnt        int
 	prevTimestamp int64
-	prevTimecode  utils.TimeCode
+	prevTimecode  common.TimeCode
 	errCount      int
 }
 
@@ -165,7 +166,7 @@ func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
 			nextTc := utils.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)
-			tc, err := utils.RtpTimestampToTimeCode(utils.MpegClk(timestamp) * utils.Clk90k, -1, 30000, 1001, false, 0)
+			tc, err := utils.RtpTimestampToTimeCode(clock.MpegClk(timestamp) * clock.Clk90k, -1, 30000, 1001, false, 0)
 
 			// HACK: Cannot identify field and frame right now, so we skip the case for same timecode
 			if ir.stat.prevTimecode != tc && nextTc != tc {

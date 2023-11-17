@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
-	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
 
 func TestReadPicTiming(t *testing.T) {
@@ -22,7 +22,7 @@ func TestReadPicTiming(t *testing.T) {
 				CountingType: 0,
 				DiscontinuityFlag: false,
 				CntDroppedFlag: false,
-				Tc: commonUtils.TimeCode{
+				Tc: common.TimeCode{
 					Hour: 0,
 					Minute: 5,
 					Second: 28,

@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/utils"
 )
 
 type PARSED_TYPE int
@@ -49,7 +48,7 @@ const (
 type VideoDataStruct struct {
 	Dts      int
 	Pts      int
-	TimeCode utils.TimeCode
+	TimeCode common.TimeCode
 	Type     FRAME_TYPE
 }
 
@@ -67,7 +66,7 @@ func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
 
 func VideoData() VideoDataStruct {
 	return VideoDataStruct{
-		TimeCode: utils.TimeCode{Frame: -1},
+		TimeCode: common.NewTimeCode(),
 		Type: UNKNOWN_SLICE,
 	}
 }

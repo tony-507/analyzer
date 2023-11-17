@@ -1,8 +1,8 @@
 package h264
 
 import (
+	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
-	"github.com/tony-507/analyzers/src/utils"
 )
 
 type PicTiming struct{
@@ -15,7 +15,7 @@ type PicClock struct {
 	CountingType int
 	DiscontinuityFlag bool
 	CntDroppedFlag bool
-	Tc utils.TimeCode
+	Tc common.TimeCode
 }
 
 func ParsePicTiming(r *io.BsReader, sequenceParameterSet SequenceParameterSet) PicTiming {
@@ -95,7 +95,7 @@ func ParsePicTiming(r *io.BsReader, sequenceParameterSet SequenceParameterSet) P
 						}
 					}
 				}
-				picClock.Tc = utils.TimeCode{
+				picClock.Tc = common.TimeCode{
 					Hour: hours,
 					Minute: minutes,
 					Second: seconds,
