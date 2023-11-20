@@ -1,6 +1,6 @@
 {
 	"source": "ASCENT.TS",
-	"app": ["tsa"],
+	"app": ["tsa", "editCap"],
 	"expected": {
 		"tsa": {
 			"json": ["0_0", "258_0"],
@@ -11,6 +11,10 @@
 					"md5sum": "1a38d99310c3e190dac56f92318f0369"
 				}
 			]
+		},
+		"editCap": {
+			"fname": "rawBuffer",
+			"size": 9400
 		}
 	}
 }
