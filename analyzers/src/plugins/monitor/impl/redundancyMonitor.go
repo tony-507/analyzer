@@ -9,14 +9,16 @@ import (
 var _MONITOR_QUEUE_SIZE = 10
 
 type redundancyMonitor struct {
-	dataQueues map[string][]*common.MediaUnit
+	inputIds   []string
+	dataQueues [][]*common.MediaUnit
 	timeReference redundancyTimeRef
 }
 
 func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 	// Ensure input id is added to the map
 	if !rm.HasInputId(inputId) {
-		rm.dataQueues[inputId] = make([]*common.MediaUnit, _MONITOR_QUEUE_SIZE)
+		rm.inputIds = append(rm.inputIds, inputId)
+		rm.dataQueues = append(rm.dataQueues, make([]*common.MediaUnit, _MONITOR_QUEUE_SIZE))
 	}
 	vUnit, ok := unit.(*common.MediaUnit)
 	if !ok {
@@ -27,10 +29,11 @@ func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
 		return
 	}
 
-	if len(rm.dataQueues[inputId]) == _MONITOR_QUEUE_SIZE {
-		rm.dataQueues[inputId] = append(rm.dataQueues[inputId][1:], vUnit)
+	idx := rm.getIdIndex(inputId)
+	if len(rm.dataQueues[idx]) == _MONITOR_QUEUE_SIZE {
+		rm.dataQueues[idx] = append(rm.dataQueues[idx][1:], vUnit)
 	} else {
-		rm.dataQueues[inputId] = append(rm.dataQueues[inputId], vUnit)
+		rm.dataQueues[idx] = append(rm.dataQueues[idx], vUnit)
 	}
 }
 
@@ -43,8 +46,7 @@ func (rm *redundancyMonitor) GetFields() []string {
 }
 
 func (rm *redundancyMonitor) HasInputId(inputId string) bool {
-	_, hasKey := rm.dataQueues[inputId]
-	return hasKey
+	return rm.getIdIndex(inputId) != -1
 }
 
 func (rm *redundancyMonitor) GetDisplayData() []string {
@@ -82,9 +84,19 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 	return res
 }
 
+func (rm *redundancyMonitor) getIdIndex(inputId string) int {
+	for i, id := range rm.inputIds {
+		if id == inputId {
+			return i
+		}
+	}
+	return -1
+}
+
 func GetRedundancyMonitor(param *RedundancyParam) MonitorImpl {
 	return &redundancyMonitor{
-		dataQueues: map[string][]*common.MediaUnit{},
+		inputIds:      []string{},
+		dataQueues:    [][]*common.MediaUnit{},
 		timeReference: param.TimeRef,
 	}
 }
