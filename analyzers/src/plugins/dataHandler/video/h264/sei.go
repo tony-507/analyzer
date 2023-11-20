@@ -5,6 +5,12 @@ import (
 	"github.com/tony-507/analyzers/src/common/io"
 )
 
+type Sei struct {
+	PayloadType int
+	PayloadSize int
+	Buffer      []byte
+}
+
 type PicTiming struct{
 	PicStructPresentFlag bool
 	Clocks []PicClock

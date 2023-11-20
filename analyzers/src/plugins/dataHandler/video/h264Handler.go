@@ -61,7 +61,7 @@ func (h *h264Handler) readNalUnit(r *io.BsReader, data *utils.VideoDataStruct) {
 
 func (h *h264Handler) readSEI(rbsp []byte, data *utils.VideoDataStruct) {
 	r := io.GetBufferReader(rbsp)
-	// Last byte is rbsp_trailing_bits
+	seiMsgs := []h264.Sei{}
 	for len(r.GetRemainedBuffer()) > 1 {
 		payloadType := 0
 		payloadSize := 0
@@ -77,19 +77,29 @@ func (h *h264Handler) readSEI(rbsp []byte, data *utils.VideoDataStruct) {
 			payloadSize += 255
 		}
 		payloadSize += r.ReadBits(8)
+		sei := h264.Sei{
+			PayloadType: payloadType,
+			PayloadSize: payloadSize,
+			Buffer: r.GetRemainedBuffer()[:payloadSize],
+		}
+		seiMsgs = append(seiMsgs, sei)
+		r.ReadBits(payloadSize * 8)
+		if r.PeekBits(1) == 1 {
+			r.ReadBits(1)
+			for len(r.GetRemainedBuffer()) > 0 && r.PeekBits(1) == 0 {
+				r.ReadBits(1)
+			}
+		}
+	}
 
-		switch payloadType {
+	for _, sei := range seiMsgs {
+		switch sei.PayloadType {
 		case 1:
-			picTiming := h264.ParsePicTiming(&r, h.sqp)
+			reader := io.GetBufferReader(sei.Buffer)
+			picTiming := h264.ParsePicTiming(&reader, h.sqp)
 			for _, clock := range picTiming.Clocks {
 				data.TimeCode = clock.Tc
 			}
-		default:
-			r.ReadBits(payloadSize * 8)
-		}
-
-		if r.GetOffset() != 8 {
-			r.ReadBits(r.GetOffset())
 		}
 	}
 }
