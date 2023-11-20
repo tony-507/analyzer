@@ -25,7 +25,14 @@ type PicClock struct {
 }
 
 func ParsePicTiming(r *io.BsReader, sequenceParameterSet SequenceParameterSet) PicTiming {
-	picTiming := PicTiming{}
+	// HACK: Assume non-empty pic_timing must have full timecode
+	picTiming := PicTiming{
+		PicStructPresentFlag: false,
+		Clocks: []PicClock{},
+	}
+	if len(r.GetRemainedBuffer()) < 5 {
+		return picTiming
+	}
 	cpbDpbDelaysPresentFlag := false
 	if sequenceParameterSet.Vui.BPresent {
 		if sequenceParameterSet.Vui.NalHrdParametersPresentFlag {

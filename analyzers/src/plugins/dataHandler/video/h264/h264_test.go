@@ -37,6 +37,13 @@ func TestReadPicTiming(t *testing.T) {
 	assert.Equal(t, r.GetPos(), 8)
 }
 
+func TestPicTimingBug(t *testing.T) {
+	// Bug automation: Handling of empty pic_timing
+	r := io.GetBufferReader([]byte{0x00, 0x12, 0x80, 0x01})
+	picTiming := ParsePicTiming(&r, CreateSequenceParameterSet())
+	assert.Equal(t, false, picTiming.PicStructPresentFlag)
+}
+
 func TestReadSliceHeader(t *testing.T) {
 	rbsp := []byte{0x9e, 0x0e, 0x9f}
 	r := io.GetBufferReader(rbsp)
