@@ -118,34 +118,13 @@ func (w *Worker) onRequestReceived(name string, reqType common.WORKER_REQUEST, o
 
 // Depth-first search
 func (w *Worker) searchNode(name string, curPos *graphNode) *graphNode {
-	var rv *graphNode
-
-	if curPos == nil {
-		// Start searching
-		for _, root := range w.nodes {
-			rv = w.searchNode(name, root)
-			if rv != nil {
-				return rv
-			}
-		}
-		return nil
-	}
-
-	if name == curPos.name() {
-		return curPos
-	}
-	if len(curPos.children) == 0 {
-		return nil
-	}
-
-	// Recursive search
-	for _, child := range curPos.children {
-		rv = w.searchNode(name, child)
-		if rv != nil {
-			return rv
+	var node *graphNode = nil
+	for _, pg := range w.nodes {
+		if pg.name() == name {
+			node = pg
 		}
 	}
-	return nil
+	return node
 }
 
 func (w *Worker) handleRequests() {
@@ -203,6 +182,9 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 
 	// Check which node this plugin corresponds to
 	node := w.searchNode(name, nil)
+	if node == nil {
+		w.logger.Error("Received POST request from unknown node %s", name)
+	}
 
 	switch reqType {
 	case common.FETCH_REQUEST:
@@ -226,6 +208,9 @@ func (w *Worker) postStatus(unit common.CmUnit) {
 		if arr, hasKey := w.statusStore[id]; hasKey {
 			for _, name := range arr {
 				node := w.searchNode(name, nil)
+				if node == nil {
+					w.logger.Error("Fail to deliver status to unknown node %s", name)
+				}
 				w.logger.Info("Deliver a status to %s", node.name())
 				node.deliverStatus(unit)
 			}
