@@ -100,7 +100,7 @@ func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 		clk := m_pMux.control.updateSrcClk(progNum)
 
 		if curCnt, ok := common.GetBufFieldAsInt(cmBuf, "pktCnt"); ok {
-			pid, _ := rv.GetField("id").(int)
+			pid, _ := common.GetBufFieldAsInt(cmBuf, "pid")
 			pcr, _ := clk.requestPcr(pid, curCnt)
 			cmBuf.SetField("pcr", pcr, false)
 			if dts, ok := common.GetBufFieldAsInt(cmBuf, "dts"); ok {

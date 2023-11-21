@@ -63,7 +63,7 @@ func (dp *dummyPlugin) DeliverStatus(unit common.CmUnit) {}
 
 func (dp *dummyPlugin) FetchUnit() common.CmUnit {
 	val := dp.inCnt * 10 + dp.fetchCnt
-	rv := common.MakeIOUnit(common.MakeSimpleBuf([]byte{byte(val)}), 0, -1)
+	rv := common.NewMediaUnit(common.MakeSimpleBuf([]byte{byte(val)}), common.UNKNOWN_UNIT)
 	dp.logger.Info("fetchUnit called with data %d", val)
 	dp.fetchCnt += 1
 	return rv

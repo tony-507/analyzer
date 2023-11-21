@@ -137,7 +137,6 @@ func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
 
 func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
-	newUnit := common.IOUnit{}
 	res, ok := ir.impl.DataAvailable()
 	if ir.param.maxInCnt != 0 && ok {
 		if !res.IsEmpty {
@@ -146,12 +145,10 @@ func (ir *inputReaderPlugin) start() {
 
 			ir.processMetadata(&res)
 
-			newUnit.IoType = 3
-			newUnit.Id = -1
 			cmBuf := common.MakeSimpleBuf(res.GetBuffer())
-			newUnit.Buf = cmBuf
+			newUnit := common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
 
-			ir.outputQueue = append(ir.outputQueue, &newUnit)
+			ir.outputQueue = append(ir.outputQueue, newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
 			tttKernel.Post_request(ir.callback, ir.name, reqUnit)
 		}

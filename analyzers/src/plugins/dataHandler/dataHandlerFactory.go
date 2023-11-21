@@ -70,7 +70,7 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId stri
 
 	// Extract buffer from input unit
 	cmBuf := unit.GetBuf()
-	pid, isPidInt := unit.GetField("id").(int)
+	pid, isPidInt := common.GetBufFieldAsInt(cmBuf, "pid")
 	if !isPidInt {
 		panic("Something wrong with the data")
 	}

@@ -5,7 +5,6 @@ package common
 /*
  * CmUnit:       The basic interface for different units
  * CmStatusUnit: The unit that stores status information
- * IOUnit:       The basic unit containing data from one plugin to another
  * ReqUnit:      The unit that contains requests to worker
  */
 
@@ -50,33 +49,6 @@ func (unit *CmStatusUnit) GetField(name string) interface{} {
 		return unit.id
 	default:
 		panic("Unknown field in statusUnit")
-	}
-}
-
-// ====================     I/O     ====================
-type IOUnit struct {
-	Buf    CmBuf
-	IoType int // input: [UNKNOWN, FILE], output: [UNKNOWN, JSON, CSV]
-	Id     int // Specify a receiver. If not -1, this is the name of receiver, else hardcoded for now
-}
-
-func MakeIOUnit(buf CmBuf, ioType int, id int) *IOUnit {
-	rv := IOUnit{Buf: buf, IoType: ioType, Id: id}
-	return &rv
-}
-
-func (unit *IOUnit) GetBuf() CmBuf {
-	return unit.Buf
-}
-
-func (unit *IOUnit) GetField(name string) interface{} {
-	switch name {
-	case "type":
-		return unit.IoType
-	case "id":
-		return unit.Id
-	default:
-		panic("Unknown field in IO unit")
 	}
 }
 

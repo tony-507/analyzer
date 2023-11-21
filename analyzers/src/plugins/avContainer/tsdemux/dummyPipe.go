@@ -17,7 +17,7 @@ func (dp *dummyPipe) processUnit(buf []byte, pktCnt int) error {
 	if dp.inCnt > 1 {
 		dp.ready = true
 	}
-	dummy := common.MakeIOUnit(common.MakeSimpleBuf(buf), 3, -1)
+	dummy := common.NewMediaUnit(common.MakeSimpleBuf(buf), common.UNKNOWN_UNIT)
 	if dp.ready {
 		dp.outputQueue = append(dp.outputQueue, dummy)
 		dp.callback.outputReady()

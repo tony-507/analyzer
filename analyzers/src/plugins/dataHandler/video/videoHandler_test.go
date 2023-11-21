@@ -27,7 +27,7 @@ func TestReadMultipleNal(t *testing.T) {
 		sqp: h264.CreateSequenceParameterSet(),
 	}
 	cmBuf := common.MakeSimpleBuf(data)
-	unit := common.MakeIOUnit(cmBuf, 0, 0)
+	unit := common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
 	newData := utils.CreateParsedData()
 	handle.Feed(unit, &newData)
 

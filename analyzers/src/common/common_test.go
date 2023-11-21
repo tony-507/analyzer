@@ -29,16 +29,16 @@ func TestSimpleBufOverwriteField(t *testing.T) {
 	assert.Equal(t, 10, v2, "Field should be 10")
 }
 
-func TestIOUnitWithSimpleBuf(t *testing.T) {
+func TestMediaUnitWithSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
 	buffer := MakeSimpleBuf(buf)
 
 	buffer.SetField("dummy2", 50, true)
 
-	unit := MakeIOUnit(buffer, -1, -1)
+	unit := NewMediaUnit(buffer, UNKNOWN_UNIT)
 
-	// Test if *IOUnit implements CmUnit
-	var _ CmUnit = (*IOUnit)(unit)
+	// Test if *MediaUnit implements CmUnit
+	var _ CmUnit = (*MediaUnit)(unit)
 
 	extractedBuffer := unit.GetBuf()
 
