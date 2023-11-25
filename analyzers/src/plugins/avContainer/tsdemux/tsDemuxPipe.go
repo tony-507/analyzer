@@ -110,7 +110,8 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 		// Null packets
 	default:
 		if pid < 32 {
-			// Special pids
+			// Not handled, just record it
+			m_pMux.control.dataParsed(pid)
 			return nil
 		}
 		hasKey := false
