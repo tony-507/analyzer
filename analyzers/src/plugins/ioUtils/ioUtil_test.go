@@ -7,9 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
+	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
 
 func TestReaderSetParameter(t *testing.T) {
@@ -68,7 +67,7 @@ func TestTsParser(t *testing.T) {
 			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
 		}
 	}
-	resList := parser.Parse(&def.ParseResult{Buffer: data})
+	resList := parser.Parse(&protocol.ParseResult{Buffer: data})
 	for idx, res := range(resList) {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}
@@ -79,7 +78,7 @@ func TestRtpParser(t *testing.T) {
 		0x80, 0x60, 0xf2, 0xf6, 0xe4, 0x1a, 0xf0, 0x29, 0xab, 0xcd, 0xab, 0xcd,
 		0x01, 0x02, 0x03, 0x04, 0x05,
 	}
-	resList := protocol.ParseWithParsers([]def.IParser{protocol.GetParser(def.PROT_RTP)}, &def.ParseResult{Buffer: data})
+	resList := protocol.ParseWithParsers([]protocol.IParser{protocol.GetParser(protocol.PROT_RTP)}, &protocol.ParseResult{Buffer: data})
 	assert.Equal(t, 1, len(resList))
 
 	res := resList[0]
@@ -95,7 +94,7 @@ func TestParseWithParsers(t *testing.T) {
 			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
 		}
 	}
-	resList := protocol.ParseWithParsers([]def.IParser{protocol.GetParser(def.PROT_TS), protocol.GetParser(def.PROT_TS)}, &def.ParseResult{Buffer: data})
+	resList := protocol.ParseWithParsers([]protocol.IParser{protocol.GetParser(protocol.PROT_TS), protocol.GetParser(protocol.PROT_TS)}, &protocol.ParseResult{Buffer: data})
 	for idx, res := range(resList) {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}

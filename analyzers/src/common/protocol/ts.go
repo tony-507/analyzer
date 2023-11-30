@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"github.com/tony-507/analyzers/src/common/logging"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 const (
@@ -14,13 +13,13 @@ type TsProtocolParser struct {
 	count    int
 }
 
-func (ts *TsProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
+func (ts *TsProtocolParser) Parse(data *ParseResult) []ParseResult {
 	rawBuf := data.GetBuffer()
-	res := []def.ParseResult{}
+	res := []ParseResult{}
 	nPackets := len(rawBuf) / TS_PKT_SIZE
 	for i := 0; i < nPackets; i++ {
 		res = append(res,
-			def.ParseResult{
+			ParseResult{
 				Buffer: rawBuf[(i * TS_PKT_SIZE):((i + 1) * TS_PKT_SIZE)],
 			},
 		)
@@ -28,6 +27,6 @@ func (ts *TsProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 	return res
 }
 
-func TsParser() def.IParser {
+func TsParser() IParser {
 	return &TsProtocolParser{logger: logging.CreateLogger("TsParser")}
 }

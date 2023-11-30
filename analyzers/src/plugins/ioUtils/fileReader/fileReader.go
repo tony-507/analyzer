@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 )
 
 type fileHandler interface {
@@ -27,7 +27,7 @@ type FileReaderStruct struct {
 	fname       string
 	fHandle     *os.File
 	config      def.IReaderConfig
-	bufferQueue []def.ParseResult
+	bufferQueue []protocol.ParseResult
 	running     bool
 	mtx         sync.Mutex
 	wg          sync.WaitGroup
@@ -74,7 +74,7 @@ func (fr *FileReaderStruct) worker() {
 			break
 		}
 		fr.mtx.Lock()
-		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Parsers, &def.ParseResult{Buffer: buf})...)
+		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Parsers, &protocol.ParseResult{Buffer: buf})...)
 		fr.mtx.Unlock()
 	}
 
@@ -88,7 +88,7 @@ func (fr *FileReaderStruct) StopRecv() error {
 	return fr.fHandle.Close()
 }
 
-func (fr *FileReaderStruct) DataAvailable() (def.ParseResult, bool) {
+func (fr *FileReaderStruct) DataAvailable() (protocol.ParseResult, bool) {
 	fr.mtx.Lock()
 	defer fr.mtx.Unlock()
 	if len(fr.bufferQueue) > 0 {
@@ -96,13 +96,13 @@ func (fr *FileReaderStruct) DataAvailable() (def.ParseResult, bool) {
 		if len(fr.bufferQueue) > 1 {
 			fr.bufferQueue = fr.bufferQueue[1:]
 		} else {
-			fr.bufferQueue = []def.ParseResult{}
+			fr.bufferQueue = []protocol.ParseResult{}
 		}
 		return buf, true
 	} else if fr.running {
-		return def.EmptyResult(), true
+		return protocol.EmptyResult(), true
 	}
-	return def.ParseResult{}, false
+	return protocol.ParseResult{}, false
 }
 
 func FileReader(name string, fname string) def.IReader {
@@ -110,7 +110,7 @@ func FileReader(name string, fname string) def.IReader {
 		logger: logging.CreateLogger(name),
 		fname: fname,
 		config: def.IReaderConfig{},
-		bufferQueue: []def.ParseResult{},
+		bufferQueue: []protocol.ParseResult{},
 	}
 	return rv
 }

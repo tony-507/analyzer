@@ -3,21 +3,20 @@ package protocol
 import (
 	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/common/logging"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
 type RtpProtocolParser struct {
 	logger logging.Log
 }
 
-func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
+func (rtp *RtpProtocolParser) Parse(data *ParseResult) []ParseResult {
 	rawBuf := data.GetBuffer()
-	res := make([]def.ParseResult, 1)
+	res := make([]ParseResult, 1)
 	fields := make(map[string]int64)
 
 	r := io.GetBufferReader(rawBuf)
 	// RTP header
-	def.AssertIntEqual("version", 2, r.ReadBits(2))
+	AssertIntEqual("version", 2, r.ReadBits(2))
 	bPad := r.ReadBits(1) != 0
 	bExtension := r.ReadBits(1) != 0
 	csrcCount := r.ReadBits(4)
@@ -40,7 +39,7 @@ func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 	if bPad {
 		nPad = int(remainedBuf[len(remainedBuf) - 1])
 	}
-	res[0] = def.ParseResult{
+	res[0] = ParseResult{
 		Buffer: remainedBuf[:(len(remainedBuf) - nPad)],
 		Fields: fields,
 	}
@@ -48,7 +47,7 @@ func (rtp *RtpProtocolParser) Parse(data *def.ParseResult) []def.ParseResult {
 	return res
 }
 
-func RtpParser() def.IParser {
+func RtpParser() IParser {
 	return &RtpProtocolParser{
 		logger: logging.CreateLogger("RTP"),
 	}

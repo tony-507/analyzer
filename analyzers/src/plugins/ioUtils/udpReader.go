@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 	"golang.org/x/net/ipv4"
 )
 
@@ -127,7 +127,7 @@ type udpReaderStruct struct {
 	itf         string
 	timeout     int
 	conn        *sockConn
-	bufferQueue []def.ParseResult
+	bufferQueue []protocol.ParseResult
 	udpCount    int
 	config      def.IReaderConfig
 }
@@ -145,7 +145,7 @@ func (ur *udpReaderStruct) StopRecv() error {
 	return ur.conn.close()
 }
 
-func (ur *udpReaderStruct) DataAvailable() (def.ParseResult, bool) {
+func (ur *udpReaderStruct) DataAvailable() (protocol.ParseResult, bool) {
 	if len(ur.bufferQueue) <= 1 {
 		udpBuf, err := ur.conn.read()
 
@@ -159,7 +159,7 @@ func (ur *udpReaderStruct) DataAvailable() (def.ParseResult, bool) {
 
 		ur.udpCount += 1
 
-		ur.bufferQueue = append(ur.bufferQueue, protocol.ParseWithParsers(ur.config.Parsers, &def.ParseResult{Buffer: udpBuf})...)
+		ur.bufferQueue = append(ur.bufferQueue, protocol.ParseWithParsers(ur.config.Parsers, &protocol.ParseResult{Buffer: udpBuf})...)
 	}
 
 	buf := ur.bufferQueue[0]
@@ -174,7 +174,7 @@ func udpReader(param *udpInputParam, name string) def.IReader {
 	rv.udpCount = 0
 
 	rv.logger = logging.CreateLogger(name)
-	rv.bufferQueue = make([]def.ParseResult, 0)
+	rv.bufferQueue = make([]protocol.ParseResult, 0)
 
 	tmp := strings.Split(param.Address, ":")
 	rv.address = tmp[0]

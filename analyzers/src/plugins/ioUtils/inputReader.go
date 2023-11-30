@@ -9,9 +9,9 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/clock"
 	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
-	"github.com/tony-507/analyzers/src/plugins/ioUtils/protocol"
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/utils"
 )
@@ -37,7 +37,7 @@ type inputReaderPlugin struct {
 	outputQueue  []common.CmUnit
 	stat         inputStat
 	param        inputParam
-	parsers      []def.IParser
+	parsers      []protocol.IParser
 	rawDataFile  *os.File
 }
 
@@ -112,7 +112,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 
 	if (param.Protocols != "") {
 		for _, prot := range strings.Split(param.Protocols, ",") {
-			ir.parsers = append(ir.parsers, protocol.GetParser(def.StringToProtocol(prot)))
+			ir.parsers = append(ir.parsers, protocol.GetParser(protocol.StringToProtocol(prot)))
 		}
 	}
 
@@ -159,7 +159,7 @@ func (ir *inputReaderPlugin) start() {
 	}
 }
 
-func (ir *inputReaderPlugin) processMetadata(res *def.ParseResult) {
+func (ir *inputReaderPlugin) processMetadata(res *protocol.ParseResult) {
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
 			nextTc := utils.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)

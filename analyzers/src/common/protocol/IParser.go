@@ -1,9 +1,31 @@
-package def
+package protocol
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type IParser interface {
 	Parse(*ParseResult) []ParseResult // Parse given data
+}
+
+type PROTOCOL int
+
+const (
+	PROT_UNKNOWN PROTOCOL = 0
+	PROT_TS      PROTOCOL = 1
+	PROT_RTP     PROTOCOL = 2
+)
+
+func StringToProtocol(prot_name string) PROTOCOL {
+	switch strings.ToLower(prot_name) {
+	case "ts":
+		return PROT_TS
+	case "rtp":
+		return PROT_RTP
+	default:
+		return PROT_UNKNOWN
+	}
 }
 
 type ParseResult struct {

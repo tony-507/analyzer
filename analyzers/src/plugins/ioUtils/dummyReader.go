@@ -1,6 +1,7 @@
 package ioUtils
 
 import (
+	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
@@ -20,10 +21,10 @@ func (dr *dummyReader) StopRecv() error {
 	return nil
 }
 
-func (dr *dummyReader) DataAvailable() (def.ParseResult, bool) {
+func (dr *dummyReader) DataAvailable() (protocol.ParseResult, bool) {
 	dr.readCnt += 1
 	if dr.readCnt > 5 {
-		return def.ParseResult{}, false
+		return protocol.ParseResult{}, false
 	}
-	return def.EmptyResult(), true
+	return protocol.EmptyResult(), true
 }
