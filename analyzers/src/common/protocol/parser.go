@@ -5,6 +5,10 @@ import (
 )
 
 func ParseWithParsers(parsers []IParser, lastRes *ParseResult) []ParseResult {
+	if len(parsers) == 0 {
+		return []ParseResult{*lastRes}
+	}
+
 	if len(parsers) == 1 {
 		return parsers[0].Parse(lastRes)
 	}
