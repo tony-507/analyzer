@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/tony-507/analyzers/src/plugins/avContainer/tsdemux"
+	"github.com/tony-507/analyzers/src/plugins/baseband"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils"
 	"github.com/tony-507/analyzers/src/plugins/monitor"
@@ -20,6 +21,8 @@ func selectPlugin(inputName string) tttKernel.IPlugin {
 		return ioUtils.InputReader(inputName)
 	case "TsDemuxer":
 		return tsdemux.TsDemuxer(inputName)
+	case "BasebandProcessor":
+		return baseband.BasebandProcessor(inputName)
 	case "DataHandler":
 		return dataHandler.DataHandlerFactory(inputName)
 	case "OutputMonitor":

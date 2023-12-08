@@ -1,20 +1,60 @@
 // Read RTP timestamp of ST-2110-20 stream
 
-input = #InputReader_1;
+bb = #BasebandProcessor_1;
 
-alias(file, f);
-
-if $f;
+if $f1;
+    input = #InputReader_1;
+    input.SkipCnt = $skipCnt | 0;
+    input.MaxInCnt = $maxInCnt | 0;
     input.Source = _SOURCE_FILE;
-    input.FileInput.Fname = $f;
+    input.FileInput.Fname = $f1;
+    link(input, bb);
 end;
 
-if $addr;
+if $addr1;
+    input = #InputReader_1;
+    input.SkipCnt = $skipCnt | 0;
+    input.MaxInCnt = $maxInCnt | 0;
     input.Source = _SOURCE_UDP;
-    input.UdpInput.Address = $addr;
+    input.UdpInput.Address = $addr1;
     input.UdpInput.Itf = $itf;
+    link(input, bb);
 end;
 
-input.SkipCnt = $skipCnt | 0;
-input.MaxInCnt = $maxInCnt | 0;
-input.Protocols = RTP;
+if $f2;
+    input2 = #InputReader_2;
+    input2.SkipCnt = $skipCnt | 0;
+    input2.MaxInCnt = $maxInCnt | 0;
+    input2.Source = _SOURCE_FILE;
+    input2.FileInput.Fname = $f2;
+    link(input2, bb);
+end;
+
+if $addr2;
+    input2 = #InputReader_2;
+    input2.SkipCnt = $skipCnt | 0;
+    input2.MaxInCnt = $maxInCnt | 0;
+    input2.Source = _SOURCE_UDP;
+    input2.UdpInput.Address = $addr2;
+    input2.UdpInput.Itf = $itf;
+    link(input2, bb);
+end;
+
+if $f3;
+    input3 = #InputReader_3;
+    input3.SkipCnt = $skipCnt | 0;
+    input3.MaxInCnt = $maxInCnt | 0;
+    input3.Source = _SOURCE_FILE;
+    input3.FileInput.Fname = $f3;
+    link(input3, bb);
+end;
+
+if $addr3;
+    input3 = #InputReader_3;
+    input3.SkipCnt = $skipCnt | 0;
+    input3.MaxInCnt = $maxInCnt | 0;
+    input3.Source = _SOURCE_UDP;
+    input3.UdpInput.Address = $addr3;
+    input3.UdpInput.Itf = $itf;
+    link(input3, bb);
+end;
