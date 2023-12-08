@@ -28,6 +28,10 @@ func (bf *binaryData) getBuffer() ([]byte, error) {
 	return buf, nil
 }
 
+func (bf *binaryData) tick() (int64, bool) {
+	return 0, false
+}
+
 func binaryDataFile(fHandle *os.File) fileHandler {
 	return &binaryData{
 		fHandle: fHandle,

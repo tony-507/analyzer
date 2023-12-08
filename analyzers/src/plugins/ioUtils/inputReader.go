@@ -143,10 +143,10 @@ func (ir *inputReaderPlugin) start() {
 			ir.stat.outCnt += 1
 			ir.param.maxInCnt -= 1
 
-			ir.processMetadata(&res)
-
 			cmBuf := common.MakeSimpleBuf(res.GetBuffer())
 			newUnit := common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
+
+			ir.processMetadata(cmBuf, &res)
 
 			ir.outputQueue = append(ir.outputQueue, newUnit)
 			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
@@ -159,7 +159,11 @@ func (ir *inputReaderPlugin) start() {
 	}
 }
 
-func (ir *inputReaderPlugin) processMetadata(res *protocol.ParseResult) {
+func (ir *inputReaderPlugin) processMetadata(cmBuf common.CmBuf, res *protocol.ParseResult) {
+	if realtime, ok := res.GetField("realtimeInUs"); ok {
+		cmBuf.SetField("realtimeInUs", realtime, false)
+	}
+
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
 			nextTc := utils.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)

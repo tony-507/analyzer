@@ -167,6 +167,7 @@ type pcapFileStruct struct {
 	pktCnt        int
 	bufferQueue   [][]byte
 	bInit         bool
+	lastPktTime   int64
 }
 
 func (pcap *pcapFileStruct) close() {
@@ -224,6 +225,8 @@ func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 		pcapPkt := pcapPacket(pcap.isBigEndian)
 		pcapPkt.parseHeader(buf, pcap.logger)
 
+		pcap.lastPktTime = int64(pcapPkt.sec) * 1000000 + int64(pcapPkt.msec)
+
 		body, _ := pcap.advanceCursor(pcapPkt.length)
 		if len(body) == 0 {
 			return body, nil
@@ -266,6 +269,10 @@ func (pcap *pcapFileStruct) getBuffer() ([]byte, error) {
 	}
 }
 
+func (pcap *pcapFileStruct) tick() (int64, bool) {
+	return pcap.lastPktTime, true
+}
+
 // Try to read n bytes. If fail, return false
 func (pcap *pcapFileStruct) advanceCursor(n int) ([]byte, error) {
 	ok := true
@@ -297,6 +304,7 @@ func pcapFile(handle *os.File, logger logging.Log) fileHandler {
 	rv.bufferQueue = make([][]byte, 0)
 	rv.logger = logger
 	rv.bInit = false
+	rv.lastPktTime = 0
 
 	return &rv
 }

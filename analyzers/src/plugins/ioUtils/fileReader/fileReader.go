@@ -20,6 +20,7 @@ import (
 
 type fileHandler interface {
 	getBuffer() ([]byte, error)
+	tick() (int64, bool)
 }
 
 type FileReaderStruct struct {
@@ -73,8 +74,19 @@ func (fr *FileReaderStruct) worker() {
 			fr.logger.Info("No more buffer from file")
 			break
 		}
+
+		results := protocol.ParseWithParsers(fr.config.Parsers, &protocol.ParseResult{Buffer: buf})
+		if realtime, ok := handler.tick(); ok {
+			for i := range results {
+				if results[i].Fields == nil {
+					results[i].Fields = map[string]int64{}
+				}
+				results[i].Fields["realtimeInUs"] = realtime
+			}
+		}
+
 		fr.mtx.Lock()
-		fr.bufferQueue = append(fr.bufferQueue, protocol.ParseWithParsers(fr.config.Parsers, &protocol.ParseResult{Buffer: buf})...)
+		fr.bufferQueue = append(fr.bufferQueue, results...)
 		fr.mtx.Unlock()
 	}
 
