@@ -10,3 +10,15 @@ const (
 	Hour           = 60 * Minute
 	Day            = 24 * Hour
 )
+
+func (clk *MpegClk) Seconds() int64 {
+	return int64(*clk) / 27000000
+}
+
+func (clk *MpegClk) Millisecond() int64 {
+	return int64(*clk) / 27000
+}
+
+func (clk *MpegClk) NanoSecond() int64 {
+	return int64(*clk) / 27
+}
