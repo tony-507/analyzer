@@ -58,9 +58,13 @@ func (d * VideoDataStruct) GetType() PARSED_TYPE {
 
 func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
 	cmBuf := common.MakeSimpleBuf([]byte{})
-	cmBuf.SetField("type", strconv.Itoa(int(d.Type)), false)
+	if d.Type != UNKNOWN_SLICE {
+		cmBuf.SetField("type", strconv.Itoa(int(d.Type)), false)
+	}
 	cmBuf.SetField("pts", d.Pts, false)
-	cmBuf.SetField("timecode", d.TimeCode.ToString(), false)
+	if !d.TimeCode.IsEmpty() {
+		cmBuf.SetField("timecode", d.TimeCode.ToString(), false)
+	}
 	return cmBuf
 }
 
