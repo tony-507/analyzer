@@ -6,8 +6,9 @@ import "fmt"
 
 // Video
 type videoMetaData struct {
-	Tc   TimeCode
-	Type FRAME_TYPE
+	Tc        TimeCode
+	Type      FRAME_TYPE
+	FrameRate _FRAME_RATE
 }
 
 func NewVideoData() *videoMetaData {
@@ -51,6 +52,18 @@ const (
 	P_SLICE       FRAME_TYPE = 2
 	B_SLICE       FRAME_TYPE = 3
 )
+
+type _FRAME_RATE struct {
+	den int
+	num int
+}
+
+func FrameRate(den int, num int) _FRAME_RATE {
+	return _FRAME_RATE{
+		den: den,
+		num: num,
+	}
+}
 
 // Buffer
 
