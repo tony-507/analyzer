@@ -9,6 +9,7 @@ type videoMetaData struct {
 	Tc        TimeCode
 	Type      FRAME_TYPE
 	FrameRate _FRAME_RATE
+	PicFlag   _PIC_FLAG
 }
 
 func NewVideoData() *videoMetaData {
@@ -54,16 +55,24 @@ const (
 )
 
 type _FRAME_RATE struct {
-	den int
 	num int
+	den int
 }
 
-func FrameRate(den int, num int) _FRAME_RATE {
+func FrameRate(num int, den int) _FRAME_RATE {
 	return _FRAME_RATE{
-		den: den,
 		num: num,
+		den: den,
 	}
 }
+
+type _PIC_FLAG int
+
+const (
+	FRAME        _PIC_FLAG = 0
+	TOP_FIELD    _PIC_FLAG = 1
+	BOTTOM_FIELD _PIC_FLAG = 2
+)
 
 // Buffer
 
