@@ -77,7 +77,7 @@ func (s *scte35Struct) setBuffer(inBuf []byte) error {
 }
 
 func (s *scte35Struct) Process() error {
-	schema := &Scte35Schema{}
+	schema := s.schema
 	r := io.GetBufferReader(s.payload)
 
 	if r.ReadBits(8) != 0 {
