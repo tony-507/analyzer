@@ -127,7 +127,7 @@ func readSpliceEvent(r *io.BsReader, isSpliceInsert bool) Splice_event {
 
 		if bOnlyTime {
 			spliceTime = readSpliceTime(r, isSpliceInsert)
-		} else {
+		} else if !programSpliceFlag {
 			componentCnt := (*r).ReadBits(8)
 			for i := 0; i < componentCnt; i++ {
 				tag := (*r).ReadBits(8)
