@@ -22,9 +22,8 @@ def get_preroll(scte35_fname: str, video_fname: str) -> float:
         pkt_cnt = scte35["PktCnt"]
         if "SpliceCmd" in scte35:
             splice_time = scte35["SpliceCmd"]["SpliceTime"]
-
-    if splice_time == -1:
-        raise Exception(f"Splice time not found in {scte35_fname}")
+        else:
+            raise Exception(f"Splice time not found in {scte35_fname}")
     
     v_info = pd.read_csv(video_fname)
 
@@ -35,7 +34,11 @@ def get_preroll(scte35_fname: str, video_fname: str) -> float:
     slope = (sup_pes_pkt["pcr"] - inf_pes_pkt["pcr"]) / (sup_pes_pkt["pktCnt"] - inf_pes_pkt["pktCnt"])
     pkt_pcr = slope * (pkt_cnt - inf_pes_pkt["pktCnt"]) + inf_pes_pkt["pcr"]
 
-    idr_pcr = float(v_info[v_info["pts"] == splice_time]["pcr"].iloc[0])
+    if splice_time != -1:
+        idr_pcr = float(v_info[v_info["pts"] == splice_time]["pcr"].iloc[0])
+    else:
+        # Immediate
+        idr_pcr = float(sup_pes_pkt["pcr"])
 
     return idr_pcr - pkt_pcr
 
@@ -52,11 +55,15 @@ if __name__ == "__main__":
     for file in os.listdir(out_dir):
         r = re.match(f"{scte35_pid}_(.*)\.json", file)
         if r:
-            scte35_cnt = max(scte35_cnt, int(r.group(1)))
+            # File index starts at 0
+            scte35_cnt = max(scte35_cnt, int(r.group(1)) + 1)
 
     for idx in range(scte35_cnt):
-        preroll = get_preroll(
-            os.path.join(out_dir, f"{scte35_pid}_{idx}.json"),
-            os.path.join(out_dir, f"{video_pid}.csv")
-        )
-        print(f"Preroll for {scte35_pid}_{idx} is {int(preroll / 27000)}ms")
+        try:
+            preroll = get_preroll(
+                os.path.join(out_dir, f"{scte35_pid}_{idx}.json"),
+                os.path.join(out_dir, f"{video_pid}.csv")
+            )
+            print(f"Preroll for {scte35_pid}_{idx} is {int(preroll / 27000)}ms")
+        except:
+            print(f"Fail to get preroll for {scte35_pid}_{idx}")
