@@ -20,7 +20,7 @@ func (rtp *RtpProtocolParser) Parse(data *ParseResult) []ParseResult {
 	bPad := r.ReadBits(1) != 0
 	bExtension := r.ReadBits(1) != 0
 	csrcCount := r.ReadBits(4)
-	r.ReadBits(1) // Marker
+	fields["marker"] = int64(r.ReadBits(1))
 	fields["payloadType"] = int64(r.ReadBits(7))
 	fields["seqNumber"] = int64(r.ReadBits(16))
 	fields["timestamp"] = int64(r.ReadBits(32))
