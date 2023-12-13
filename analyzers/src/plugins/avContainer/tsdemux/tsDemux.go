@@ -2,14 +2,12 @@ package tsdemux
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/utils"
 )
 
 type IDemuxCallback interface {
@@ -20,12 +18,13 @@ type IDemuxPipe interface {
 	getDuration() int
 	getOutputUnit() common.CmUnit
 	processUnit([]byte, int) error
+	start()
+	stop()
 }
 
 type tsDemuxerPlugin struct {
 	logger      logging.Log
 	callback    tttKernel.RequestHandler
-	fileWriters map[string]map[int]utils.FileWriter
 	impl        IDemuxPipe       // Actual demuxing operation
 	control     *demuxController // Controller to handle demuxer internal state
 	isRunning   int              // Counting channels, similar to waitGroup
@@ -68,23 +67,14 @@ func (m_pMux *tsDemuxerPlugin) _setup() {
 }
 
 func (m_pMux *tsDemuxerPlugin) StartSequence() {
-	for _, fileType := range []string{"csv", "pes"} {
-		m_pMux.fileWriters[fileType] = map[int]utils.FileWriter{}
-	}
+	m_pMux.impl.start()
 }
 
 func (m_pMux *tsDemuxerPlugin) EndSequence() {
 	m_pMux.logger.Info("Shutting down handlers")
 	m_pMux.control.stop()
 
-	for fileType, writers := range m_pMux.fileWriters {
-		for pid, writer := range writers {
-			err := writer.Close()
-			if err != nil {
-				m_pMux.logger.Error("Fail to close %s writer for pid %d: %s", fileType, pid, err.Error())
-			}
-		}
-	}
+	m_pMux.impl.stop()
 
 	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
 	tttKernel.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
@@ -92,58 +82,7 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 
 func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
-	errMsg := ""
-
-	cmBuf := rv.GetBuf()
-	if progNum, ok := common.GetBufFieldAsInt(cmBuf, "progNum"); ok {
-		// Stamp PCR here
-		clk := m_pMux.control.updateSrcClk(progNum)
-
-		if curCnt, ok := common.GetBufFieldAsInt(cmBuf, "pktCnt"); ok {
-			pid, _ := common.GetBufFieldAsInt(cmBuf, "pid")
-			pcr, _ := clk.requestPcr(pid, curCnt)
-			cmBuf.SetField("pcr", pcr, false)
-			if dts, ok := common.GetBufFieldAsInt(cmBuf, "dts"); ok {
-				cmBuf.SetField("delay", dts-pcr/300, false)
-			}
-			// Write output
-			for _, fileType := range []string{"csv", "pes"} {
-				shouldWrite := true
-				if _, ok := m_pMux.fileWriters[fileType][pid]; !ok {
-					shouldWrite = false
-					outDir := "output"
-					fname := fmt.Sprintf("%d.%s", pid, fileType)
-					var fWriter utils.FileWriter
-					switch fileType {
-					case "csv":
-						fWriter = utils.CsvWriter(outDir, fname)
-					case "pes":
-						fWriter = utils.RawWriter(outDir, fname)
-					}
-					m_pMux.fileWriters[fileType][pid] = fWriter
-					if err := fWriter.Open(); err != nil {
-						m_pMux.logger.Warn("Fail to open handler for %s: %s", fname, err.Error())
-					} else {
-						shouldWrite = true
-					}
-				}
-				if shouldWrite {
-					m_pMux.fileWriters[fileType][pid].Write(cmBuf)
-				}
-			}
-		} else {
-			errMsg = "Unable to get pktCnt"
-		}
-	} else {
-		errMsg = "Unable to get progNum"
-	}
-
-	if errMsg != "" {
-		tttKernel.Throw_error(m_pMux.callback, m_pMux.name, errors.New(fmt.Sprintf("[TSDemuxerPlugin::FetchUnit] %s.", errMsg)))
-	}
-
 	m_pMux.control.outputUnitFetched()
-
 	return rv
 }
 
@@ -176,7 +115,6 @@ func (m_pMux *tsDemuxerPlugin) outputReady() {
 
 func TsDemuxer(name string) tttKernel.IPlugin {
 	rv := tsDemuxerPlugin{
-		fileWriters: map[string]map[int]utils.FileWriter{},
 		name: name,
 	}
 	return &rv

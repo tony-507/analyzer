@@ -8,6 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
+	"github.com/tony-507/analyzers/src/utils"
 )
 
 type tsDemuxPipe struct {
@@ -16,6 +17,7 @@ type tsDemuxPipe struct {
 	control         *demuxController // Controller from demuxer
 	inputMon        inputMonitor
 	dataStructs     map[int]model.DataStruct
+	fileWriters     map[string]map[int]utils.FileWriter
 	programRecords  map[int]int // PAT
 	streamRecords   map[int]int // Stream pid => stream type
 	streamTree      map[int]int // Stream pid => program number
@@ -33,6 +35,19 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.patVersion = -1
 	m_pMux.pmtVersions = make(map[int]int, 0)
 	m_pMux.scte35SplicePTS = make(map[int][]int, 0)
+}
+
+func (m_pMux *tsDemuxPipe) start() {}
+
+func (m_pMux *tsDemuxPipe) stop() {
+	for fileType, writers := range m_pMux.fileWriters {
+		for pid, writer := range writers {
+			err := writer.Close()
+			if err != nil {
+				m_pMux.logger.Error("Fail to close %s writer for pid %d: %s", fileType, pid, err.Error())
+			}
+		}
+	}
 }
 
 // Handle incoming data from demuxer
@@ -218,6 +233,53 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 
 func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
 	buf.SetField("pid", pid, true)
+
+	if progNum, ok := common.GetBufFieldAsInt(buf, "progNum"); ok {
+		// Stamp PCR here
+		clk := m_pMux.control.updateSrcClk(progNum)
+
+		if curCnt, ok := common.GetBufFieldAsInt(buf, "pktCnt"); ok {
+			pid, _ := common.GetBufFieldAsInt(buf, "pid")
+			pcr, _ := clk.requestPcr(pid, curCnt)
+			buf.SetField("pcr", pcr, false)
+			if dts, ok := common.GetBufFieldAsInt(buf, "dts"); ok {
+				buf.SetField("delay", dts-pcr/300, false)
+			}
+
+			// Write output
+			for _, fileType := range []string{"csv", "pes"} {
+				shouldWrite := true
+
+				if _, ok := m_pMux.fileWriters[fileType][pid]; !ok {
+					shouldWrite = false
+					outDir := "output"
+					fname := fmt.Sprintf("%d.%s", pid, fileType)
+					var fWriter utils.FileWriter
+					switch fileType {
+					case "csv":
+						fWriter = utils.CsvWriter(outDir, fname)
+					case "pes":
+						fWriter = utils.RawWriter(outDir, fname)
+					}
+					m_pMux.fileWriters[fileType][pid] = fWriter
+					if err := fWriter.Open(); err != nil {
+						m_pMux.logger.Warn("Fail to open handler for %s: %s", fname, err.Error())
+					} else {
+						shouldWrite = true
+					}
+				}
+
+				if shouldWrite {
+					m_pMux.fileWriters[fileType][pid].Write(buf)
+				}
+			}
+		} else {
+			m_pMux.logger.Trace("Skip writing PES data due to unknown packet count")
+		}
+	} else {
+		m_pMux.logger.Trace("Skip writing PES data due to unknown program number")
+	}
+
 	outUnit := common.NewMediaUnit(buf, common.UNKNOWN_UNIT)
 	m_pMux.outputQueue = append(m_pMux.outputQueue, outUnit)
 	m_pMux.control.outputUnitAdded()
@@ -352,6 +414,10 @@ func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string
 	rv := tsDemuxPipe{
 		callback: callback,
 		control: control,
+		fileWriters: map[string]map[int]utils.FileWriter{
+			"csv": {},
+			"pes": {},
+		},
 		logger: logging.CreateLogger(name),
 		inputMon: setupInputMonitor(),
 	}

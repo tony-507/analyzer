@@ -42,6 +42,10 @@ func (dp *dummyPipe) getOutputUnit() common.CmUnit {
 	return outUnit
 }
 
+func (dp *dummyPipe) start() {}
+
+func (dp *dummyPipe) stop() {}
+
 func getDummyPipe(callback IDemuxCallback) dummyPipe {
 	return dummyPipe{
 		callback: callback,
