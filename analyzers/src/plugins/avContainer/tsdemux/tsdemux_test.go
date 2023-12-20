@@ -12,6 +12,10 @@ type dummyCallback struct {}
 
 func (dc *dummyCallback) outputReady() {}
 
+func (dc *dummyCallback) getOutDir() string {
+	return "output"
+}
+
 func TestDemuxDeliverUnit(t *testing.T) {
 	m_pMux := tsDemuxerPlugin{name: "dummy"}
 	m_parameter := "{\"Mode\": \"_DEMUX_DUMMY\"}"

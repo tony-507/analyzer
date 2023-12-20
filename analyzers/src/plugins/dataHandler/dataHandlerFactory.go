@@ -26,6 +26,7 @@ type DataHandlerFactoryPlugin struct {
 	isRunning  bool
 	name       string
 	processors []utils.DataProcessor
+	loader   *tttKernel.ResourceLoader
 }
 
 func (df *DataHandlerFactoryPlugin) SetCallback(callback tttKernel.RequestHandler) {
@@ -36,7 +37,9 @@ func (df *DataHandlerFactoryPlugin) SetParameter(m_parameter string) {
 	df._setup()
 }
 
-func (df *DataHandlerFactoryPlugin) SetResource(loader *tttKernel.ResourceLoader) {}
+func (df *DataHandlerFactoryPlugin) SetResource(loader *tttKernel.ResourceLoader) {
+	df.loader = loader
+}
 
 func (df *DataHandlerFactoryPlugin) _setup() {
 	df.logger = logging.CreateLogger(df.name)
@@ -46,21 +49,24 @@ func (df *DataHandlerFactoryPlugin) _setup() {
 }
 
 func (df *DataHandlerFactoryPlugin) StartSequence() {
-	df.logger.Info("Data handler factory is started")
+	df.processors = append(df.processors, videoDataProcessor(df.loader.Query("outDir", nil)))
+
 	for _, proc := range df.processors {
 		if err := proc.Start(); err != nil {
 			df.logger.Warn("Skip processing due to %s", err.Error())
 		}
 	}
+
+	df.logger.Info("Data handler factory is started")
 }
 
 func (df *DataHandlerFactoryPlugin) EndSequence() {
-	df.logger.Info("Data handler factory is stopped")
 	for _, proc := range df.processors {
 		proc.Stop()
 	}
 	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
 	tttKernel.Post_request(df.callback, df.name, eosUnit)
+	df.logger.Info("Data handler factory is stopped")
 }
 
 func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
@@ -145,9 +151,7 @@ func (df *DataHandlerFactoryPlugin) Name() string {
 func DataHandlerFactory(name string) tttKernel.IPlugin {
 	rv := DataHandlerFactoryPlugin{
 		name: name,
-		processors: []utils.DataProcessor{
-			videoDataProcessor(),
-		},
+		processors: []utils.DataProcessor{},
 	}
 	return &rv
 }

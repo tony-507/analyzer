@@ -31,6 +31,8 @@ type Worker struct {
 	wg             sync.WaitGroup
 }
 
+/* APIs for worker */
+
 // Start ttt service
 func (w *Worker) StartService(params []OverallParams, selectPlugin func(string) IPlugin) {
 	w.setGraph(buildGraph(params, selectPlugin))
@@ -40,6 +42,23 @@ func (w *Worker) StartService(params []OverallParams, selectPlugin func(string) 
 	for w.isRunning != 0 {}
 
 	w.wg.Wait()
+}
+
+func (w *Worker) UpdateResource(resource Resource) {
+	w.resourceLoader.resource = resource
+}
+
+func (w *Worker) StopGraph() {
+	if w.isRunning != 0 {
+		w.logger.Error("Force stop worker due to unexpected exception")
+		for _, pg := range w.nodes {
+			pg.stopPlugin()
+		}
+	}
+	w.routineChan <- struct{}{}
+
+	w.printInfo()
+	w.isRunning = 0
 }
 
 // Main function for running a graph
@@ -68,19 +87,6 @@ func (w *Worker) runGraph() {
 	go w.startDiagnostics()
 
 	w.handleRequests()
-}
-
-func (w *Worker) StopGraph() {
-	if w.isRunning != 0 {
-		w.logger.Error("Force stop worker due to unexpected exception")
-		for _, pg := range w.nodes {
-			pg.stopPlugin()
-		}
-	}
-	w.routineChan <- struct{}{}
-
-	w.printInfo()
-	w.isRunning = 0
 }
 
 // Diagnostics

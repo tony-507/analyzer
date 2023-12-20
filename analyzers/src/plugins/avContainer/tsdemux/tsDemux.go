@@ -10,10 +10,6 @@ import (
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
-type IDemuxCallback interface {
-	outputReady()
-}
-
 type IDemuxPipe interface {
 	getDuration() int
 	getOutputUnit() common.CmUnit
@@ -111,6 +107,10 @@ func (m_pMux *tsDemuxerPlugin) Name() string {
 func (m_pMux *tsDemuxerPlugin) outputReady() {
 	reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
 	tttKernel.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
+}
+
+func (m_pMux *tsDemuxerPlugin) getOutDir() string {
+	return m_pMux.control.resourceLoader.Query("outDir", nil)
 }
 
 func TsDemuxer(name string) tttKernel.IPlugin {

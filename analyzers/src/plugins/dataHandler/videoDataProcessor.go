@@ -64,11 +64,11 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 
 func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {}
 
-func videoDataProcessor() utils.DataProcessor {
+func videoDataProcessor(outDir string) utils.DataProcessor {
 	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
 		lastTC: common.NewTimeCode(),
-		writer: commonUtils.CsvWriter("output", "video.csv"),
+		writer: commonUtils.CsvWriter(outDir, "video.csv"),
 		logger: logging.CreateLogger("VideoDataProcessor"),
 	}
 }

@@ -12,6 +12,11 @@ import (
 	"github.com/tony-507/analyzers/src/utils"
 )
 
+type IDemuxCallback interface {
+	outputReady()
+	getOutDir() string
+}
+
 type tsDemuxPipe struct {
 	logger          logging.Log
 	callback        IDemuxCallback
@@ -167,7 +172,7 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []b
 	if version == -1 {
 		version = 0
 		for {
-			fname := fmt.Sprintf("output/%d_%d.json", pid, version)
+			fname := fmt.Sprintf("%s/%d_%d.json", m_pMux.callback.getOutDir(), pid, version)
 			if _, err := os.Stat(fname); errors.Is(err, os.ErrNotExist) {
 				break
 			}
@@ -175,7 +180,7 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []b
 		}
 	}
 
-	writer := utils.RawWriter("output", fmt.Sprintf("%d_%d.json", pid, version))
+	writer := utils.RawWriter(m_pMux.callback.getOutDir(), fmt.Sprintf("%d_%d.json", pid, version))
 	writer.Open()
 	writer.Write(common.MakeSimpleBuf(jsonBytes))
 	writer.Close()
@@ -268,7 +273,7 @@ func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
 
 				if _, ok := m_pMux.fileWriters[fileType][pid]; !ok {
 					shouldWrite = false
-					outDir := "output"
+					outDir := m_pMux.callback.getOutDir()
 					fname := fmt.Sprintf("%d.%s", pid, fileType)
 					var fWriter utils.FileWriter
 					switch fileType {

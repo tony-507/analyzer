@@ -5,11 +5,12 @@ import (
 )
 
 type Resource struct {
-	StreamType []string `json:"StreamType"`
+	OutDir     string
 }
 
 type ResourceLoader struct {
 	IsRedundancyEnabled bool
+	StreamType          []string
 	resource            Resource
 }
 
@@ -21,7 +22,9 @@ func (r *ResourceLoader) Query(path string, key interface{}) string {
 		if !ok {
 			panic("Wrong query format for streamType")
 		}
-		return r.resource.StreamType[typeNum-1]
+		return r.StreamType[typeNum-1]
+	case "outDir":
+		return r.resource.OutDir
 	}
 	return ""
 }
@@ -177,10 +180,8 @@ func CreateResourceLoader() ResourceLoader {
 		"N/A",
 	}
 
-	resource := Resource{StreamType: streamType}
-
 	return ResourceLoader{
 		IsRedundancyEnabled: false,
-		resource: resource,
+		StreamType: streamType,
 	}
 }
