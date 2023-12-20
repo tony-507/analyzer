@@ -39,7 +39,7 @@ func (m *dummyManagerStruct) GetPmtPidByProgNum(progNum int) int {
 	return m.programRecords[progNum]
 }
 
-func (m *dummyManagerStruct) PsiUpdateFinished(pid int, jsonBytes []byte) {
+func (m *dummyManagerStruct) PsiUpdateFinished(pid int, version int, jsonBytes []byte) {
 	m.psiJsons[pid] = jsonBytes
 }
 

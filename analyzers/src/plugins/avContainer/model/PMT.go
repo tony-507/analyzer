@@ -3,8 +3,6 @@ package model
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
@@ -164,17 +162,7 @@ func (p *PmtStruct) Process() error {
 
 	pmtPid := p.callback.GetPmtPidByProgNum(progNum)
 	jsonBytes, _ := json.MarshalIndent(p.schema, "", "\t")
-	p.callback.PsiUpdateFinished(pmtPid, jsonBytes)
-
-	if _, err := os.Stat("output"); err == nil {
-		fname := fmt.Sprintf("output/%d_%d.json", pmtPid, p.schema.Version)
-		jsonFile, err := os.Create(fname)
-		if err != nil {
-			return err
-		}
-		jsonFile.Write(jsonBytes)
-		jsonFile.Close()
-	}
+	p.callback.PsiUpdateFinished(pmtPid, p.schema.Version, jsonBytes)
 
 	return nil
 }

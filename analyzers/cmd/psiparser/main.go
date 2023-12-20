@@ -27,7 +27,7 @@ func (m *psiCallback) GetPmtPidByProgNum(progNum int) int {
 	return -1
 }
 
-func (m *psiCallback) PsiUpdateFinished(pid int, jsonBytes []byte) {
+func (m *psiCallback) PsiUpdateFinished(pid int, version int, jsonBytes []byte) {
 	fmt.Println(string(jsonBytes))
 }
 

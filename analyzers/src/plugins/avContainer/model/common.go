@@ -24,7 +24,7 @@ type PsiManager interface {
 	GetPATVersion() int
 	GetPmtVersion(int) int
 	GetPmtPidByProgNum(int) int
-	PsiUpdateFinished(int, []byte)
+	PsiUpdateFinished(int, int, []byte)
 	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int)
 }
 

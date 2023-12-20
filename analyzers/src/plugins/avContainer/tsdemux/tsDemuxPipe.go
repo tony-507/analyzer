@@ -3,6 +3,7 @@ package tsdemux
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -162,7 +163,22 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 	return nil
 }
 
-func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, jsonBytes []byte) {
+func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []byte) {
+	if version == -1 {
+		version = 0
+		for {
+			fname := fmt.Sprintf("output/%d_%d.json", pid, version)
+			if _, err := os.Stat(fname); errors.Is(err, os.ErrNotExist) {
+				break
+			}
+			version += 1
+		}
+	}
+
+	writer := utils.RawWriter("output", fmt.Sprintf("%d_%d.json", pid, version))
+	writer.Open()
+	writer.Write(common.MakeSimpleBuf(jsonBytes))
+	writer.Close()
 }
 
 func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {

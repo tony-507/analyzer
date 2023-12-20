@@ -7,8 +7,6 @@ package model
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
@@ -89,17 +87,7 @@ func (p *patStruct) Process() error {
 
 	jsonBytes, _ := json.MarshalIndent(p.schema, "", "\t") // Extra tab prefix to support array of Jsons
 
-	p.callback.PsiUpdateFinished(0, jsonBytes)
-
-	if _, err := os.Stat("output"); err == nil {
-		fname := fmt.Sprintf("output/0_%d.json", p.schema.Version)
-		jsonFile, err := os.Create(fname)
-		if err != nil {
-			return err
-		}
-		jsonFile.Write(jsonBytes)
-		jsonFile.Close()
-	}
+	p.callback.PsiUpdateFinished(0, p.schema.Version, jsonBytes)
 
 	return nil
 }
