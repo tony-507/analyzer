@@ -3,7 +3,6 @@ package ioUtils
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/common"
@@ -24,8 +23,9 @@ type inputStat struct {
 }
 
 type inputParam struct {
-	skipCnt  int
-	maxInCnt int
+	skipCnt      int
+	maxInCnt     int
+	dumpRawInput bool
 }
 
 type inputReaderPlugin struct {
@@ -33,16 +33,24 @@ type inputReaderPlugin struct {
 	callback     tttKernel.RequestHandler
 	impl         def.IReader
 	isRunning    bool
+	loader       *tttKernel.ResourceLoader
 	logger       logging.Log
 	outputQueue  []common.CmUnit
 	stat         inputStat
 	param        inputParam
 	parsers      []protocol.IParser
-	rawDataFile  *os.File
+	rawBufWriter utils.FileWriter
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
+
+	if ir.param.dumpRawInput {
+		ir.rawBufWriter = utils.RawWriter(ir.loader.Query("outDir", nil), "rawBuffer")
+		if err := ir.rawBufWriter.Open(); err != nil {
+			ir.logger.Error("Fail to open file for dumping raw input: %s", err.Error())
+		}
+	}
 
 	err := ir.impl.StartRecv()
 	if err != nil {
@@ -59,8 +67,8 @@ func (ir *inputReaderPlugin) EndSequence() {
 		panic(err)
 	}
 
-	if ir.rawDataFile != nil {
-		ir.rawDataFile.Close()
+	if ir.rawBufWriter != nil {
+		ir.rawBufWriter.Close()
 	}
 	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
 	tttKernel.Post_request(ir.callback, ir.name, eosUnit)
@@ -86,14 +94,7 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 		ir.param.maxInCnt = -1
 	}
 
-	if param.DumpRawInput {
-		fname := "output/rawBuffer"
-		f, err := os.Create(fname)
-		ir.rawDataFile = f
-		if err != nil {
-			ir.logger.Error("Fail to create and open %s: %s", fname, err.Error())
-		}
-	}
+	ir.param.dumpRawInput = param.DumpRawInput
 
 	ir.stat.outCnt = 0
 	srcType := "unknown"
@@ -123,7 +124,9 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 	})
 }
 
-func (ir *inputReaderPlugin) SetResource(loader *tttKernel.ResourceLoader) {}
+func (ir *inputReaderPlugin) SetResource(loader *tttKernel.ResourceLoader) {
+	ir.loader = loader
+}
 
 func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
 	if ir.isRunning {
@@ -198,8 +201,8 @@ func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
 
 	ir.param.skipCnt -= 1
 
-	if ir.rawDataFile != nil && rv != nil {
-		ir.rawDataFile.Write(common.GetBytesInBuf(rv))
+	if ir.rawBufWriter != nil && rv != nil {
+		ir.rawBufWriter.Write(rv.GetBuf())
 	}
 
 	return rv
@@ -230,6 +233,7 @@ func InputReader(name string) tttKernel.IPlugin {
 			prevTimestamp: -1,
 			errCount: 0,
 		},
+		rawBufWriter: nil,
 	}
 	return &rv
 }
