@@ -183,5 +183,8 @@ func CreateResourceLoader() ResourceLoader {
 	return ResourceLoader{
 		IsRedundancyEnabled: false,
 		StreamType: streamType,
+		resource: Resource{
+			OutDir: "output",
+		},
 	}
 }

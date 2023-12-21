@@ -1,5 +1,7 @@
 // Perform basic stream analysis
 
+global.outDir = $o | output;
+
 input = #InputReader_1;
 
 if $f;

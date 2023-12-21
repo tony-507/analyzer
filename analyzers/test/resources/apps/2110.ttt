@@ -1,5 +1,7 @@
 // Read RTP timestamp of ST-2110-20 stream
 
+global.outDir = $o | output;
+
 bb = #BasebandProcessor_1;
 
 if $f1;

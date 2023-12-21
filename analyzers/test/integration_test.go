@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -97,17 +96,6 @@ func TestStartApp(t *testing.T) {
 
 				if noOutput {
 					return
-				}
-
-				// Move output files to outFolder
-				entries, readErr := os.ReadDir("output")
-				if readErr != nil {
-					panic(readErr)
-				}
-				for _, file := range entries {
-					if !file.IsDir() {
-						os.Rename("output/"+file.Name(), outFolder+file.Name())
-					}
 				}
 
 				// Perform validations

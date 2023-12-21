@@ -41,9 +41,7 @@ func StartApp(resourceDir string, appName string, input []string) {
 
 	provider := tttKernel.NewWorker()
 
-	provider.UpdateResource(tttKernel.Resource{
-		OutDir: "output",
-	})
+	provider.UpdateResource(ctrl.parser.env)
 
 	pluginParams := make([]tttKernel.OverallParams, 0)
 	for _, v := range ctrl.parser.variables {

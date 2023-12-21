@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 // A ttt struct
@@ -49,6 +51,7 @@ type scriptParser struct {
 	aliasMap    map[string]string   // Aliases
 	edgeMap     map[string][]string // Graph topology
 	variables   []*scriptVar        // Variables
+	env         tttKernel.Resource
 }
 
 func newScriptParser() scriptParser {
@@ -56,6 +59,9 @@ func newScriptParser() scriptParser {
 		aliasMap: map[string]string{},
 		edgeMap: map[string][]string{},
 		variables: []*scriptVar{},
+		env: tttKernel.Resource{
+			OutDir: "output",
+		},
 	}
 }
 
@@ -185,9 +191,13 @@ func (sp *scriptParser) declareVariable(fullname string, value string) {
 		existVar.value = value
 	} else {
 		if len(splitName) > 1 {
-			parentVar := sp.getVariable(splitName[:len(splitName)-1], true)
-			v := sp.newVariable(splitName[len(splitName)-1], value)
-			parentVar.attributes = append(parentVar.attributes, &v)
+			if splitName[0] == "global" {
+				sp.setGlobalParam(splitName[1], value)
+			} else {
+				parentVar := sp.getVariable(splitName[:len(splitName)-1], true)
+				v := sp.newVariable(splitName[len(splitName)-1], value)
+				parentVar.attributes = append(parentVar.attributes, &v)
+			}
 		} else {
 			v := sp.newVariable(splitName[len(splitName)-1], value)
 			sp.variables = append(sp.variables, &v)
@@ -201,6 +211,13 @@ func (sp *scriptParser) newVariable(name string, value string) scriptVar {
 		value: value,
 		varType: _VAR_VALUE,
 		attributes: make([]*scriptVar, 0),
+	}
+}
+
+func (sp *scriptParser) setGlobalParam(name string, value string) {
+	switch (name) {
+	case "outDir":
+		sp.env.OutDir = value
 	}
 }
 
