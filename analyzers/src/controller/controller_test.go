@@ -6,6 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDeclarePlugin(t *testing.T) {
+	script := "test = #Dummy_1;"
+	input := []string{}
+	ctrl := newController()
+
+	ctrl.parser.buildParams(script, input, -1)
+
+	assert.Equal(t, "test", ctrl.parser.variables[0].name, "Name of plugin is not test")
+	assert.Equal(t, "Dummy_1", ctrl.parser.variables[0].value, "Value of plugin is not Dummy")
+}
+
 func TestDeclareVarInScript(t *testing.T) {
 	script := "x = $x; x.a = $yes;"
 	input := []string{"--yes", "bye", "-x", "hi"}

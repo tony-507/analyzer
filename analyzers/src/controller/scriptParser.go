@@ -67,7 +67,7 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 	lines := strings.FieldsFunc(script, func(r rune) bool { return r == ';' || r == '\n' })
 	syntaxErrLine := 0
 	msg := ""
-	conditionalStack := make([]bool, 0)
+	conditionalStack := make([]bool, 0) // Stack of if-blocks
 	for lNum, line := range lines {
 		if lNum >= lim {
 			break
@@ -90,105 +90,63 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 			}
 		}
 
+		// Skip lines in unrelated if-block
 		runLine := true
 		if len(conditionalStack) > 0 {
 			runLine = conditionalStack[len(conditionalStack)-1]
 		}
 
-		switch tokens[0] {
-		// Built-in functions
-		case "link":
-			if runLine {
-				if len(tokens) != 3 {
-					panic(fmt.Sprintf("Wrong number of input: %d, %v", len(tokens), tokens))
-				}
-				if _, hasKey := sp.edgeMap[tokens[1]]; hasKey {
-					sp.edgeMap[tokens[1]] = append(sp.edgeMap[tokens[1]], sp.getValueFromName(tokens[2]))
-				} else {
-					sp.edgeMap[tokens[1]] = []string{sp.getValueFromName(tokens[2])}
-				}
-			}
-		case "alias":
-			if runLine {
-				sp.handleAliasing(tokens[1], tokens[2])
-			}
-		// Control flows
-		case "if":
-			if runLine {
-				initFrom := []rune(tokens[1])
-				switch initFrom[0] {
-				case '$':
-					if len(tokens) != 3 {
-						tokens = append(tokens, "")
-					}
-					runConditional := sp.getValueFromArgs(input, string(initFrom)[1:], tokens[2]) != ""
-					conditionalStack = append(conditionalStack, runConditional)
-				default:
-					panic("Unknown condition for if block")
-				}
-			}
-		case "end":
+		if tokens[0] == "end" {
 			if len(conditionalStack) > 1 {
 				conditionalStack = conditionalStack[:len(conditionalStack)-1]
 			} else {
 				conditionalStack = make([]bool, 0)
 			}
+			continue
+		}
+
+		if !runLine {
+			continue
+		}
+
+		switch tokens[0] {
+		// Built-in functions
+		case "link":
+			if len(tokens) != 3 {
+				panic(fmt.Sprintf("Wrong number of input: %d, %v", len(tokens), tokens))
+			}
+			sp.linkPlugins(tokens[1], tokens[2])
+		case "alias":
+			sp.setAlias(tokens[1], tokens[2])
+		// Control flows
+		case "if":
+			initFrom := []rune(tokens[1])
+			switch initFrom[0] {
+			case '$':
+				if len(tokens) != 3 {
+					tokens = append(tokens, "")
+				}
+				runConditional := sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]) != ""
+				conditionalStack = append(conditionalStack, runConditional)
+			default:
+				panic("Unknown condition for if block")
+			}
 		case "//":
 			sp.description = strings.Join(tokens[1:], " ")
 		// Declarations
 		default:
-			if runLine {
-				newVar := scriptVar{}
-				initFrom := []rune(tokens[1])
-				if len(tokens) != 3 {
-					tokens = append(tokens, "")
-				}
-				switch initFrom[0] {
-				// #: declare plugin
-				case '#':
-					newVar.name = tokens[0]
-					newVar.value = string(initFrom[1:])
-					newVar.varType = _VAR_PLUGIN
-					newVar.attributes = make([]*scriptVar, 0)
-					sp.variables = append(sp.variables, &newVar)
-				// $: User input
-				case '$':
-					splitName := strings.Split(tokens[0], ".")
-					existVar := sp.getVariable(splitName, false)
-					if existVar != nil {
-						existVar.value = sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2])
-					} else {
-						newVar.varType = _VAR_VALUE
-						newVar.value = sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2])
-						newVar.attributes = make([]*scriptVar, 0)
-						if len(splitName) > 1 {
-							newVar.name = splitName[len(splitName)-1]
-							parentVar := sp.getVariable(splitName[:len(splitName)-1], true)
-							parentVar.attributes = append(parentVar.attributes, &newVar)
-						} else {
-							newVar.name = tokens[0]
-							sp.variables = append(sp.variables, &newVar)
-						}
-					}
-				default:
-					splitName := strings.Split(tokens[0], ".")
-					existVar := sp.getVariable(splitName, false)
-					if existVar != nil {
-						existVar.value = sp.resolveRHS(tokens[1])
-					} else {
-						newVar.varType = _VAR_VALUE
-						newVar.value = sp.resolveRHS(tokens[1])
-						newVar.attributes = make([]*scriptVar, 0)
-						if len(splitName) > 1 {
-							newVar.name = splitName[len(splitName)-1]
-							parentVar := sp.getVariable(splitName[:len(splitName)-1], true)
-							parentVar.attributes = append(parentVar.attributes, &newVar)
-						} else {
-							newVar.name = tokens[0]
-							sp.variables = append(sp.variables, &newVar)
-						}
-					}
-				}
+			if len(tokens) != 3 {
+				tokens = append(tokens, "")
+			}
+			initFrom := []rune(tokens[1])
+			switch initFrom[0] {
+			case '#':
+				sp.declarePlugin(tokens[0], string(initFrom[1:]))
+			case '$':
+				// User input
+				sp.declareVariable(tokens[0], sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]))
+			default:
+				sp.declareVariable(tokens[0], sp.resolveRHS(tokens[1]))
 			}
 		}
 	}
@@ -198,8 +156,52 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 	}
 }
 
-func (sp *scriptParser) handleAliasing(alias string, orig string) {
+func (sp *scriptParser) setAlias(alias string, orig string) {
 	sp.aliasMap[alias] = orig
+}
+
+func (sp *scriptParser) linkPlugins(parent string, child string) {
+	if _, hasKey := sp.edgeMap[parent]; hasKey {
+		sp.edgeMap[parent] = append(sp.edgeMap[parent], sp.getValueFromName(child))
+	} else {
+		sp.edgeMap[parent] = []string{sp.getValueFromName(child)}
+	}
+}
+
+func (sp *scriptParser) declarePlugin(name string, pluginType string) {
+	newVar := scriptVar{
+		name: name,
+		value: pluginType,
+		varType: _VAR_PLUGIN,
+		attributes: make([]*scriptVar, 0),
+	}
+	sp.variables = append(sp.variables, &newVar)
+}
+
+func (sp *scriptParser) declareVariable(fullname string, value string) {
+	splitName := strings.Split(fullname, ".")
+	existVar := sp.getVariable(splitName, false)
+	if existVar != nil {
+		existVar.value = value
+	} else {
+		if len(splitName) > 1 {
+			parentVar := sp.getVariable(splitName[:len(splitName)-1], true)
+			v := sp.newVariable(splitName[len(splitName)-1], value)
+			parentVar.attributes = append(parentVar.attributes, &v)
+		} else {
+			v := sp.newVariable(splitName[len(splitName)-1], value)
+			sp.variables = append(sp.variables, &v)
+		}
+	}
+}
+
+func (sp *scriptParser) newVariable(name string, value string) scriptVar {
+	return scriptVar{
+		name: name,
+		value: value,
+		varType: _VAR_VALUE,
+		attributes: make([]*scriptVar, 0),
+	}
 }
 
 func (sp *scriptParser) getVariable(components []string, createIfNeeded bool) *scriptVar {
