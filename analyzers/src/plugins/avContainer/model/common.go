@@ -25,7 +25,7 @@ type PsiManager interface {
 	GetPmtVersion(int) int
 	GetPmtPidByProgNum(int) int
 	PsiUpdateFinished(int, int, []byte)
-	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int)
+	SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int, pktCnt int)
 }
 
 type pesHandle interface {

@@ -74,6 +74,32 @@ const (
 	BOTTOM_FIELD _PIC_FLAG = 2
 )
 
+// Data structs
+type mediaData interface {
+	GetType() _DATA_TYPE
+}
+
+type _DATA_TYPE int
+const (
+	SCTE_35 _DATA_TYPE = 0
+)
+
+type scte35Data struct {
+	SpliceTime int64
+	Preroll    int64
+}
+
+func (data *scte35Data) GetType() _DATA_TYPE {
+	return SCTE_35
+}
+
+func NewScte35Data(spliceTime int64, preroll int64) scte35Data {
+	return scte35Data{
+		SpliceTime: spliceTime,
+		Preroll: preroll,
+	}
+}
+
 // Buffer
 
 type _MEDIA_TYPE int
@@ -88,6 +114,7 @@ type MediaUnit struct {
 	buf      CmBuf
 	unitType _MEDIA_TYPE
 	vmd      *videoMetaData
+	Data     mediaData
 }
 
 func NewMediaUnit(buf CmBuf, unitType _MEDIA_TYPE) *MediaUnit {
@@ -95,6 +122,7 @@ func NewMediaUnit(buf CmBuf, unitType _MEDIA_TYPE) *MediaUnit {
 		buf:      buf,
 		unitType: unitType,
 		vmd:      nil,
+		Data:     nil,
 	}
 }
 

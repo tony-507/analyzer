@@ -43,7 +43,7 @@ func (m *dummyManagerStruct) PsiUpdateFinished(pid int, version int, jsonBytes [
 	m.psiJsons[pid] = jsonBytes
 }
 
-func (m *dummyManagerStruct) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
+func (m *dummyManagerStruct) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int, pktCnt int) {
 	if spliceCmdTypeStr == "splice_null" {
 		m.receivedSpliceNull = true
 	} else {

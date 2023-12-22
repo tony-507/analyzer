@@ -31,7 +31,7 @@ func (m *psiCallback) PsiUpdateFinished(pid int, version int, jsonBytes []byte) 
 	fmt.Println(string(jsonBytes))
 }
 
-func (m *psiCallback) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {}
+func (m *psiCallback) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int, pktCnt int) {}
 
 func main() {
 	if len(os.Args) != 2 {

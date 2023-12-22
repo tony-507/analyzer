@@ -126,7 +126,7 @@ func (s *scte35Struct) Process() error {
 		return errors.New(msg)
 	}
 
-	s.callback.SpliceEventReceived(s.pid, spliceCmdTypeStr, spliceCmd.GetSplicePTS())
+	s.callback.SpliceEventReceived(s.pid, spliceCmdTypeStr, spliceCmd.GetSplicePTS(), s.schema.PktCnt)
 
 	schema.SpliceCmdTypeStr = spliceCmdTypeStr
 	schema.SpliceCmd = spliceCmd

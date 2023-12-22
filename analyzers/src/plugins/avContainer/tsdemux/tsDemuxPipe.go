@@ -30,7 +30,7 @@ type tsDemuxPipe struct {
 	patVersion      int
 	pmtVersions     map[int]int     // Program number => version
 	outputQueue     []common.CmUnit // Outputs to other plugins
-	scte35SplicePTS map[int][]int   // Program number => Splice PTS
+	videoPlayTime   map[int]int     // Program number => playtime
 }
 
 func (m_pMux *tsDemuxPipe) _setup() {
@@ -40,7 +40,6 @@ func (m_pMux *tsDemuxPipe) _setup() {
 	m_pMux.dataStructs = make(map[int]model.DataStruct, 0)
 	m_pMux.patVersion = -1
 	m_pMux.pmtVersions = make(map[int]int, 0)
-	m_pMux.scte35SplicePTS = make(map[int][]int, 0)
 }
 
 func (m_pMux *tsDemuxPipe) start() {}
@@ -186,18 +185,35 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []b
 	writer.Close()
 }
 
-func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int) {
+func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr string, splicePTS []int, pktCnt int) {
 	if spliceCmdTypeStr == "splice_null" {
 		return
 	}
 
-	progNum := m_pMux.streamTree[dpiPid]
-	if _, hasKey := m_pMux.scte35SplicePTS[progNum]; !hasKey {
-		m_pMux.scte35SplicePTS[progNum] = make([]int, 0)
-	}
-	m_pMux.scte35SplicePTS[progNum] = append(m_pMux.scte35SplicePTS[progNum], splicePTS...)
+	buf := common.MakeSimpleBuf([]byte{})
+	buf.SetField("pktCnt", pktCnt, false)
+	buf.SetField("pid", dpiPid, false)
+	buf.SetField("streamType", 134, true)
 
-	m_pMux.logger.Info("Received SCTE-35 %s with splice PTS %v", spliceCmdTypeStr, splicePTS)
+	progNum := m_pMux.streamTree[dpiPid]
+	if curVideoPlayTime, ok := m_pMux.videoPlayTime[progNum]; ok {
+		for _, spliceTime := range splicePTS {
+			preroll := 0
+			// Not immediate
+			if spliceTime != -1 {
+				preroll = spliceTime - curVideoPlayTime
+				if preroll < 4 * 90000 {
+					m_pMux.logger.Warn("Preroll of SCTE-35 at #%d has short preroll %d", pktCnt, preroll)
+				}
+			}
+			data := common.NewScte35Data(int64(spliceTime), int64(preroll))
+			unit := common.NewMediaUnit(buf, common.DATA_UNIT)
+			unit.Data = &data
+			m_pMux.outputQueue = append(m_pMux.outputQueue, unit)
+			m_pMux.control.outputUnitAdded()
+			m_pMux.callback.outputReady()
+		}
+	}
 }
 
 func (m_pMux *tsDemuxPipe) GetPATVersion() int {
@@ -265,6 +281,10 @@ func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
 			buf.SetField("pcr", pcr, false)
 			if dts, ok := common.GetBufFieldAsInt(buf, "dts"); ok {
 				buf.SetField("delay", dts-pcr/300, false)
+			}
+
+			if pts, ok := common.GetBufFieldAsInt(buf, "pts"); ok {
+				m_pMux.videoPlayTime[progNum] = pts
 			}
 
 			// Write output
@@ -441,6 +461,7 @@ func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string
 		},
 		logger: logging.CreateLogger(name),
 		inputMon: setupInputMonitor(),
+		videoPlayTime: map[int]int{},
 	}
 	rv._setup()
 	return rv

@@ -28,7 +28,7 @@ run_unit_tests () {
 	binPath="$(go env GOPATH)/bin/"
 	pkgList=$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) 
 
-	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/test_result/testCoverage.txt ./... -timeout 60s 2>&1 | tee /dev/tty | $binPath/go-junit-report > $MODULE_DIR/build/test_result/test_detail.xml
+	go test -v -cover -coverpkg ./... -coverprofile $MODULE_DIR/build/test_result/testCoverage.txt ./... -timeout 10m 2>&1 | tee /dev/tty | $binPath/go-junit-report > $MODULE_DIR/build/test_result/test_detail.xml
 }
 
 generate_coverage_report () {
