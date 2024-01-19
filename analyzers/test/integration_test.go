@@ -61,7 +61,6 @@ func TestStartApp(t *testing.T) {
 
 		for _, app := range tc.App {
 			outFolder := getOutputDir() + "/output/" + caseName + "/" + app + "/"
-			noOutput := false
 			testName := caseName + "_" + app
 			t.Run(testName, func(t *testing.T) {
 				setupLogging(outFolder)
@@ -84,8 +83,8 @@ func TestStartApp(t *testing.T) {
 				case "tsMon":
 					args = []string{
 						"-f1", inFile,
+						"-o", outFolder,
 					}
-					noOutput = true
 				default:
 					panic(fmt.Sprintf("Unknown app: %s", app))
 				}
@@ -93,10 +92,6 @@ func TestStartApp(t *testing.T) {
 				// Run app
 				fmt.Println("Running app")
 				controller.StartApp("./resources/apps/", app, args)
-
-				if noOutput {
-					return
-				}
 
 				// Perform validations
 				fmt.Println("Performing validations")

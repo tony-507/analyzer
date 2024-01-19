@@ -28,6 +28,8 @@ func PerformValidation(app string, outFolder string, expectedProp *schema.Expect
 					return err
 				}
 			}
+		case "tsMon":
+			return nil
 		default:
 			return errors.New(fmt.Sprintf("Unknown app %s", app))
 		}

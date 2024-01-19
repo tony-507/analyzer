@@ -69,8 +69,9 @@ func (w *Worker) runGraph() {
 
 	startTime := time.Now()
 	if w.resourceLoader.IsRedundancyEnabled {
-		w.logger.Info("Redundancy monitor is enabled. Output directory would be deleted")
-		os.RemoveAll("output")
+		w.logger.Info("Redundancy monitor is enabled. Output directory %s would be deleted",
+			w.resourceLoader.resource.OutDir)
+		os.RemoveAll(w.resourceLoader.resource.OutDir)
 	}
 
 	for _, node := range w.nodes {
