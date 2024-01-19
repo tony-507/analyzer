@@ -7,19 +7,18 @@ type TestCase struct {
 }
 
 type ExpectedProp struct {
-	Tsa     *TsaExpectedProp     `json:"tsa"`
-	EditCap *EditCapExpectedProp `json:"editCap"`
+	Tsa     *TestProp     `json:"tsa"`
+	EditCap *TestProp     `json:"editCap"`
 }
 
-type TsaExpectedProp struct {
-	JsonList []string              `json:"json"`
-	CsvList  []string              `json:"csv"`
-	Md5sum   *[]Md5sumExpectedProp `json:"md5sum"`
+type TestProp struct {
+	File   *[]FileProp
 }
 
-type EditCapExpectedProp struct {
-	Fname string `json:"fname"`
-	Size  int    `json:"size"`
+type FileProp struct {
+	Fname  string `json:"fname"`
+	Size   int    `json:"size"`
+	Md5sum string `json:"md5sum"`
 }
 
 type Md5sumExpectedProp struct {

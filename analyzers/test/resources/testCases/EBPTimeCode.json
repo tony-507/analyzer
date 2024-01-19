@@ -3,7 +3,7 @@
 	"app": ["tsa","tsMon"],
 	"expected": {
 		"tsa": {
-			"md5sum": [
+			"file": [
 				{
 					"fname": "video.csv",
 					"md5sum": "f9d8777a6dfad3ea9a63971aa3b3701a"

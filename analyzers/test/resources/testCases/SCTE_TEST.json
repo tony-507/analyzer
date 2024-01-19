@@ -3,13 +3,14 @@
 	"app": ["tsa"],
 	"expected": {
 		"tsa": {
-			"json": ["0_0", "37_0", "81_0", "81_1", "81_2", "81_11"],
-			"csv": ["33", "49", "50"],
-			"md5sum": [
+			"file": [
 				{
 					"fname": "81_0.json",
 					"md5sum": "a8246504d5ca1e6c11176b2e7b81f6ad"
-				}
+				},
+				{ "fname": "81_1.json" },
+				{ "fname": "81_2.json" },
+				{ "fname": "81_11.json" }
 			]
 		}
 	}

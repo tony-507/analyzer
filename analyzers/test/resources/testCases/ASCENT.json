@@ -3,9 +3,11 @@
 	"app": ["tsa", "editCap"],
 	"expected": {
 		"tsa": {
-			"json": ["0_0", "258_0"],
-			"csv": ["32", "33"],
-			"md5sum": [
+			"file": [
+				{ "fname": "0_0.json" },
+				{ "fname": "258_0.json" },
+				{ "fname": "32.csv" },
+				{ "fname": "33.csv" },
 				{
 					"fname": "32.pes",
 					"md5sum": "1a38d99310c3e190dac56f92318f0369"
@@ -13,8 +15,12 @@
 			]
 		},
 		"editCap": {
-			"fname": "rawBuffer",
-			"size": 9400
+			"file": [
+				{
+					"fname": "rawBuffer",
+					"size": 9400
+				}
+			]
 		}
 	}
 }
