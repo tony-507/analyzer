@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -166,7 +165,7 @@ func TestAdaptationFieldIO(t *testing.T) {
 
 	for idx := range byteSpecs {
 		t.Run(caseName[idx], func(t *testing.T) {
-			pkt := &tsPacketStruct{hasAdaptationField: false}
+			pkt := &tsPacketStruct{}
 			l, err := pkt.readAdaptationField(byteSpecs[idx])
 			if err != nil {
 				panic(err)
@@ -177,13 +176,12 @@ func TestAdaptationFieldIO(t *testing.T) {
 				return
 			}
 
-			for k, v := range resSpec {
-				rv, err := pkt.GetValueFromAdaptationField(k)
-				if err != nil {
-					panic(err)
-				}
-				assert.Equal(t, v[idx-1], rv, fmt.Sprintf("%s not equal", k))
-			}
+			assert.Equal(t, resSpec["discontinuityIdr"][idx-1] != 0, pkt.GetAdaptationField().Discontinuity, "Discontinuity indicator not equal")
+			assert.Equal(t, resSpec["randomAccessIdr"][idx-1] != 0, pkt.GetAdaptationField().RandomAccess, "Random access indicator not equal")
+			assert.Equal(t, resSpec["esPriorityIdr"][idx-1] != 0, pkt.GetAdaptationField().EsPriority, "ES priority indicator not equal")
+			assert.Equal(t, resSpec["pcr"][idx-1], int(pkt.GetAdaptationField().Pcr), "PCR not equal")
+			assert.Equal(t, resSpec["opcr"][idx-1], int(pkt.GetAdaptationField().Opcr), "OPCR not equal")
+			assert.Equal(t, resSpec["spliceCountdown"][idx-1], pkt.GetAdaptationField().SpliceCountdown, "Splice countdown not equal")
 		})
 	}
 }
@@ -305,46 +303,25 @@ func TestTsHeaderIO(t *testing.T) {
 		panic(err)
 	}
 
-	tei, fieldErr := pkt.GetField("tei")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
-	assert.Equal(t, 0, tei, "tei not match")
+	tei := pkt.GetHeader().Tei
+	assert.Equal(t, false, tei, "tei not match")
 
-	pusi, fieldErr := pkt.GetField("pusi")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
-	assert.Equal(t, 0, pusi, "pusi not match")
+	pusi := pkt.GetHeader().Pusi
+	assert.Equal(t, false, pusi, "pusi not match")
 
-	priority, fieldErr := pkt.GetField("priority")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
-	assert.Equal(t, 0, priority, "priority not match")
+	priority := pkt.GetHeader().Priority
+	assert.Equal(t, false, priority, "priority not match")
 
-	pid, fieldErr := pkt.GetField("pid")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
+	pid := pkt.GetHeader().Pid
 	assert.Equal(t, 911, pid, "pid not match")
 
-	tsc, fieldErr := pkt.GetField("tsc")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
+	tsc := pkt.GetHeader().Tsc
 	assert.Equal(t, 0, tsc, "tsc not match")
 
-	afc, fieldErr := pkt.GetField("afc")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
+	afc := pkt.GetHeader().Afc
 	assert.Equal(t, 1, afc, "afc not match")
 
-	cc, fieldErr := pkt.GetField("cc")
-	if fieldErr != nil {
-		panic(fieldErr)
-	}
+	cc := pkt.GetHeader().Cc
 	assert.Equal(t, 15, cc, "cc not match")
 
 	// headerStruct := TsHeader{Tei: false, Pusi: false, Priority: false, Pid: 911, Tsc: 0, Afc: 1, Cc: 15}

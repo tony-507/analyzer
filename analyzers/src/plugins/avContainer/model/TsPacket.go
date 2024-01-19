@@ -2,17 +2,35 @@ package model
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
 )
 
+type tsPacketHeader struct {
+	Tei      bool
+	Pusi     bool
+	Priority bool
+	Pid      int
+	Tsc      int
+	Afc      int
+	Cc       int
+}
+
+type adaptationField struct {
+	exist           bool
+	Discontinuity   bool
+	RandomAccess    bool
+	EsPriority      bool
+	Pcr             int64
+	Opcr            int64
+	SpliceCountdown int
+	PrivateData     string
+}
+
 type tsPacketStruct struct {
-	header             common.CmBuf
-	adaptationField    common.CmBuf
+	header             tsPacketHeader
+	adaptationField    adaptationField
 	payload            []byte
-	hasAdaptationField bool
 }
 
 func (p *tsPacketStruct) setBuffer(inBuf []byte) error {
@@ -21,22 +39,18 @@ func (p *tsPacketStruct) setBuffer(inBuf []byte) error {
 	if r.ReadBits(8) != 0x47 {
 		return errors.New("TS sync byte not match")
 	}
-	p.header = common.MakeSimpleBuf(buf)
-	p.header.SetField("tei", r.ReadBits(1), true)
-	p.header.SetField("pusi", r.ReadBits(1), true)
-	p.header.SetField("priority", r.ReadBits(1), true)
-	p.header.SetField("pid", r.ReadBits(13), true)
-	p.header.SetField("tsc", r.ReadBits(2), true)
-
-	afc := r.ReadBits(2)
-
-	p.header.SetField("afc", afc, true)
-	p.header.SetField("cc", r.ReadBits(4), true)
+	p.header.Tei = r.ReadBits(1) != 0
+	p.header.Pusi = r.ReadBits(1) != 0
+	p.header.Priority = r.ReadBits(1) != 0
+	p.header.Pid = r.ReadBits(13)
+	p.header.Tsc = r.ReadBits(2)
+	p.header.Afc = r.ReadBits(2)
+	p.header.Cc = r.ReadBits(4)
 
 	afSize := 0
 
-	if afc > 1 {
-		p.hasAdaptationField = true
+	if p.header.Afc > 1 {
+		p.adaptationField.exist = true
 		var err error
 		afSize, err = p.readAdaptationField(inBuf[4:])
 		if err != nil {
@@ -57,12 +71,10 @@ func (p *tsPacketStruct) readAdaptationField(inBuf []byte) (int, error) {
 		return 1, nil
 	}
 
-	p.adaptationField = common.MakeSimpleBuf(inBuf[:afLen])
-
 	remainedLen := afLen
-	p.adaptationField.SetField("discontinuityIdr", r.ReadBits(1), true)
-	p.adaptationField.SetField("randomAccessIdr", r.ReadBits(1), true)
-	p.adaptationField.SetField("esPriorityIdr", r.ReadBits(1), true)
+	p.adaptationField.Discontinuity = r.ReadBits(1) != 0
+	p.adaptationField.RandomAccess = r.ReadBits(1) != 0
+	p.adaptationField.EsPriority = r.ReadBits(1) != 0
 
 	pcrFlag := r.ReadBits(1)
 	opcrFlag := r.ReadBits(1)
@@ -101,10 +113,10 @@ func (p *tsPacketStruct) readAdaptationField(inBuf []byte) (int, error) {
 		remainedLen -= privateDataLen + 1
 	}
 
-	p.adaptationField.SetField("pcr", pcr, true)
-	p.adaptationField.SetField("opcr", opcr, true)
-	p.adaptationField.SetField("spliceCountdown", spliceCountdown, true)
-	p.adaptationField.SetField("privateData", privateData, true)
+	p.adaptationField.Pcr = int64(pcr)
+	p.adaptationField.Opcr = int64(opcr)
+	p.adaptationField.SpliceCountdown = spliceCountdown
+	p.adaptationField.PrivateData = privateData
 
 	if afExtensionFlag != 0 {
 	}
@@ -122,24 +134,12 @@ func (p *tsPacketStruct) Append(buf []byte) {
 	p.payload = append(p.payload, buf...)
 }
 
-func (p *tsPacketStruct) GetField(str string) (int, error) {
-	return resolveHeaderField(p, str)
-}
-
-func (p *tsPacketStruct) GetHeader() common.CmBuf {
+func (p *tsPacketStruct) GetHeader() tsPacketHeader {
 	return p.header
 }
 
-func (p *tsPacketStruct) GetValueFromAdaptationField(name string) (int, error) {
-	field, ok := p.adaptationField.GetField(name)
-	if !ok {
-		return 0, errors.New(fmt.Sprintf("%s not exist in adaptation field", name))
-	}
-	val, isInt := field.(int)
-	if !isInt {
-		return 0, errors.New(fmt.Sprintf("%s is not an integer", name))
-	}
-	return val, nil
+func (p *tsPacketStruct) GetAdaptationField() adaptationField {
+	return p.adaptationField
 }
 
 func (p *tsPacketStruct) GetPayload() []byte {
@@ -154,17 +154,16 @@ func (p *tsPacketStruct) Ready() bool {
 	return len(p.payload) == 184
 }
 
-func (p *tsPacketStruct) Serialize() []byte {
-	// TODO
-	return []byte{}
-}
-
 func (p *tsPacketStruct) HasAdaptationField() bool {
-	return p.hasAdaptationField
+	return p.adaptationField.exist
 }
 
 func TsPacket(buf []byte) (*tsPacketStruct, error) {
-	rv := &tsPacketStruct{hasAdaptationField: false, payload: make([]byte, 0)}
+	rv := &tsPacketStruct{
+		header: tsPacketHeader{},
+		adaptationField: adaptationField{ exist: false },
+		payload: make([]byte, 0),
+	}
 	err := rv.setBuffer(buf)
 	return rv, err
 }

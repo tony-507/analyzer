@@ -64,53 +64,25 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 	}
 	buf = pkt.GetPayload()
 
-	tsc, fieldErr := pkt.GetField("tsc")
-	if fieldErr != nil {
-		return fieldErr
-	}
-
 	// If scrambled, throw away
-	if tsc != 0 {
+	if pkt.GetHeader().Tsc != 0 {
 		return errors.New("the packet is scrambled")
 	}
 
 	// Determine the type of the unit
-	pid, fieldErr := pkt.GetField("pid")
-	if fieldErr != nil {
-		return fieldErr
-	}
-
-	pusiInt, fieldErr := pkt.GetField("pusi")
-	if fieldErr != nil {
-		return fieldErr
-	}
-	pusi := pusiInt != 0
-
-	afc, fieldErr := pkt.GetField("afc")
-	if fieldErr != nil {
-		return fieldErr
-	}
-
-	cc, fieldErr := pkt.GetField("cc")
-	if fieldErr != nil {
-		return fieldErr
-	}
+	pid := pkt.GetHeader().Pid
+	pusi := pkt.GetHeader().Pusi
+	afc := pkt.GetHeader().Afc
+	cc := pkt.GetHeader().Cc
 
 	m_pMux.inputMon.checkTsHeader(pid, afc, cc, pktCnt)
 
 	pcr := -1
 
 	if pkt.HasAdaptationField() {
-		var err error
-		pcr, err = pkt.GetValueFromAdaptationField("pcr")
-		if err != nil {
-			return err
-		}
+		pcr = int(pkt.GetAdaptationField().Pcr)
 
-		spliceCountdown, err := pkt.GetValueFromAdaptationField("spliceCountdown")
-		if err != nil {
-			return err
-		}
+		spliceCountdown := pkt.GetAdaptationField().SpliceCountdown
 		if spliceCountdown != -1 {
 			if spliceCountdown >= 128 {
 				spliceCountdown -= 256
