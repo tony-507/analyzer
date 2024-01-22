@@ -16,17 +16,6 @@ type tsPacketHeader struct {
 	Cc       int
 }
 
-type adaptationField struct {
-	exist           bool
-	Discontinuity   bool
-	RandomAccess    bool
-	EsPriority      bool
-	Pcr             int64
-	Opcr            int64
-	SpliceCountdown int
-	PrivateData     string
-}
-
 type tsPacketStruct struct {
 	header             tsPacketHeader
 	adaptationField    adaptationField
@@ -64,66 +53,8 @@ func (p *tsPacketStruct) setBuffer(inBuf []byte) error {
 }
 
 func (p *tsPacketStruct) readAdaptationField(inBuf []byte) (int, error) {
-	r := io.GetBufferReader(inBuf)
-
-	afLen := r.ReadBits(8)
-	if afLen == 0 {
-		return 1, nil
-	}
-
-	remainedLen := afLen
-	p.adaptationField.Discontinuity = r.ReadBits(1) != 0
-	p.adaptationField.RandomAccess = r.ReadBits(1) != 0
-	p.adaptationField.EsPriority = r.ReadBits(1) != 0
-
-	pcrFlag := r.ReadBits(1)
-	opcrFlag := r.ReadBits(1)
-	spliceCountdownFlag := r.ReadBits(1)
-	transportPrivateFlag := r.ReadBits(1)
-	afExtensionFlag := r.ReadBits(1)
-	remainedLen -= 1
-
-	pcr := -1
-	opcr := -1
-	spliceCountdown := -1
-	privateData := ""
-
-	if pcrFlag != 0 {
-		pcr = r.ReadBits(33)
-		r.ReadBits(6)                 // Reserved
-		pcr = pcr*300 + r.ReadBits(9) // Extension
-		remainedLen -= 6
-	}
-
-	if opcrFlag != 0 {
-		opcr = r.ReadBits(33)
-		r.ReadBits(6)                   // Reserved
-		opcr = opcr*300 + r.ReadBits(9) // Extension
-		remainedLen -= 6
-	}
-
-	if spliceCountdownFlag != 0 {
-		spliceCountdown = r.ReadBits(8)
-		remainedLen -= 1
-	}
-
-	if transportPrivateFlag != 0 {
-		privateDataLen := r.ReadBits(8)
-		privateData = r.ReadChar(privateDataLen)
-		remainedLen -= privateDataLen + 1
-	}
-
-	p.adaptationField.Pcr = int64(pcr)
-	p.adaptationField.Opcr = int64(opcr)
-	p.adaptationField.SpliceCountdown = spliceCountdown
-	p.adaptationField.PrivateData = privateData
-
-	if afExtensionFlag != 0 {
-	}
-
-	r.ReadBits(8 * remainedLen)
-
-	return afLen + 1, nil
+	p.adaptationField = newAdaptationField()
+	return p.adaptationField.read(inBuf)
 }
 
 func (p *tsPacketStruct) Process() error {
