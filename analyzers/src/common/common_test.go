@@ -6,39 +6,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
-
-func TestSimpleBufOverwriteField(t *testing.T) {
-	buf := MakeSimpleBuf([]byte{})
-	field := "dummy"
-
-	buf.SetField(field, 0, true)
-
-	v1, ok := buf.GetField(field)
-	if !ok {
-		panic("No such field")
-	}
-	assert.Equal(t, 0, v1, "Field should be 0")
-
-	buf.SetField(field, 10, false)
-
-	v2, ok := buf.GetField(field)
-	if !ok {
-		panic("No such field")
-	}
-	assert.Equal(t, 10, v2, "Field should be 10")
-}
 
 func TestMediaUnitWithSimpleBuf(t *testing.T) {
 	buf := []byte{1, 2, 3}
-	buffer := MakeSimpleBuf(buf)
+	buffer := tttKernel.MakeSimpleBuf(buf)
 
 	buffer.SetField("dummy2", 50, true)
 
 	unit := NewMediaUnit(buffer, UNKNOWN_UNIT)
 
 	// Test if *MediaUnit implements CmUnit
-	var _ CmUnit = (*MediaUnit)(unit)
+	var _ tttKernel.CmUnit = (*MediaUnit)(unit)
 
 	extractedBuffer := unit.GetBuf()
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/io"
 )
 
@@ -29,7 +29,7 @@ type PmtSchema struct {
 
 type PmtStruct struct {
 	callback   PsiManager
-	header     common.CmBuf
+	header     tttKernel.CmBuf
 	payload    []byte
 	schema     *PmtSchema
 	sectionLen int
@@ -47,7 +47,7 @@ func (p *PmtStruct) GetName() string {
 	return "PMT"
 }
 
-func (p *PmtStruct) GetHeader() common.CmBuf {
+func (p *PmtStruct) GetHeader() tttKernel.CmBuf {
 	return p.header
 }
 
@@ -67,7 +67,7 @@ func (p *PmtStruct) Serialize() []byte {
 func (p *PmtStruct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
 	r := io.GetBufferReader(buf)
-	p.header = common.MakeSimpleBuf(buf)
+	p.header = tttKernel.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
 		return errors.New("Section syntax indicator of PMT is not set to 1")
 	}

@@ -7,8 +7,28 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
 )
+
+func TestSimpleBufOverwriteField(t *testing.T) {
+	buf := MakeSimpleBuf([]byte{})
+	field := "dummy"
+
+	buf.SetField(field, 0, true)
+
+	v1, ok := buf.GetField(field)
+	if !ok {
+		panic("No such field")
+	}
+	assert.Equal(t, 0, v1, "Field should be 0")
+
+	buf.SetField(field, 10, false)
+
+	v2, ok := buf.GetField(field)
+	if !ok {
+		panic("No such field")
+	}
+	assert.Equal(t, 10, v2, "Field should be 10")
+}
 
 func dummySelector(inputName string) IPlugin {
 	splitName := strings.Split(inputName, "_")
@@ -21,16 +41,16 @@ func dummySelector(inputName string) IPlugin {
 
 func TestPluginInterfaces(t *testing.T) {
 	pg := getPluginByName("Dummy_1", dummySelector)
-	pg.impl.SetCallback(func(string, common.WORKER_REQUEST, interface{}) {
+	pg.impl.SetCallback(func(string, WORKER_REQUEST, interface{}) {
 
 	})
 
-	inUnit := common.NewMediaUnit(common.MakeSimpleBuf([]byte{byte(2)}), common.UNKNOWN_UNIT)
+	inUnit := &dummyUnit{MakeSimpleBuf([]byte{byte(2)})}
 	pg.impl.DeliverUnit(inUnit, "")
 
 	unit := pg.impl.FetchUnit()
 
-	rv := int(common.GetBytesInBuf(unit)[0])
+	rv := int(GetBytesInBuf(unit)[0])
 	if rv != 20 {
 		panic(fmt.Sprintf("Expect return value 20, but got %d", rv))
 	}
@@ -54,7 +74,7 @@ func TestSimpleGraph(t *testing.T) {
 	w.runGraph()
 
 	unit := dummy3.fetchUnit()
-	cnt := int(common.GetBytesInBuf(unit)[0])
+	cnt := int(GetBytesInBuf(unit)[0])
 
 	assert.Equal(t, 33, cnt, "Count should be 33 (20001 casted to byte)")
 }
@@ -81,7 +101,7 @@ func TestGraphMultipleInput(t *testing.T) {
 	w.runGraph()
 
 	unit := dummy4.fetchUnit()
-	cnt := int(common.GetBytesInBuf(unit)[0])
+	cnt := int(GetBytesInBuf(unit)[0])
 
 	assert.Equal(t, 66, cnt, "Count should be 66 (40002 casted to byte)")
 }
@@ -106,12 +126,12 @@ func TestGraphMultipleOutput(t *testing.T) {
 	w.runGraph()
 
 	unit1 := dummy3.fetchUnit()
-	cnt1 := int(common.GetBytesInBuf(unit1)[0])
+	cnt1 := int(GetBytesInBuf(unit1)[0])
 
 	assert.Equal(t, 33, cnt1, "First count should be 33 (20001 casted to byte)")
 
 	unit2 := dummy4.impl.FetchUnit()
-	cnt2 := int(common.GetBytesInBuf(unit2)[0])
+	cnt2 := int(GetBytesInBuf(unit2)[0])
 
 	assert.Equal(t, 33, cnt2, "Second count should be 33 (20001 casted to byte)")
 }

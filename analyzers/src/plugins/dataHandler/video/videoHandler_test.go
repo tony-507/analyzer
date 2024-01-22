@@ -8,6 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 func TestReadMultipleNal(t *testing.T) {
@@ -26,7 +27,7 @@ func TestReadMultipleNal(t *testing.T) {
 		inCnt: 0,
 		sqp: h264.CreateSequenceParameterSet(),
 	}
-	cmBuf := common.MakeSimpleBuf(data)
+	cmBuf := tttKernel.MakeSimpleBuf(data)
 	unit := common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
 	newData := utils.CreateParsedData()
 	handle.Feed(unit, &newData)

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type PARSED_TYPE int
@@ -56,8 +57,8 @@ func (d * VideoDataStruct) GetType() PARSED_TYPE {
 	return PARSED_VIDEO
 }
 
-func (d *VideoDataStruct) ToCmBuf() common.CmBuf {
-	cmBuf := common.MakeSimpleBuf([]byte{})
+func (d *VideoDataStruct) ToCmBuf() tttKernel.CmBuf {
+	cmBuf := tttKernel.MakeSimpleBuf([]byte{})
 	if d.Type != UNKNOWN_SLICE {
 		cmBuf.SetField("type", strconv.Itoa(int(d.Type)), false)
 	}
@@ -76,5 +77,5 @@ func VideoData() VideoDataStruct {
 }
 
 type DataHandler interface {
-	Feed(unit common.CmUnit, newData *ParsedData) error// Accept input buffer and begin parsing
+	Feed(unit tttKernel.CmUnit, newData *ParsedData) error// Accept input buffer and begin parsing
 }

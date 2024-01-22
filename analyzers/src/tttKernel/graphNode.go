@@ -3,8 +3,6 @@ package tttKernel
 import (
 	"strings"
 	"sync"
-
-	"github.com/tony-507/analyzers/src/common"
 )
 
 // A plugin serves as a graph node of operation graph
@@ -46,19 +44,19 @@ func (node *graphNode) printInfo(sb *strings.Builder) {
 	node.impl.PrintInfo(sb)
 }
 
-func (node *graphNode) deliverUnit(unit common.CmUnit, inputId string) {
+func (node *graphNode) deliverUnit(unit CmUnit, inputId string) {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 	node.impl.DeliverUnit(unit, inputId)
 }
 
-func (node *graphNode) fetchUnit() common.CmUnit {
+func (node *graphNode) fetchUnit() CmUnit {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 	return node.impl.FetchUnit()
 }
 
-func (node *graphNode) deliverStatus(status common.CmUnit) {
+func (node *graphNode) deliverStatus(status CmUnit) {
 	node.mtx.Lock()
 	defer node.mtx.Unlock()
 	node.impl.DeliverStatus(status)

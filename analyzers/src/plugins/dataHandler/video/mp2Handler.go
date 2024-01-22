@@ -3,7 +3,7 @@ package video
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
@@ -55,9 +55,9 @@ func (h *mpeg2Handler) readSequenceHeader(r *io.BsReader) {
 	}
 }
 
-func (h *mpeg2Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
+func (h *mpeg2Handler) Feed(unit tttKernel.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
-	buf := common.GetBytesInBuf(unit)
+	buf := tttKernel.GetBytesInBuf(unit)
 	r := io.GetBufferReader(buf)
 
 	nextBits := r.ReadBits(32)

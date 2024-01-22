@@ -7,6 +7,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	commonUtils "github.com/tony-507/analyzers/src/utils"
 )
 
@@ -25,7 +26,7 @@ func (vp *videoDataProcessorStruct) Stop() error {
 	return vp.writer.Close()
 }
 
-func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *utils.ParsedData) {
+func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *utils.ParsedData) {
 	if parsedData.GetType() != utils.PARSED_VIDEO {
 		return
 	}
@@ -34,8 +35,8 @@ func (vp *videoDataProcessorStruct) Process(unit common.CmUnit, parsedData *util
 	vmd := vUnit.GetVideoData()
 
 	data := parsedData.GetVideoData()
-	dts, _ := common.GetBufFieldAsInt(cmBuf, "dts")
-	pts, _ := common.GetBufFieldAsInt(cmBuf, "pts")
+	dts, _ := tttKernel.GetBufFieldAsInt(cmBuf, "dts")
+	pts, _ := tttKernel.GetBufFieldAsInt(cmBuf, "pts")
 	data.Dts = dts
 	data.Pts = pts
 

@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type IDemuxPipe interface {
 	getDuration() int
-	getOutputUnit() common.CmUnit
+	getOutputUnit() tttKernel.CmUnit
 	processUnit([]byte, int) error
 	start()
 	stop()
@@ -72,28 +71,28 @@ func (m_pMux *tsDemuxerPlugin) EndSequence() {
 
 	m_pMux.impl.stop()
 
-	eosUnit := common.MakeReqUnit(m_pMux.name, common.EOS_REQUEST)
+	eosUnit := tttKernel.MakeReqUnit(m_pMux.name, tttKernel.EOS_REQUEST)
 	tttKernel.Post_request(m_pMux.callback, m_pMux.name, eosUnit)
 }
 
-func (m_pMux *tsDemuxerPlugin) FetchUnit() common.CmUnit {
+func (m_pMux *tsDemuxerPlugin) FetchUnit() tttKernel.CmUnit {
 	rv := m_pMux.impl.getOutputUnit()
 	m_pMux.control.outputUnitFetched()
 	return rv
 }
 
-func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit common.CmUnit, intputId string) {
+func (m_pMux *tsDemuxerPlugin) DeliverUnit(inUnit tttKernel.CmUnit, intputId string) {
 	m_pMux.control.inputReceived()
 
 	// Perform demuxing on the received TS packet
-	buf := common.GetBytesInBuf(inUnit)
+	buf := tttKernel.GetBytesInBuf(inUnit)
 	procErr := m_pMux.impl.processUnit(buf, m_pMux.control.getInputCount())
 	if procErr != nil {
 		m_pMux.logger.Error("At pkt#%d, %s", m_pMux.control.getInputCount(), procErr)
 	}
 }
 
-func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit common.CmUnit) {}
+func (m_pMux *tsDemuxerPlugin) DeliverStatus(unit tttKernel.CmUnit) {}
 
 func (m_pMux *tsDemuxerPlugin) PrintInfo(sb *strings.Builder) {
 	sb.WriteString(fmt.Sprintf("\tDuration: %f", float64(m_pMux.impl.getDuration()) / 27000000))
@@ -105,7 +104,7 @@ func (m_pMux *tsDemuxerPlugin) Name() string {
 }
 
 func (m_pMux *tsDemuxerPlugin) outputReady() {
-	reqUnit := common.MakeReqUnit(m_pMux.name, common.FETCH_REQUEST)
+	reqUnit := tttKernel.MakeReqUnit(m_pMux.name, tttKernel.FETCH_REQUEST)
 	tttKernel.Post_request(m_pMux.callback, m_pMux.name, reqUnit)
 }
 

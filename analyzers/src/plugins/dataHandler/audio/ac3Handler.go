@@ -3,7 +3,7 @@ package audio
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
@@ -16,10 +16,10 @@ type ac3Handler struct {
 	bInit      bool
 }
 
-func (h *ac3Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
+func (h *ac3Handler) Feed(unit tttKernel.CmUnit, newData *utils.ParsedData) error {
 	h.pesCnt += 1
 	cmBuf := unit.GetBuf()
-	size, ok := common.GetBufFieldAsInt(cmBuf, "size")
+	size, ok := tttKernel.GetBufFieldAsInt(cmBuf, "size")
 	if !ok {
 		return nil
 	}

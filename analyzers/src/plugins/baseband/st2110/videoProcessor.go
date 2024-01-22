@@ -5,6 +5,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 // Video handling logic for processor struct
@@ -39,7 +40,7 @@ func (p *processor) processVideoPackets() {
 
 func (p *processor) processVideo(outRtp uint32, nextRtp uint32, pktBuffer [][]byte) {
 	// ST-2110-20
-	buf := common.MakeSimpleBuf([]byte{})
+	buf := tttKernel.MakeSimpleBuf([]byte{})
 
 	buf.SetField("pid", -1, true)
 	buf.SetField("streamType", 235, true)

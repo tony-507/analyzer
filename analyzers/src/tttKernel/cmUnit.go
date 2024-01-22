@@ -1,4 +1,4 @@
-package common
+package tttKernel
 
 // Structs to provide a unified interface for communication
 

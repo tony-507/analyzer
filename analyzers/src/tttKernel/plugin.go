@@ -2,8 +2,6 @@ package tttKernel
 
 import (
 	"strings"
-
-	"github.com/tony-507/analyzers/src/common"
 )
 
 type IPlugin interface {
@@ -11,9 +9,9 @@ type IPlugin interface {
 	SetParameter(string)
 	SetResource(*ResourceLoader)
 	StartSequence()
-	DeliverUnit(common.CmUnit, string)
-	DeliverStatus(common.CmUnit)
-	FetchUnit() common.CmUnit
+	DeliverUnit(CmUnit, string)
+	DeliverStatus(CmUnit)
+	FetchUnit() CmUnit
 	EndSequence()
 	PrintInfo(*strings.Builder)
 	Name() string

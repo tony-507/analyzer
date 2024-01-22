@@ -1,6 +1,10 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/tony-507/analyzers/src/tttKernel"
+)
 
 // Units representing media data
 
@@ -111,13 +115,13 @@ const (
 )
 
 type MediaUnit struct {
-	buf      CmBuf
+	buf      tttKernel.CmBuf
 	unitType _MEDIA_TYPE
 	vmd      *videoMetaData
 	Data     mediaData
 }
 
-func NewMediaUnit(buf CmBuf, unitType _MEDIA_TYPE) *MediaUnit {
+func NewMediaUnit(buf tttKernel.CmBuf, unitType _MEDIA_TYPE) *MediaUnit {
 	return &MediaUnit{
 		buf:      buf,
 		unitType: unitType,
@@ -126,7 +130,7 @@ func NewMediaUnit(buf CmBuf, unitType _MEDIA_TYPE) *MediaUnit {
 	}
 }
 
-func (m *MediaUnit) GetBuf() CmBuf {
+func (m *MediaUnit) GetBuf() tttKernel.CmBuf {
 	return m.buf
 }
 

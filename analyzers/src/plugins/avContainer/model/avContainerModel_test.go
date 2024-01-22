@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type dummyManagerStruct struct {
@@ -64,16 +64,16 @@ func dummyManager() *dummyManagerStruct {
 }
 
 type dummyPesCallbackStruct struct {
-	outputQueue []common.CmBuf
+	outputQueue []tttKernel.CmBuf
 }
 
-func (p *dummyPesCallbackStruct) PesPacketReady(buf common.CmBuf, pid int) {
+func (p *dummyPesCallbackStruct) PesPacketReady(buf tttKernel.CmBuf, pid int) {
 	p.outputQueue = append(p.outputQueue, buf)
 }
 
 func dummyPesCallback() pesHandle {
 	rv := &dummyPesCallbackStruct{}
-	rv.outputQueue = make([]common.CmBuf, 0)
+	rv.outputQueue = make([]tttKernel.CmBuf, 0)
 	return rv
 }
 

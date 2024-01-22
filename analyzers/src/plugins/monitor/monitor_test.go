@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/monitor/impl"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -15,14 +16,14 @@ func TestMonitorHeading(t *testing.T) {
 	pts := 1234567
 	tc := common.TimeCode{Hour : 1, Minute: 2, Second: 3, Frame: 4}
 
-	buf1 := common.MakeSimpleBuf([]byte{})
+	buf1 := tttKernel.MakeSimpleBuf([]byte{})
 	buf1.SetField("pts", pts, false)
 	unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
 	vmd1 := unit1.GetVideoData()
 	vmd1.Type = common.I_SLICE
 	vmd1.Tc = tc
 
-	buf2 := common.MakeSimpleBuf([]byte{})
+	buf2 := tttKernel.MakeSimpleBuf([]byte{})
 	buf2.SetField("pts", pts, false)
 	unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
 	vmd2 := unit2.GetVideoData()
@@ -58,14 +59,14 @@ func TestRedundancyMonitorVitcMode(t *testing.T) {
 	expected := []string{}
 
 	for i := 0; i < 10; i++ {
-		buf1 := common.MakeSimpleBuf([]byte{})
+		buf1 := tttKernel.MakeSimpleBuf([]byte{})
 		buf1.SetField("pts", pts1, false)
 		unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
 		vmd1 := unit1.GetVideoData()
 		vmd1.Type = common.I_SLICE
 		vmd1.Tc = tc1
 
-		buf2 := common.MakeSimpleBuf([]byte{})
+		buf2 := tttKernel.MakeSimpleBuf([]byte{})
 		buf2.SetField("pts", pts2, false)
 		unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
 		vmd2 := unit2.GetVideoData()
@@ -98,13 +99,13 @@ func TestRedundancyMonitorPtsMode(t *testing.T) {
 	expected := []string{}
 
 	for i := 0; i < 10; i++ {
-		buf1 := common.MakeSimpleBuf([]byte{})
+		buf1 := tttKernel.MakeSimpleBuf([]byte{})
 		buf1.SetField("pts", pts1, false)
 		unit1 := common.NewMediaUnit(buf1, common.VIDEO_UNIT)
 		vmd1 := unit1.GetVideoData()
 		vmd1.Type = common.I_SLICE
 
-		buf2 := common.MakeSimpleBuf([]byte{})
+		buf2 := tttKernel.MakeSimpleBuf([]byte{})
 		buf2.SetField("pts", pts2, false)
 		unit2 := common.NewMediaUnit(buf2, common.VIDEO_UNIT)
 		vmd2 := unit2.GetVideoData()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 var _MONITOR_QUEUE_SIZE = 10
@@ -14,7 +15,7 @@ type redundancyMonitor struct {
 	timeReference redundancyTimeRef
 }
 
-func (rm *redundancyMonitor) Feed(unit common.CmUnit, inputId string) {
+func (rm *redundancyMonitor) Feed(unit tttKernel.CmUnit, inputId string) {
 	// Ensure input id is added to the map
 	if !rm.HasInputId(inputId) {
 		rm.inputIds = append(rm.inputIds, inputId)
@@ -65,7 +66,7 @@ func (rm *redundancyMonitor) GetDisplayData() []string {
 				continue
 			}
 			vmd := datum.GetVideoData()
-			pts, _ := common.GetBufFieldAsInt(datum.GetBuf(), "pts")
+			pts, _ := tttKernel.GetBufFieldAsInt(datum.GetBuf(), "pts")
 			res[_MONITOR_QUEUE_SIZE - 1 - idx] += fmt.Sprintf("|%15d", pts)
 			if rm.timeReference == Vitc {
 				tc := ""

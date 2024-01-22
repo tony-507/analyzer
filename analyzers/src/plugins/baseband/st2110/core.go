@@ -8,6 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/baseband/def"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type St2110Core struct {
@@ -23,7 +24,7 @@ func (core *St2110Core) SetCallback(callback def.ProcessorCallback) {
 	core.callback = callback
 }
 
-func (core *St2110Core) Feed(unit common.CmUnit, inputId string) {
+func (core *St2110Core) Feed(unit tttKernel.CmUnit, inputId string) {
 	if _, hasKey := core.processors[inputId]; !hasKey {
 		core.processors[inputId] = newProcessor(core, inputId)
 	}

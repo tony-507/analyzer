@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/baseband/def"
 	"github.com/tony-507/analyzers/src/plugins/baseband/st2110"
@@ -38,13 +37,13 @@ func (bb *BasebandProcessorPlugin) StartSequence() {
 
 func (bb *BasebandProcessorPlugin) EndSequence() {}
 
-func (bb *BasebandProcessorPlugin) DeliverStatus(status common.CmUnit) {}
+func (bb *BasebandProcessorPlugin) DeliverStatus(status tttKernel.CmUnit) {}
 
-func (bb *BasebandProcessorPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
+func (bb *BasebandProcessorPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId string) {
 	bb.core.Feed(unit, inputId)
 }
 
-func (bb *BasebandProcessorPlugin) FetchUnit() common.CmUnit {
+func (bb *BasebandProcessorPlugin) FetchUnit() tttKernel.CmUnit {
 	return nil
 }
 
@@ -56,7 +55,7 @@ func (bb *BasebandProcessorPlugin) Name() string {
 	return bb.name
 }
 
-func (bb *BasebandProcessorPlugin) OnDataReady(unit common.CmUnit) {}
+func (bb *BasebandProcessorPlugin) OnDataReady(unit tttKernel.CmUnit) {}
 
 func BasebandProcessor(name string) tttKernel.IPlugin {
 	return &BasebandProcessorPlugin{

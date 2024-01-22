@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
@@ -34,13 +33,13 @@ func (rm *outputMonitorPlugin) StartSequence() {
 	rm.monitor.start()
 }
 
-func (rm *outputMonitorPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
+func (rm *outputMonitorPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId string) {
 	rm.monitor.feed(unit, inputId)
 }
 
-func (rm *outputMonitorPlugin) DeliverStatus(unit common.CmUnit) {}
+func (rm *outputMonitorPlugin) DeliverStatus(unit tttKernel.CmUnit) {}
 
-func (rm *outputMonitorPlugin) FetchUnit() common.CmUnit {
+func (rm *outputMonitorPlugin) FetchUnit() tttKernel.CmUnit {
 	return nil
 }
 

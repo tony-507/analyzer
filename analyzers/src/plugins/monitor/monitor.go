@@ -7,9 +7,9 @@ import (
 	"time"
 
 	tm "github.com/buger/goterm"
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/monitor/colors"
 	"github.com/tony-507/analyzers/src/plugins/monitor/impl"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 var _SLEEP_DURATION = 5 * time.Second
@@ -48,7 +48,7 @@ func (m *monitor) stop() {
 	m.wg.Wait()
 }
 
-func (m *monitor) feed(unit common.CmUnit, inputId string) {
+func (m *monitor) feed(unit tttKernel.CmUnit, inputId string) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 	if !m.impl.HasInputId(inputId) {

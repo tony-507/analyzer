@@ -22,7 +22,7 @@ type DataHandlerFactoryPlugin struct {
 	logger     logging.Log
 	callback   tttKernel.RequestHandler
 	handlers   map[int]utils.DataHandler
-	outputUnit []common.CmUnit
+	outputUnit []tttKernel.CmUnit
 	isRunning  bool
 	name       string
 	processors []utils.DataProcessor
@@ -44,7 +44,7 @@ func (df *DataHandlerFactoryPlugin) SetResource(loader *tttKernel.ResourceLoader
 func (df *DataHandlerFactoryPlugin) _setup() {
 	df.logger = logging.CreateLogger(df.name)
 	df.handlers = map[int]utils.DataHandler{}
-	df.outputUnit = []common.CmUnit{}
+	df.outputUnit = []tttKernel.CmUnit{}
 	df.isRunning = true
 }
 
@@ -64,25 +64,25 @@ func (df *DataHandlerFactoryPlugin) EndSequence() {
 	for _, proc := range df.processors {
 		proc.Stop()
 	}
-	eosUnit := common.MakeReqUnit(df.name, common.EOS_REQUEST)
+	eosUnit := tttKernel.MakeReqUnit(df.name, tttKernel.EOS_REQUEST)
 	tttKernel.Post_request(df.callback, df.name, eosUnit)
 	df.logger.Info("Data handler factory is stopped")
 }
 
-func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
+func (df *DataHandlerFactoryPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId string) {
 	if unit == nil {
 		return
 	}
 
 	// Extract buffer from input unit
 	cmBuf := unit.GetBuf()
-	pid, isPidInt := common.GetBufFieldAsInt(cmBuf, "pid")
+	pid, isPidInt := tttKernel.GetBufFieldAsInt(cmBuf, "pid")
 	if !isPidInt {
 		panic("Something wrong with the data")
 	}
 
 	_, hasPid := df.handlers[pid]
-	dType, ok := common.GetBufFieldAsInt(cmBuf, "streamType")
+	dType, ok := tttKernel.GetBufFieldAsInt(cmBuf, "streamType")
 	if !ok {
 		return
 	}
@@ -99,7 +99,7 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId stri
 		}
 	}
 
-	var newUnit common.CmUnit = nil
+	var newUnit tttKernel.CmUnit = nil
 
 	if h, hasHandle := df.handlers[pid]; hasHandle {
 		newData := utils.CreateParsedData()
@@ -118,19 +118,19 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit common.CmUnit, inputId stri
 	df.outputUnit = append(df.outputUnit, newUnit)
 
 	// Directly output the unit
-	reqUnit := common.MakeReqUnit(df.name, common.FETCH_REQUEST)
+	reqUnit := tttKernel.MakeReqUnit(df.name, tttKernel.FETCH_REQUEST)
 	tttKernel.Post_request(df.callback, df.name, reqUnit)
 }
 
-func (df *DataHandlerFactoryPlugin) DeliverStatus(unit common.CmUnit) {}
+func (df *DataHandlerFactoryPlugin) DeliverStatus(unit tttKernel.CmUnit) {}
 
-func (df *DataHandlerFactoryPlugin) FetchUnit() common.CmUnit {
+func (df *DataHandlerFactoryPlugin) FetchUnit() tttKernel.CmUnit {
 	switch len(df.outputUnit) {
 	case 0:
 		return nil
 	case 1:
 		rv := df.outputUnit[0]
-		df.outputUnit = make([]common.CmUnit, 0)
+		df.outputUnit = make([]tttKernel.CmUnit, 0)
 		return rv
 	default:
 		rv := df.outputUnit[0]

@@ -8,13 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 )
 
 type workerRequest struct {
 	source  string
-	reqType common.WORKER_REQUEST
+	reqType WORKER_REQUEST
 	body    interface{}
 }
 
@@ -116,7 +115,7 @@ func (w *Worker) printInfo() {
 }
 
 // Callback function
-func (w *Worker) onRequestReceived(name string, reqType common.WORKER_REQUEST, obj interface{}) {
+func (w *Worker) onRequestReceived(name string, reqType WORKER_REQUEST, obj interface{}) {
 	request := workerRequest{source: name, reqType: reqType, body: obj}
 	if w.isRunning != 0 {
 		w.reqChannel <- request
@@ -144,12 +143,12 @@ func (w *Worker) handleRequests() {
 	}
 }
 
-func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, obj interface{}) {
+func (w *Worker) handleOneRequest(name string, reqType WORKER_REQUEST, obj interface{}) {
 	switch reqType {
-	case common.POST_REQUEST:
-		unit, _ := obj.(common.CmUnit)
+	case POST_REQUEST:
+		unit, _ := obj.(CmUnit)
 		w.postRequest(name, unit)
-	case common.STATUS_LISTEN_REQUEST:
+	case STATUS_LISTEN_REQUEST:
 		if msgId, isInt := obj.(int); isInt {
 			if _, hasKey := w.statusStore[msgId]; hasKey {
 				w.statusStore[msgId] = append(w.statusStore[msgId], name)
@@ -160,13 +159,13 @@ func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, ob
 		} else {
 			panic(fmt.Sprintf("Attempt to listen to a status message with invalid ID: %v", obj))
 		}
-	case common.STATUS_REQUEST:
-		if unit, isValid := obj.(*common.CmStatusUnit); isValid {
+	case STATUS_REQUEST:
+		if unit, isValid := obj.(*CmStatusUnit); isValid {
 			w.postStatus(unit)
 		} else {
 			w.logger.Error("Worker error: Receive a status request with invalid unit: %v", obj)
 		}
-	case common.ERROR_REQUEST:
+	case ERROR_REQUEST:
 		err, _ := obj.(error)
 		w.logger.Error("From %s: %s", name, err.Error())
 		w.StopGraph()
@@ -177,12 +176,12 @@ func (w *Worker) handleOneRequest(name string, reqType common.WORKER_REQUEST, ob
 	}
 }
 
-func (w *Worker) postRequest(name string, unit common.CmUnit) {
+func (w *Worker) postRequest(name string, unit CmUnit) {
 	if unit == nil {
 		return
 	}
 
-	reqType, isReq := unit.GetField("reqType").(common.WORKER_REQUEST)
+	reqType, isReq := unit.GetField("reqType").(WORKER_REQUEST)
 	if !isReq {
 		panic("Error in worker request handling")
 	}
@@ -194,14 +193,14 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 	}
 
 	switch reqType {
-	case common.FETCH_REQUEST:
+	case FETCH_REQUEST:
 		outputUnit := node.fetchUnit()
 		for _, child := range node.children {
 			child.deliverUnit(outputUnit, node.name())
 		}
-	case common.DELIVER_REQUEST:
+	case DELIVER_REQUEST:
 		node.deliverUnit(nil, "worker")
-	case common.EOS_REQUEST:
+	case EOS_REQUEST:
 		w.isRunning -= 1
 		w.logger.Trace("Worker receives EOS from %s", node.name())
 		// Trigger EndSequence of children nodes
@@ -210,7 +209,7 @@ func (w *Worker) postRequest(name string, unit common.CmUnit) {
 
 }
 
-func (w *Worker) postStatus(unit common.CmUnit) {
+func (w *Worker) postStatus(unit CmUnit) {
 	if id, isInt := unit.GetField("id").(int); isInt {
 		if arr, hasKey := w.statusStore[id]; hasKey {
 			for _, name := range arr {

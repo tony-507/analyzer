@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type pesPacketStruct struct {
 	pid               int
-	header            common.CmBuf
+	header            tttKernel.CmBuf
 	payload           []byte
 	hasOptionalHeader bool
 	sectionLen        int
@@ -20,7 +20,7 @@ type pesPacketStruct struct {
 func (p *pesPacketStruct) setBuffer(inBuf []byte, pktCnt int) error {
 	buf := inBuf[:6]
 	r := io.GetBufferReader(buf)
-	p.header = common.MakeSimpleBuf(buf)
+	p.header = tttKernel.MakeSimpleBuf(buf)
 
 	p.header.SetField("pktCnt", pktCnt, false)
 	p.header.SetField("size", -1, false)
@@ -230,7 +230,7 @@ func (p *pesPacketStruct) GetName() string {
 	return "PES packet"
 }
 
-func (p *pesPacketStruct) GetHeader() common.CmBuf {
+func (p *pesPacketStruct) GetHeader() tttKernel.CmBuf {
 	return p.header
 }
 

@@ -3,11 +3,11 @@ package video
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 const (
@@ -109,8 +109,8 @@ func (h *h264Handler) isLeadingOrTrailingZeros(r *io.BsReader) bool {
 	(len(r.GetRemainedBuffer()) > 3 && r.PeekBits(24) != _H264_START_CODE_PREFIX)
 }
 
-func (h *h264Handler) Feed(unit common.CmUnit, newData *utils.ParsedData) error {
-	buf := common.GetBytesInBuf(unit)
+func (h *h264Handler) Feed(unit tttKernel.CmUnit, newData *utils.ParsedData) error {
+	buf := tttKernel.GetBytesInBuf(unit)
 	r := io.GetBufferReader(buf)
 	nalCnt := 0
 	data := newData.GetVideoData()

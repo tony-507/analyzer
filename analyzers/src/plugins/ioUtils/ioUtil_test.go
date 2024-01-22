@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 func TestReaderSetParameter(t *testing.T) {
@@ -42,8 +42,8 @@ func TestReaderDeliverUnit(t *testing.T) {
 		ir := inputReaderPlugin{name: "dummy", logger: logging.CreateLogger("dummy")}
 		ir.SetParameter(param)
 
-		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
-			expected := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+		ir.SetCallback(func(s string, reqType tttKernel.WORKER_REQUEST, obj interface{}) {
+			expected := tttKernel.MakeReqUnit(ir.name, tttKernel.FETCH_REQUEST)
 			assert.Equal(t, expected, obj, fmt.Sprintf("[%d] Expect a fetch request", idx))
 		})
 
@@ -51,8 +51,8 @@ func TestReaderDeliverUnit(t *testing.T) {
 			ir.start()
 		}
 
-		ir.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
-			expected := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+		ir.SetCallback(func(s string, reqType tttKernel.WORKER_REQUEST, obj interface{}) {
+			expected := tttKernel.MakeReqUnit(ir.name, tttKernel.EOS_REQUEST)
 			assert.Equal(t, expected, obj, "Expect an EOS request")
 		})
 		ir.start()

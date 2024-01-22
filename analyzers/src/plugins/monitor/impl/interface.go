@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type MonitorImpl interface {
-	Feed(common.CmUnit, string)
+	Feed(tttKernel.CmUnit, string)
 	GetFields() []string
 	GetDisplayData() []string
 	HasInputId(string) bool

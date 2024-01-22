@@ -9,6 +9,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/logging"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/utils"
 )
 
@@ -29,7 +30,7 @@ type tsDemuxPipe struct {
 	streamTree      map[int]int // Stream pid => program number
 	patVersion      int
 	pmtVersions     map[int]int     // Program number => version
-	outputQueue     []common.CmUnit // Outputs to other plugins
+	outputQueue     []tttKernel.CmUnit // Outputs to other plugins
 	videoPlayTime   map[int]int     // Program number => playtime
 }
 
@@ -153,7 +154,7 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []b
 
 	writer := utils.RawWriter(m_pMux.callback.getOutDir(), fmt.Sprintf("%d_%d.json", pid, version))
 	writer.Open()
-	writer.Write(common.MakeSimpleBuf(jsonBytes))
+	writer.Write(tttKernel.MakeSimpleBuf(jsonBytes))
 	writer.Close()
 }
 
@@ -162,7 +163,7 @@ func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr stri
 		return
 	}
 
-	buf := common.MakeSimpleBuf([]byte{})
+	buf := tttKernel.MakeSimpleBuf([]byte{})
 	buf.SetField("pktCnt", pktCnt, false)
 	buf.SetField("pid", dpiPid, false)
 	buf.SetField("streamType", 134, true)
@@ -240,22 +241,22 @@ func (m_pMux *tsDemuxPipe) AddStream(version int, progNum int, streamPid int, st
 	m_pMux.streamTree[streamPid] = progNum
 }
 
-func (m_pMux *tsDemuxPipe) PesPacketReady(buf common.CmBuf, pid int) {
+func (m_pMux *tsDemuxPipe) PesPacketReady(buf tttKernel.CmBuf, pid int) {
 	buf.SetField("pid", pid, true)
 
-	if progNum, ok := common.GetBufFieldAsInt(buf, "progNum"); ok {
+	if progNum, ok := tttKernel.GetBufFieldAsInt(buf, "progNum"); ok {
 		// Stamp PCR here
 		clk := m_pMux.control.updateSrcClk(progNum)
 
-		if curCnt, ok := common.GetBufFieldAsInt(buf, "pktCnt"); ok {
-			pid, _ := common.GetBufFieldAsInt(buf, "pid")
+		if curCnt, ok := tttKernel.GetBufFieldAsInt(buf, "pktCnt"); ok {
+			pid, _ := tttKernel.GetBufFieldAsInt(buf, "pid")
 			pcr, _ := clk.requestPcr(pid, curCnt)
 			buf.SetField("pcr", pcr, false)
-			if dts, ok := common.GetBufFieldAsInt(buf, "dts"); ok {
+			if dts, ok := tttKernel.GetBufFieldAsInt(buf, "dts"); ok {
 				buf.SetField("delay", dts-pcr/300, false)
 			}
 
-			if pts, ok := common.GetBufFieldAsInt(buf, "pts"); ok {
+			if pts, ok := tttKernel.GetBufFieldAsInt(buf, "pts"); ok {
 				m_pMux.videoPlayTime[progNum] = pts
 			}
 
@@ -413,10 +414,10 @@ func (m_pMux *tsDemuxPipe) getDuration() int {
 	return end - start
 }
 
-func (m_pMux *tsDemuxPipe) getOutputUnit() common.CmUnit {
+func (m_pMux *tsDemuxPipe) getOutputUnit() tttKernel.CmUnit {
 	outUnit := m_pMux.outputQueue[0]
 	if len(m_pMux.outputQueue) == 1 {
-		m_pMux.outputQueue = make([]common.CmUnit, 0)
+		m_pMux.outputQueue = make([]tttKernel.CmUnit, 0)
 	} else {
 		m_pMux.outputQueue = m_pMux.outputQueue[1:]
 	}

@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type patStruct struct {
 	callback   PsiManager
-	header     common.CmBuf
+	header     tttKernel.CmBuf
 	payload    []byte
 	schema     *PatSchema
 	sectionLen int
@@ -30,7 +30,7 @@ type PatSchema struct {
 func (p *patStruct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
 	r := io.GetBufferReader(buf)
-	p.header = common.MakeSimpleBuf(buf)
+	p.header = tttKernel.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 1 {
 		return errors.New("Section syntax indicator of PAT is not set to 1")
 	}
@@ -104,7 +104,7 @@ func (p *patStruct) GetName() string {
 	return "PAT"
 }
 
-func (p *patStruct) GetHeader() common.CmBuf {
+func (p *patStruct) GetHeader() tttKernel.CmBuf {
 	return p.header
 }
 

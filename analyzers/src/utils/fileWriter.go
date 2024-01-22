@@ -4,12 +4,12 @@ import (
 	"os"
 	"path"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type FileWriter interface {
 	Open() error
-	Write(common.CmBuf)
+	Write(tttKernel.CmBuf)
 	Close() error
 }
 
@@ -32,7 +32,7 @@ func (csv *CsvWriterStruct) Open() error {
 	return nil
 }
 
-func (csv *CsvWriterStruct) Write(cmBuf common.CmBuf) {
+func (csv *CsvWriterStruct) Write(cmBuf tttKernel.CmBuf) {
 	if (csv.fHandle == nil) {
 		return
 	}
@@ -78,7 +78,7 @@ func (raw *RawWriterStruct) Open() error {
 	return nil
 }
 
-func (raw *RawWriterStruct) Write(cmBuf common.CmBuf) {
+func (raw *RawWriterStruct) Write(cmBuf tttKernel.CmBuf) {
 	if (raw.fHandle == nil) {
 		return
 	}

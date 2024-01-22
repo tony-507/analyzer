@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/io"
 )
 
 type scte35Struct struct {
 	callback   PsiManager
-	header     common.CmBuf
+	header     tttKernel.CmBuf
 	payload    []byte
 	pid        int
 	schema     *Scte35Schema
@@ -40,7 +40,7 @@ func (s *scte35Struct) GetName() string {
 	return "SCTE-35"
 }
 
-func (s *scte35Struct) GetHeader() common.CmBuf {
+func (s *scte35Struct) GetHeader() tttKernel.CmBuf {
 	return s.header
 }
 
@@ -60,7 +60,7 @@ func (s *scte35Struct) Serialize() []byte {
 func (s *scte35Struct) setBuffer(inBuf []byte) error {
 	buf := inBuf[:2]
 	r := io.GetBufferReader(buf)
-	s.header = common.MakeSimpleBuf(buf)
+	s.header = tttKernel.MakeSimpleBuf(buf)
 	if r.ReadBits(1) != 0 {
 		return errors.New("Section syntax indicator of SCTE-35 splice info section is not set to 0")
 	}

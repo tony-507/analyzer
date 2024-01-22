@@ -4,14 +4,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type DataStruct interface {
 	Append(buf []byte)
 	GetField(string) (int, error)
 	GetName() string
-	GetHeader() common.CmBuf
+	GetHeader() tttKernel.CmBuf
 	GetPayload() []byte
 	Ready() bool
 	Serialize() []byte
@@ -29,7 +29,7 @@ type PsiManager interface {
 }
 
 type pesHandle interface {
-	PesPacketReady(buf common.CmBuf, pid int)
+	PesPacketReady(buf tttKernel.CmBuf, pid int)
 }
 
 func resolveHeaderField(d DataStruct, str string) (int, error) {

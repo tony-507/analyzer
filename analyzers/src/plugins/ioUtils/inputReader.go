@@ -35,7 +35,7 @@ type inputReaderPlugin struct {
 	isRunning    bool
 	loader       *tttKernel.ResourceLoader
 	logger       logging.Log
-	outputQueue  []common.CmUnit
+	outputQueue  []tttKernel.CmUnit
 	stat         inputStat
 	param        inputParam
 	parsers      []protocol.IParser
@@ -70,7 +70,7 @@ func (ir *inputReaderPlugin) EndSequence() {
 	if ir.rawBufWriter != nil {
 		ir.rawBufWriter.Close()
 	}
-	eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+	eosUnit := tttKernel.MakeReqUnit(ir.name, tttKernel.EOS_REQUEST)
 	tttKernel.Post_request(ir.callback, ir.name, eosUnit)
 }
 
@@ -128,15 +128,15 @@ func (ir *inputReaderPlugin) SetResource(loader *tttKernel.ResourceLoader) {
 	ir.loader = loader
 }
 
-func (ir *inputReaderPlugin) DeliverUnit(unit common.CmUnit, inputId string) {
+func (ir *inputReaderPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId string) {
 	if ir.isRunning {
 		ir.start()
-		reqUnit := common.MakeReqUnit(ir.name, common.DELIVER_REQUEST)
+		reqUnit := tttKernel.MakeReqUnit(ir.name, tttKernel.DELIVER_REQUEST)
 		tttKernel.Post_request(ir.callback, ir.name, reqUnit)
 	}
 }
 
-func (ir *inputReaderPlugin) DeliverStatus(unit common.CmUnit) {}
+func (ir *inputReaderPlugin) DeliverStatus(unit tttKernel.CmUnit) {}
 
 func (ir *inputReaderPlugin) start() {
 	// Here, we will keep delivering until EOS is signaled
@@ -146,23 +146,23 @@ func (ir *inputReaderPlugin) start() {
 			ir.stat.outCnt += 1
 			ir.param.maxInCnt -= 1
 
-			cmBuf := common.MakeSimpleBuf(res.GetBuffer())
+			cmBuf := tttKernel.MakeSimpleBuf(res.GetBuffer())
 			newUnit := common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
 
 			ir.processMetadata(cmBuf, &res)
 
 			ir.outputQueue = append(ir.outputQueue, newUnit)
-			reqUnit := common.MakeReqUnit(ir.name, common.FETCH_REQUEST)
+			reqUnit := tttKernel.MakeReqUnit(ir.name, tttKernel.FETCH_REQUEST)
 			tttKernel.Post_request(ir.callback, ir.name, reqUnit)
 		}
 	} else {
 		// Stop reader
-		eosUnit := common.MakeReqUnit(ir.name, common.EOS_REQUEST)
+		eosUnit := tttKernel.MakeReqUnit(ir.name, tttKernel.EOS_REQUEST)
 		tttKernel.Post_request(ir.callback, ir.name, eosUnit)
 	}
 }
 
-func (ir *inputReaderPlugin) processMetadata(cmBuf common.CmBuf, res *protocol.ParseResult) {
+func (ir *inputReaderPlugin) processMetadata(cmBuf tttKernel.CmBuf, res *protocol.ParseResult) {
 	if realtime, ok := res.GetField("realtimeInUs"); ok {
 		cmBuf.SetField("realtimeInUs", realtime, false)
 	}
@@ -186,15 +186,15 @@ func (ir *inputReaderPlugin) processMetadata(cmBuf common.CmBuf, res *protocol.P
 	}
 }
 
-func (ir *inputReaderPlugin) FetchUnit() common.CmUnit {
-	var rv common.CmUnit
+func (ir *inputReaderPlugin) FetchUnit() tttKernel.CmUnit {
+	var rv tttKernel.CmUnit
 
 	if len(ir.outputQueue) != 0 && ir.param.skipCnt <= 0 {
 		rv = ir.outputQueue[0]
 	}
 
 	if len(ir.outputQueue) == 1 {
-		ir.outputQueue = make([]common.CmUnit, 0)
+		ir.outputQueue = make([]tttKernel.CmUnit, 0)
 	} else {
 		ir.outputQueue = ir.outputQueue[1:]
 	}

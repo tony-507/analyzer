@@ -8,11 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/baseband/def"
+	"github.com/tony-507/analyzers/src/tttKernel"
 )
 
 type dummyCallback struct {}
 
-func (cb *dummyCallback) Feed(common.CmUnit, string) {}
+func (cb *dummyCallback) Feed(tttKernel.CmUnit, string) {}
 
 func (cb *dummyCallback) PrintInfo(*strings.Builder) {}
 

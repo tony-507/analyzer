@@ -21,13 +21,13 @@ func TestDemuxDeliverUnit(t *testing.T) {
 	m_parameter := "{\"Mode\": \"_DEMUX_DUMMY\"}"
 	m_pMux.SetParameter(m_parameter)
 
-	m_pMux.SetCallback(func(s string, reqType common.WORKER_REQUEST, obj interface{}) {
-		expected := common.MakeReqUnit("dummy", common.FETCH_REQUEST)
+	m_pMux.SetCallback(func(s string, reqType tttKernel.WORKER_REQUEST, obj interface{}) {
+		expected := tttKernel.MakeReqUnit("dummy", tttKernel.FETCH_REQUEST)
 		assert.Equal(t, expected, obj, "Unit not equal")
 	})
 
 	for i := 0; i < 2; i++ {
-		buf := common.MakeSimpleBuf([]byte{byte(i)})
+		buf := tttKernel.MakeSimpleBuf([]byte{byte(i)})
 		dummy := common.NewMediaUnit(buf, common.UNKNOWN_UNIT)
 		m_pMux.DeliverUnit(dummy, "")
 	}
