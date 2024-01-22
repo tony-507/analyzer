@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/baseband/def"
 	"github.com/tony-507/analyzers/src/tttKernel"

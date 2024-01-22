@@ -5,7 +5,7 @@ import (
 
 	"github.com/tony-507/analyzers/src/tttKernel"
 	"github.com/tony-507/analyzers/src/common/io"
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
 

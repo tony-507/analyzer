@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"golang.org/x/net/ipv4"

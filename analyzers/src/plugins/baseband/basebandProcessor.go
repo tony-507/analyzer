@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/baseband/def"
 	"github.com/tony-507/analyzers/src/plugins/baseband/st2110"
 	"github.com/tony-507/analyzers/src/tttKernel"

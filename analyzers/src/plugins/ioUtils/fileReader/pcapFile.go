@@ -10,7 +10,7 @@ import (
 	"time"
 
 	tio "github.com/tony-507/analyzers/src/common/io"
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 )
 
 type dataPacketStruct interface {

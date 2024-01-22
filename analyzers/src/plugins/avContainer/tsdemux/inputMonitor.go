@@ -1,7 +1,7 @@
 package tsdemux
 
 import (
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 )
 
 const (

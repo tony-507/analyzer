@@ -3,7 +3,7 @@ package tttKernel
 import (
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common/logging"
+	"github.com/tony-507/analyzers/src/logging"
 )
 
 // This file stores some dummy struct for testing
