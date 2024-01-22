@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 )
 
 type Descriptor struct {

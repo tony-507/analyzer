@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/common/clock"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/clock"
 )
 
 // All calculations are done with 27MHz clock

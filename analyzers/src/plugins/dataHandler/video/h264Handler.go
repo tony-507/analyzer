@@ -3,7 +3,7 @@ package video
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"

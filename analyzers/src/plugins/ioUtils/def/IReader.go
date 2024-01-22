@@ -1,6 +1,6 @@
 package def
 
-import "github.com/tony-507/analyzers/src/common/protocol"
+import "github.com/tony-507/analyzers/src/plugins/common/protocol"
 
 type IReader interface {
 	Setup(config IReaderConfig)              // Set up reader

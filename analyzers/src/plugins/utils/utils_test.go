@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/common/clock"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/clock"
 )
 
 func msToMpegClk(ms int) clock.MpegClk {

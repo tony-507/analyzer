@@ -1,6 +1,6 @@
 package st2110
 
-import "github.com/tony-507/analyzers/src/common/protocol"
+import "github.com/tony-507/analyzers/src/plugins/common/protocol"
 
 type rtpPacket struct {
 	payload     []byte

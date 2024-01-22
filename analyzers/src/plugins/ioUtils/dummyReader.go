@@ -1,7 +1,7 @@
 package ioUtils
 
 import (
-	"github.com/tony-507/analyzers/src/common/protocol"
+	"github.com/tony-507/analyzers/src/plugins/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 

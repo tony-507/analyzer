@@ -3,7 +3,7 @@ package utils
 import (
 	"strconv"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 

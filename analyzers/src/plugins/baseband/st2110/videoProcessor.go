@@ -3,8 +3,8 @@ package st2110
 import (
 	"math"
 
-	"github.com/tony-507/analyzers/src/common"
-	"github.com/tony-507/analyzers/src/common/io"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/tttKernel"
 )
 

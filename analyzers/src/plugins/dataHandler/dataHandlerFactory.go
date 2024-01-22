@@ -3,7 +3,7 @@ package dataHandler
 import (
 	"strings"
 
-	"github.com/tony-507/analyzers/src/common"
+	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"

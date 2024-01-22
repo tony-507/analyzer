@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	tio "github.com/tony-507/analyzers/src/common/io"
+	tio "github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/logging"
 )
 

@@ -14,7 +14,7 @@ import (
 	"sync"
 
 	"github.com/tony-507/analyzers/src/logging"
-	"github.com/tony-507/analyzers/src/common/protocol"
+	"github.com/tony-507/analyzers/src/plugins/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 )
 
