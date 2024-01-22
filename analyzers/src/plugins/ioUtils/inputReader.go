@@ -12,7 +12,7 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/utils"
+	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type inputStat struct {

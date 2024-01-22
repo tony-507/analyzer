@@ -8,7 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/common"
 	"github.com/tony-507/analyzers/src/plugins/monitor/impl"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/utils"
+	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 func TestMonitorHeading(t *testing.T) {

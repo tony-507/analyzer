@@ -10,7 +10,7 @@ import (
 	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/utils"
+	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type IDemuxCallback interface {

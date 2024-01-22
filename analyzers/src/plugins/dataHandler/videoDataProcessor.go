@@ -8,7 +8,7 @@ import (
 	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	commonUtils "github.com/tony-507/analyzers/src/utils"
+	commonUtils "github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type videoDataProcessorStruct struct {
