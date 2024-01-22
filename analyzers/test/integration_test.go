@@ -28,18 +28,28 @@ func getOutputDir() string {
 	return filepath.Dir(filename)
 }
 
+func readTestCases(testCaseDir string) []string {
+	specs := []string{}
+
+	fileInfo, err := ioutil.ReadDir(testCaseDir)
+	if err != nil {
+		panic(fmt.Sprintf("Fail to read testcases: %s", err.Error()))
+	}
+
+	for _, file := range fileInfo {
+		specs = append(specs, filepath.Join(testCaseDir, file.Name()))
+	}
+
+	return specs
+}
+
 // TODO How to validate?
 func TestListApp(t *testing.T) {
 	controller.ListApp("./resources/apps/")
 }
 
 func TestStartApp(t *testing.T) {
-	specs := []string{
-		"resources/testCases/ASCENT.json",
-		"resources/testCases/AdSmart_pcap.json",
-		"resources/testCases/EBPTimeCode.json",
-		"resources/testCases/SCTE_TEST.json",
-	}
+	specs := readTestCases("resources/testCases")
 
 	for _, spec := range specs {
 		caseName := strings.Split(filepath.Base(spec), ".")[0]
