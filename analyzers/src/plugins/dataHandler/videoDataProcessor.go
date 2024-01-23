@@ -4,17 +4,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/logging"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	commonUtils "github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type videoDataProcessorStruct struct {
 	videos   []utils.VideoDataStruct
 	lastTC   common.TimeCode
-	writer commonUtils.FileWriter
+	writer   io.FileWriter
 	logger   logging.Log
 }
 
@@ -47,7 +47,7 @@ func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *u
 			vp.writer.Write(storedData.ToCmBuf())
 			if !storedData.TimeCode.IsEmpty() {
 				// Currently assume 29.97 with drop frame
-				nextTc := commonUtils.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
+				nextTc := common.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
 				if !storedData.TimeCode.Equals(&nextTc) {
 					vp.logger.Error("VITC jump detected: %s -> %s. Expecting %s", vp.lastTC.ToString(), storedData.TimeCode.ToString(), nextTc.ToString())
 				}
@@ -69,7 +69,7 @@ func videoDataProcessor(outDir string) utils.DataProcessor {
 	return &videoDataProcessorStruct{
 		videos: make([]utils.VideoDataStruct, 0, 20),
 		lastTC: common.NewTimeCode(),
-		writer: commonUtils.CsvWriter(outDir, "video.csv"),
+		writer: io.CsvWriter(outDir, "video.csv"),
 		logger: logging.CreateLogger("VideoDataProcessor"),
 	}
 }

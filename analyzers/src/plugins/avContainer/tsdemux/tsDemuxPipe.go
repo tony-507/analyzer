@@ -6,11 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/avContainer/model"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type IDemuxCallback interface {
@@ -24,7 +24,7 @@ type tsDemuxPipe struct {
 	control         *demuxController // Controller from demuxer
 	inputMon        inputMonitor
 	dataStructs     map[int]model.DataStruct
-	fileWriters     map[string]map[int]utils.FileWriter
+	fileWriters     map[string]map[int]io.FileWriter
 	programRecords  map[int]int // PAT
 	streamRecords   map[int]int // Stream pid => stream type
 	streamTree      map[int]int // Stream pid => program number
@@ -152,7 +152,7 @@ func (m_pMux *tsDemuxPipe) PsiUpdateFinished(pid int, version int, jsonBytes []b
 		}
 	}
 
-	writer := utils.RawWriter(m_pMux.callback.getOutDir(), fmt.Sprintf("%d_%d.json", pid, version))
+	writer := io.RawWriter(m_pMux.callback.getOutDir(), fmt.Sprintf("%d_%d.json", pid, version))
 	writer.Open()
 	writer.Write(tttKernel.MakeSimpleBuf(jsonBytes))
 	writer.Close()
@@ -268,12 +268,12 @@ func (m_pMux *tsDemuxPipe) PesPacketReady(buf tttKernel.CmBuf, pid int) {
 					shouldWrite = false
 					outDir := m_pMux.callback.getOutDir()
 					fname := fmt.Sprintf("%d.%s", pid, fileType)
-					var fWriter utils.FileWriter
+					var fWriter io.FileWriter
 					switch fileType {
 					case "csv":
-						fWriter = utils.CsvWriter(outDir, fname)
+						fWriter = io.CsvWriter(outDir, fname)
 					case "pes":
-						fWriter = utils.RawWriter(outDir, fname)
+						fWriter = io.RawWriter(outDir, fname)
 					}
 					m_pMux.fileWriters[fileType][pid] = fWriter
 					if err := fWriter.Open(); err != nil {
@@ -428,7 +428,7 @@ func getDemuxPipe(callback IDemuxCallback, control *demuxController, name string
 	rv := tsDemuxPipe{
 		callback: callback,
 		control: control,
-		fileWriters: map[string]map[int]utils.FileWriter{
+		fileWriters: map[string]map[int]io.FileWriter{
 			"csv": {},
 			"pes": {},
 		},

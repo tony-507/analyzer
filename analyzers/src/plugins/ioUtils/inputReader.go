@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tony-507/analyzers/src/logging"
 	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/plugins/common/clock"
-	"github.com/tony-507/analyzers/src/logging"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/plugins/common/protocol"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/def"
 	"github.com/tony-507/analyzers/src/plugins/ioUtils/fileReader"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 type inputStat struct {
@@ -39,14 +39,14 @@ type inputReaderPlugin struct {
 	stat         inputStat
 	param        inputParam
 	parsers      []protocol.IParser
-	rawBufWriter utils.FileWriter
+	rawBufWriter io.FileWriter
 }
 
 func (ir *inputReaderPlugin) StartSequence() {
 	ir.isRunning = true
 
 	if ir.param.dumpRawInput {
-		ir.rawBufWriter = utils.RawWriter(ir.loader.Query("outDir", nil), "rawBuffer")
+		ir.rawBufWriter = io.RawWriter(ir.loader.Query("outDir", nil), "rawBuffer")
 		if err := ir.rawBufWriter.Open(); err != nil {
 			ir.logger.Error("Fail to open file for dumping raw input: %s", err.Error())
 		}
@@ -169,8 +169,8 @@ func (ir *inputReaderPlugin) processMetadata(cmBuf tttKernel.CmBuf, res *protoco
 
 	if timestamp, ok := res.GetField("timestamp"); ok {
 		if ir.stat.prevTimestamp != timestamp {
-			nextTc := utils.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)
-			tc, err := utils.RtpTimestampToTimeCode(clock.MpegClk(timestamp) * clock.Clk90k, -1, 30000, 1001, false, 0)
+			nextTc := common.GetNextTimeCode(&ir.stat.prevTimecode, 30000, 1001, true)
+			tc, err := common.RtpTimestampToTimeCode(clock.MpegClk(timestamp) * clock.Clk90k, -1, 30000, 1001, false, 0)
 
 			// HACK: Cannot identify field and frame right now, so we skip the case for same timecode
 			if ir.stat.prevTimecode != tc && nextTc != tc {

@@ -8,7 +8,6 @@ import (
 	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/plugins/monitor/impl"
 	"github.com/tony-507/analyzers/src/tttKernel"
-	"github.com/tony-507/analyzers/src/plugins/utils"
 )
 
 func TestMonitorHeading(t *testing.T) {
@@ -79,9 +78,9 @@ func TestRedundancyMonitorVitcMode(t *testing.T) {
 		rm.Feed(unit2, "def")
 
 		pts1 += 3003
-		tc1 = utils.GetNextTimeCode(&tc1, 30000, 1001, true)
+		tc1 = common.GetNextTimeCode(&tc1, 30000, 1001, true)
 		pts2 += 3003
-		tc2 = utils.GetNextTimeCode(&tc2, 30000, 1001, true)
+		tc2 = common.GetNextTimeCode(&tc2, 30000, 1001, true)
 	}
 	assert.Equal(t, expected, rm.GetDisplayData())
 }

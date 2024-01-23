@@ -1,11 +1,10 @@
-package utils
+package common
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/plugins/common/clock"
 )
 
@@ -14,7 +13,7 @@ import (
 var RTP_TIMESTAMP_LOOP_POINT = 4294967295 * clock.Clk90k
 var TIMESTAMP_DIFF_THRESHOLD = 60 * clock.Second
 
-func GetNextTimeCode(curTc *common.TimeCode, fr_num int, fr_den int, dropFrame bool) common.TimeCode {
+func GetNextTimeCode(curTc *TimeCode, fr_num int, fr_den int, dropFrame bool) TimeCode {
 	maxFrame := (fr_num + fr_den / 2) / fr_den - 1 // Adjustment may be slightly < 0.5
 	rv := *curTc
 
@@ -63,10 +62,10 @@ func rtpTimestampToUtcInMs(rtp clock.MpegClk, curUtcSec int64) (clock.MpegClk, e
 	return convertedUtc, nil
 }
 
-func getNDFTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, field bool) common.TimeCode {
+func getNDFTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, field bool) TimeCode {
 	timeOfDay := realTime % clock.Day
 	frameDuration := clock.MpegClk(27000000 / fr_num * fr_den)
-	tc := common.TimeCode{
+	tc := TimeCode{
 		DropFrame: false,
 		Field: true,
 	}
@@ -95,8 +94,8 @@ func getNumFramesForDFIn10Min(fr_num int, fr_den int, field bool) int {
 	return getNumFramesForDFIn1Min(fr_num, fr_den) * 10 + 2
 }
 
-func getDFTimeCodeFromNFrames(nFrames int64, fr_num int, fr_den int, field bool) common.TimeCode {
-	tc := common.TimeCode{
+func getDFTimeCodeFromNFrames(nFrames int64, fr_num int, fr_den int, field bool) TimeCode {
+	tc := TimeCode{
 		DropFrame: true,
 		Field: true,
 	}
@@ -148,7 +147,7 @@ func computeLastSyncTime(realTime clock.MpegClk, fr_num int, fr_den int, dailySy
 	return rv
 }
 
-func getDFTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, dailySyncTime clock.MpegClk, field bool) common.TimeCode {
+func getDFTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, dailySyncTime clock.MpegClk, field bool) TimeCode {
 	frameDuration := clock.MpegClk(27000000 / fr_num * fr_den)
 	lastSyncTime := computeLastSyncTime(realTime, fr_num, fr_den, dailySyncTime)
 
@@ -163,14 +162,14 @@ func getDFTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, dailySyncTime
 	return tc
 }
 
-func utcTimestampToTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, dailySyncTime clock.MpegClk, field bool) common.TimeCode {
+func utcTimestampToTimeCode(realTime clock.MpegClk, fr_num int, fr_den int, dailySyncTime clock.MpegClk, field bool) TimeCode {
 	if fr_den == 1 {
 		return getNDFTimeCode(realTime, fr_num, fr_den, field)
 	}
 	return getDFTimeCode(realTime, fr_num, fr_den, dailySyncTime, field)
 }
 
-func RtpTimestampToTimeCode(rtp clock.MpegClk, curUtcSec int64, fr_num int, fr_den int, field bool, dailySyncTimeInHour int) (common.TimeCode, error) {
+func RtpTimestampToTimeCode(rtp clock.MpegClk, curUtcSec int64, fr_num int, fr_den int, field bool, dailySyncTimeInHour int) (TimeCode, error) {
 	convertedUtc, err := rtpTimestampToUtcInMs(rtp, curUtcSec)
 	return utcTimestampToTimeCode(convertedUtc, fr_num, fr_den, clock.MpegClk(dailySyncTimeInHour) * clock.Hour, field), err
 	
