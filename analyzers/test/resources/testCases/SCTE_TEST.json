@@ -10,7 +10,11 @@
 				},
 				{ "fname": "81_1.json" },
 				{ "fname": "81_2.json" },
-				{ "fname": "81_11.json" }
+				{ "fname": "81_11.json" },
+				{
+					"fname": "33-tspriv.csv",
+					"md5sum": "45a4e49888e9ae486ebbbe241b5c29ec"
+				}
 			]
 		}
 	}

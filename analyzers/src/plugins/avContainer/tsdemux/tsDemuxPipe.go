@@ -90,6 +90,28 @@ func (m_pMux *tsDemuxPipe) processUnit(buf []byte, pktCnt int) error {
 			}
 			m_pMux.logger.Info("[%d] At TS packet #%d, spliceCountdown is %d", pid, pktCnt, spliceCountdown)
 		}
+
+		privateData := pkt.GetAdaptationField().PrivateData
+		if len(privateData) != 0 {
+			if _, ok := m_pMux.fileWriters["tspriv"]; !ok {
+				m_pMux.fileWriters["tspriv"] = map[int]io.FileWriter{}
+			}
+			if _, ok := m_pMux.fileWriters["tspriv"][pid]; !ok {
+				m_pMux.fileWriters["tspriv"][pid] = io.CsvWriter(m_pMux.callback.getOutDir(), fmt.Sprintf("%d-tspriv.csv", pid))
+				if err := m_pMux.fileWriters["tspriv"][pid].Open(); err != nil {
+					m_pMux.logger.Warn("Fail to open handler for writing private data for pid %d: %s", pid, err.Error())
+				}
+			}
+			writer := m_pMux.fileWriters["tspriv"][pid]
+			for _, pd := range privateData {
+				buf := tttKernel.MakeSimpleBuf([]byte{})
+				buf.SetField("pktCnt", pktCnt, false)
+				buf.SetField("tag", pd.Tag, false)
+				buf.SetField("length", pd.Length, false)
+				buf.SetField("data", pd.Data, false)
+				writer.Write(buf)
+			}
+		}
 	}
 
 	switch pid {

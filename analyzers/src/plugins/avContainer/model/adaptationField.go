@@ -12,7 +12,7 @@ type adaptationField struct {
 	Pcr             int64
 	Opcr            int64
 	SpliceCountdown int
-	PrivateData     string
+	PrivateData     []privateData
 }
 
 func (af *adaptationField) read(buf []byte) (int, error) {
@@ -38,7 +38,7 @@ func (af *adaptationField) read(buf []byte) (int, error) {
 	pcr := -1
 	opcr := -1
 	spliceCountdown := -1
-	privateData := ""
+	privateData := []privateData{}
 
 	if pcrFlag != 0 {
 		pcr = r.ReadBits(33)
@@ -67,8 +67,8 @@ func (af *adaptationField) read(buf []byte) (int, error) {
 			if err != nil {
 				panic(err)
 			}
-			privateData = pd.data
-			privateDataLen -= pd.length + 2
+			privateData = append(privateData, pd)
+			privateDataLen -= pd.Length + 2
 		}
 	}
 

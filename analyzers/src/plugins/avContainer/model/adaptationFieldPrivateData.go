@@ -64,32 +64,28 @@ func parseEbpInfo(r *io.BsReader) ([]byte, error) {
 }
 
 type privateData struct {
-	tag    int
-	length int
-	data   string // JSON string if known, otherwise hex string
-}
-
-func (pd *privateData) getData() string {
-	return pd.data
+	Tag    int
+	Length int
+	Data   string // JSON string if known, otherwise hex string
 }
 
 func parsePrivateData(r *io.BsReader) (privateData, error) {
 	pd := privateData{}
 
-	pd.tag = r.ReadBits(8)
-	pd.length = r.ReadBits(8)
+	pd.Tag = r.ReadBits(8)
+	pd.Length = r.ReadBits(8)
 
 	var err error
 	var data []byte
-	switch pd.tag {
+	switch pd.Tag {
 	case 0xDF:
 		data, err = parseEbpInfo(r)
 	default:
-		pd.data = r.ReadChar(pd.length)
+		pd.Data = r.ReadHex(pd.Length)
 	}
 
 	if len(data) != 0 {
-		pd.data = string(data)
+		pd.Data = string(data)
 	}
 
 	return pd, err
