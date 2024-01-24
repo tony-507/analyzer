@@ -6,8 +6,14 @@
 			"file": [
 				{ "fname": "0_0.json" },
 				{ "fname": "258_0.json" },
-				{ "fname": "32.csv" },
-				{ "fname": "33.csv" },
+				{
+					"fname": "32.csv",
+					"md5sum": "eeb1bbab82e3403281aee0cbed1207fa"
+				},
+				{
+					"fname": "33.csv",
+					"md5sum": "8daba72797677b9c8d701050ff1d2ee8"
+				},
 				{
 					"fname": "32.pes",
 					"md5sum": "1a38d99310c3e190dac56f92318f0369"
