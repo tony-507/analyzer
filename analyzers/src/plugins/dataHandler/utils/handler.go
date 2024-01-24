@@ -18,7 +18,8 @@ const (
 
 type ParsedData struct {
 	dType  PARSED_TYPE
-	vData VideoDataStruct
+	vData  VideoDataStruct
+	data   DataStruct
 }
 
 func (data *ParsedData) GetType() PARSED_TYPE {
@@ -30,10 +31,16 @@ func (data *ParsedData) GetVideoData() *VideoDataStruct {
 	return &data.vData
 }
 
+func (data *ParsedData) GetData() *DataStruct {
+	data.dType = PARSED_DATA
+	return &data.data
+}
+
 func CreateParsedData() ParsedData {
 	return ParsedData{
 		dType: EMPTY,
 		vData: VideoData(),
+		data:  newData(),
 	}
 }
 
@@ -73,6 +80,29 @@ func VideoData() VideoDataStruct {
 	return VideoDataStruct{
 		TimeCode: common.NewTimeCode(),
 		Type: UNKNOWN_SLICE,
+	}
+}
+
+type _DATA_TYPE int
+
+const (
+	UNKNOWN _DATA_TYPE = 0
+	SCTE_35 _DATA_TYPE = 1
+)
+
+type DataStruct struct {
+	Type   _DATA_TYPE
+	Scte35 *Scte35Struct
+}
+
+type Scte35Struct struct {
+	SpliceTime int
+}
+
+func newData() DataStruct {
+	return DataStruct{
+		Type: UNKNOWN,
+		Scte35: nil,
 	}
 }
 
