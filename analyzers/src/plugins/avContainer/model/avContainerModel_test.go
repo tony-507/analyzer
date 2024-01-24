@@ -145,23 +145,25 @@ func TestReadPMT(t *testing.T) {
 
 func TestAdaptationFieldIO(t *testing.T) {
 	caseName := []string{
-		"EmptyAdaptationField",
-		"AdapationFieldWithPCR",
-		"AdapationFieldWithEverything",
+		"Empty",
+		"PCR",
+		"MultiplePrivateData",
+		"Everything",
 	}
 	byteSpecs := [][]byte{
 		{0x00},
 		{0x07, 0x50, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3}, // With PCR
-		{0x14, 0x5e, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x01, 0x03, 0x45, 0x4e, 0x47, 0xff, 0xff}, // With everything
+		{0x0b, 0x03, 0x09, 0xff, 0x02, 0x11, 0x11, 0xff, 0x03, 0x22, 0x22, 0x22}, // Multiple private data
+		{0x16, 0x5e, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x00, 0x04, 0xce, 0xcd, 0x7e, 0xf3, 0x01, 0x05, 0xff, 0x03, 0x45, 0x4e, 0x47, 0xff, 0xff}, // With everything
 	}
-	afSize := []int{1, 8, 21}
+	afSize := []int{1, 8, 12, 23}
 	resSpec := make(map[string][]int, 0)
-	resSpec["discontinuityIdr"] = []int{0, 0}
-	resSpec["randomAccessIdr"] = []int{1, 1}
-	resSpec["esPriorityIdr"] = []int{0, 0}
-	resSpec["pcr"] = []int{189051243, 189051243}
-	resSpec["opcr"] = []int{-1, 189051243}
-	resSpec["spliceCountdown"] = []int{-1, 1}
+	resSpec["discontinuityIdr"] = []int{0, 0, 0}
+	resSpec["randomAccessIdr"] = []int{1, 0, 1}
+	resSpec["esPriorityIdr"] = []int{0, 0, 0}
+	resSpec["pcr"] = []int{189051243, -1, 189051243}
+	resSpec["opcr"] = []int{-1, -1, 189051243}
+	resSpec["spliceCountdown"] = []int{-1, -1, 1}
 
 	for idx := range byteSpecs {
 		t.Run(caseName[idx], func(t *testing.T) {

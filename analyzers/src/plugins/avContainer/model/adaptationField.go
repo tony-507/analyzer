@@ -1,6 +1,8 @@
 package model
 
-import "github.com/tony-507/analyzers/src/plugins/common/io"
+import (
+	"github.com/tony-507/analyzers/src/plugins/common/io"
+)
 
 type adaptationField struct {
 	exist           bool
@@ -59,8 +61,15 @@ func (af *adaptationField) read(buf []byte) (int, error) {
 
 	if transportPrivateFlag != 0 {
 		privateDataLen := r.ReadBits(8)
-		privateData = r.ReadChar(privateDataLen)
 		remainedLen -= privateDataLen + 1
+		for privateDataLen > 0 {
+			pd, err := parsePrivateData(&r)
+			if err != nil {
+				panic(err)
+			}
+			privateData = pd.data
+			privateDataLen -= pd.length + 2
+		}
 	}
 
 	af.Pcr = int64(pcr)
