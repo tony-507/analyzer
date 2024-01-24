@@ -81,6 +81,7 @@ const (
 // Data structs
 type mediaData interface {
 	GetType() _DATA_TYPE
+	GetField(name string) int64
 }
 
 type _DATA_TYPE int
@@ -95,6 +96,17 @@ type scte35Data struct {
 
 func (data *scte35Data) GetType() _DATA_TYPE {
 	return SCTE_35
+}
+
+func (data *scte35Data) GetField(name string) int64 {
+	switch name {
+	case "spliceTime":
+		return data.SpliceTime
+	case "preroll":
+		return data.Preroll
+	default:
+		panic("No such field")
+	}
 }
 
 func NewScte35Data(spliceTime int64, preroll int64) scte35Data {

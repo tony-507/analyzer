@@ -3,9 +3,10 @@ package dataHandler
 import (
 	"strings"
 
-	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/logging"
+	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/audio"
+	"github.com/tony-507/analyzers/src/plugins/dataHandler/data"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video"
 	"github.com/tony-507/analyzers/src/tttKernel"
@@ -94,6 +95,8 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId s
 			df.handlers[pid] = video.H264VideoHandler(pid)
 		case 129:
 			df.handlers[pid] = audio.AC3Handler(pid)
+		case 134:
+			df.handlers[pid] = data.Scte35Handler(pid)
 		case 135:
 			df.handlers[pid] = audio.AC3Handler(pid)
 		}
@@ -107,6 +110,8 @@ func (df *DataHandlerFactoryPlugin) DeliverUnit(unit tttKernel.CmUnit, inputId s
 		switch newData.GetType() {
 		case utils.PARSED_VIDEO:
 			newUnit = common.NewMediaUnit(cmBuf, common.VIDEO_UNIT)
+		case utils.PARSED_DATA:
+			newUnit = common.NewMediaUnit(cmBuf, common.DATA_UNIT)
 		default:
 			newUnit = common.NewMediaUnit(cmBuf, common.UNKNOWN_UNIT)
 		}
