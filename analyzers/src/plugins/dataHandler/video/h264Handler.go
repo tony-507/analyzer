@@ -32,6 +32,9 @@ func (h *h264Handler) readNalUnit(r *io.BsReader, data *utils.VideoDataStruct) {
 	// HACK: Speed up processing by assuming coded slice always present as the last NAL unit
 	if nal_unit_type <= 5 || nal_unit_type == 19 {
 		h264.ReadSlice(r, data)
+		if nal_unit_type == 5 {
+			data.Type = utils.IDR_SLICE
+		}
 	}
 	rbsp := []byte{}
 	for {

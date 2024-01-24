@@ -51,6 +51,7 @@ const (
 	I_SLICE       FRAME_TYPE = 1
 	P_SLICE       FRAME_TYPE = 2
 	B_SLICE       FRAME_TYPE = 3
+	IDR_SLICE     FRAME_TYPE = 4
 )
 
 type VideoDataStruct struct {

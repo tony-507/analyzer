@@ -47,7 +47,7 @@ func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *u
 		data.Dts = dts
 		data.Pts = pts
 
-		if data.Type == utils.I_SLICE {
+		if data.Type == utils.I_SLICE || data.Type == utils.IDR_SLICE {
 			// Sort data when we reach an I slice
 			sort.Slice(vp.videos, func (i, j int) bool { return vp.videos[i].Pts < vp.videos[j].Pts })
 			for _, storedData := range vp.videos {
