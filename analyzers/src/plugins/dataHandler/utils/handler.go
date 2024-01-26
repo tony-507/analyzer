@@ -44,21 +44,11 @@ func CreateParsedData() ParsedData {
 	}
 }
 
-type FRAME_TYPE int
-
-const (
-	UNKNOWN_SLICE FRAME_TYPE = 0
-	I_SLICE       FRAME_TYPE = 1
-	P_SLICE       FRAME_TYPE = 2
-	B_SLICE       FRAME_TYPE = 3
-	IDR_SLICE     FRAME_TYPE = 4
-)
-
 type VideoDataStruct struct {
 	Dts      int
 	Pts      int
 	TimeCode common.TimeCode
-	Type     FRAME_TYPE
+	Type     common.FRAME_TYPE
 }
 
 func (d * VideoDataStruct) GetType() PARSED_TYPE {
@@ -67,7 +57,7 @@ func (d * VideoDataStruct) GetType() PARSED_TYPE {
 
 func (d *VideoDataStruct) ToCmBuf() tttKernel.CmBuf {
 	cmBuf := tttKernel.MakeSimpleBuf([]byte{})
-	if d.Type != UNKNOWN_SLICE {
+	if d.Type != common.UNKNOWN_SLICE {
 		cmBuf.SetField("type", strconv.Itoa(int(d.Type)), false)
 	}
 	cmBuf.SetField("pts", d.Pts, false)
@@ -80,7 +70,7 @@ func (d *VideoDataStruct) ToCmBuf() tttKernel.CmBuf {
 func VideoData() VideoDataStruct {
 	return VideoDataStruct{
 		TimeCode: common.NewTimeCode(),
-		Type: UNKNOWN_SLICE,
+		Type: common.UNKNOWN_SLICE,
 	}
 }
 

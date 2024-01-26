@@ -3,8 +3,9 @@ package video
 import (
 	"fmt"
 
-	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/logging"
+	"github.com/tony-507/analyzers/src/plugins/common"
+	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/video/h264"
 	"github.com/tony-507/analyzers/src/tttKernel"
@@ -33,7 +34,7 @@ func (h *h264Handler) readNalUnit(r *io.BsReader, data *utils.VideoDataStruct) {
 	if nal_unit_type <= 5 || nal_unit_type == 19 {
 		h264.ReadSlice(r, data)
 		if nal_unit_type == 5 {
-			data.Type = utils.IDR_SLICE
+			data.Type = common.IDR_SLICE
 		}
 	}
 	rbsp := []byte{}

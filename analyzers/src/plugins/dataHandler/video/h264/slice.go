@@ -1,6 +1,7 @@
 package h264
 
 import (
+	"github.com/tony-507/analyzers/src/plugins/common"
 	"github.com/tony-507/analyzers/src/plugins/common/io"
 	"github.com/tony-507/analyzers/src/plugins/dataHandler/utils"
 )
@@ -15,13 +16,13 @@ func readSliceHeader(r *io.BsReader, data *utils.VideoDataStruct) {
 
 	switch slice_type % 5 {
 	case 0:
-		data.Type = utils.P_SLICE
+		data.Type = common.P_SLICE
 	case 1:
-		data.Type = utils.B_SLICE
+		data.Type = common.B_SLICE
 	case 2:
-		data.Type = utils.I_SLICE
+		data.Type = common.I_SLICE
 	default:
-		data.Type = utils.UNKNOWN_SLICE
+		data.Type = common.UNKNOWN_SLICE
 	}
 
 	r.ReadBits((len(r.GetRemainedBuffer()) - 1) * 8 + r.GetOffset())

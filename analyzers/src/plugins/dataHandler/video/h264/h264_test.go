@@ -51,5 +51,5 @@ func TestReadSliceHeader(t *testing.T) {
 	vData := data.GetVideoData()
 	readSliceHeader(&r, vData)
 
-	assert.Equal(t, utils.B_SLICE, vData.Type)
+	assert.Equal(t, common.B_SLICE, vData.Type)
 }
