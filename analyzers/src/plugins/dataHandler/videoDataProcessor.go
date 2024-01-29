@@ -34,10 +34,9 @@ func (vp *videoDataProcessorStruct) Stop() error {
 }
 
 func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *utils.ParsedData) {
-	cmBuf := unit.GetBuf()
-
 	switch parsedData.GetType() {
 	case utils.PARSED_VIDEO:
+		cmBuf := unit.GetBuf()
 		vUnit, _ := unit.(*common.MediaUnit)
 		vmd := vUnit.GetVideoData()
 
@@ -53,7 +52,9 @@ func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *u
 			for _, storedData := range vp.videos {
 				vp.writer.Write(storedData.ToCmBuf())
 
-				vp.validateTimeCode(&storedData)
+				if !vp.validateTimeCode(&storedData) {
+					vp.stat.nTcDiscontinuity++
+				}
 				vp.validateSpliceIDR(&storedData)
 			}
 			vp.videos = []utils.VideoDataStruct{}
@@ -66,38 +67,53 @@ func (vp *videoDataProcessorStruct) Process(unit tttKernel.CmUnit, parsedData *u
 	case utils.PARSED_DATA:
 		data := parsedData.GetData()
 		if data.Type == utils.SCTE_35 {
-			vp.splicePTS = append(vp.splicePTS, uint64(data.Scte35.SpliceTime))
+			hasSpliceTime := false
+			for _, spliceTime := range vp.splicePTS {
+				if spliceTime == uint64(data.Scte35.SpliceTime) {
+					hasSpliceTime = true
+					break
+				}
+			}
+			if !hasSpliceTime {
+				vp.splicePTS = append(vp.splicePTS, uint64(data.Scte35.SpliceTime))
+			}
 		}
 	}
 }
 
-func (vp *videoDataProcessorStruct) validateTimeCode(data *utils.VideoDataStruct) {
+func (vp *videoDataProcessorStruct) validateTimeCode(data *utils.VideoDataStruct) bool {
 	if !data.TimeCode.IsEmpty() {
 		// Currently assume 29.97 with drop frame
 		nextTc := common.GetNextTimeCode(&vp.lastTC, 30000, 1001, true)
 		if !data.TimeCode.Equals(&nextTc) {
-			vp.stat.nTcDiscontinuity++
+			return false
 		}
 		vp.lastTC = data.TimeCode
 	}
+	return true
 }
 
-func (vp *videoDataProcessorStruct) validateSpliceIDR(data *utils.VideoDataStruct) {
-	if data.Type != common.I_SLICE {
-		return
+func (vp *videoDataProcessorStruct) validateSpliceIDR(data *utils.VideoDataStruct) bool {
+	if data.Type != common.IDR_SLICE {
+		return true
 	}
 
-	updatedSplicePTS := []uint64{}
-	for _, spliceTime := range vp.splicePTS {
-		if uint64(data.Pts) > spliceTime {
-			vp.logger.Error("No I frame at splice PTS %d", spliceTime)
-		} else if uint64(data.Pts) == spliceTime {
-			vp.logger.Info("I frame found for splice PTS %d", spliceTime)
-		} else {
-			updatedSplicePTS = append(updatedSplicePTS, spliceTime)
-		}
+	if len(vp.splicePTS) == 0 {
+		return true
 	}
-	vp.splicePTS = updatedSplicePTS
+
+	spliceTime := vp.splicePTS[0]
+
+	if uint64(data.Pts) > spliceTime {
+		vp.logger.Error("No I frame at splice PTS %d", spliceTime)
+		vp.splicePTS = vp.splicePTS[1:]
+		return false
+	} else if uint64(data.Pts) == spliceTime {
+		vp.logger.Info("I frame found for splice PTS %d", spliceTime)
+		vp.splicePTS = vp.splicePTS[1:]
+		return true
+	}
+	return true
 }
 
 func (vp *videoDataProcessorStruct) PrintInfo(sb *strings.Builder) {
