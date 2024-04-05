@@ -201,7 +201,7 @@ func (m_pMux *tsDemuxPipe) SpliceEventReceived(dpiPid int, spliceCmdTypeStr stri
 					m_pMux.logger.Warn("Preroll of SCTE-35 at #%d has short preroll %d", pktCnt, preroll)
 				}
 			}
-			data := common.NewScte35Data(int64(spliceTime), int64(preroll))
+			data := common.NewScte35Data(int64(curVideoPlayTime), int64(spliceTime), int64(preroll))
 			unit := common.NewMediaUnit(buf, common.DATA_UNIT)
 			unit.Data = &data
 			m_pMux.outputQueue = append(m_pMux.outputQueue, unit)

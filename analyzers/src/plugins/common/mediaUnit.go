@@ -91,6 +91,7 @@ const (
 )
 
 type scte35Data struct {
+	Playtime   int64
 	SpliceTime int64
 	Preroll    int64
 }
@@ -101,6 +102,8 @@ func (data *scte35Data) GetType() _DATA_TYPE {
 
 func (data *scte35Data) GetField(name string) int64 {
 	switch name {
+	case "playtime":
+		return data.Playtime
 	case "spliceTime":
 		return data.SpliceTime
 	case "preroll":
@@ -110,8 +113,9 @@ func (data *scte35Data) GetField(name string) int64 {
 	}
 }
 
-func NewScte35Data(spliceTime int64, preroll int64) scte35Data {
+func NewScte35Data(playtime int64, spliceTime int64, preroll int64) scte35Data {
 	return scte35Data{
+		Playtime: playtime,
 		SpliceTime: spliceTime,
 		Preroll: preroll,
 	}
@@ -154,6 +158,10 @@ func (m *MediaUnit) GetField(field string) interface{} {
 	default:
 		return nil
 	}
+}
+
+func (m *MediaUnit) GetType() _MEDIA_TYPE {
+	return m.unitType
 }
 
 func (m *MediaUnit) GetVideoData() *videoMetaData {
