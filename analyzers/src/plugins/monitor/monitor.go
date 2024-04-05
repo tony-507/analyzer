@@ -20,6 +20,7 @@ type monitorStat struct {
 
 type monitor struct {
 	isRunning    bool
+	showTime     bool
 	ctrlChan     chan struct{}
 	mtx          sync.Mutex
 	wg           sync.WaitGroup
@@ -31,6 +32,9 @@ type monitor struct {
 func (m *monitor) setParameter(param *OutputMonitorParam) {
 	if param.Redundancy != nil {
 		m.impl = impl.GetRedundancyMonitor(param.Redundancy)
+		m.showTime = true
+	} else {
+		m.impl = impl.GetScte35Monitor()
 	}
 }
 
@@ -82,7 +86,10 @@ func (m *monitor) worker() {
 func (m *monitor) getOutputMsg() string {
 	lineLen := len(m.heading) + 1
 	sepStr := fmt.Sprintf(colors.Reset + "%s\n", strings.Repeat(colors.Reset + "-", lineLen))
-	msg := fmt.Sprintf("Current time: %s\n", time.Now().UTC().Format("15:04:05.000000"))
+	msg := ""
+	if m.showTime {
+		msg += fmt.Sprintf("Current time: %s\n", time.Now().UTC().Format("15:04:05.000000"))
+	}
 	msg += sepStr
 	msg += m.heading + "|\n"
 	msg += sepStr
@@ -91,7 +98,7 @@ func (m *monitor) getOutputMsg() string {
 	defer m.mtx.Unlock()
 
 	for _, body := range m.impl.GetDisplayData() {
-		if len(body) < lineLen {
+		if len(body) == 0 {
 			// Hide empty row
 			continue
 		}
@@ -105,6 +112,7 @@ func (m *monitor) getOutputMsg() string {
 func newMonitor() monitor {
 	return monitor{
 		isRunning: false,
+		showTime: false,
 		ctrlChan: make(chan struct{}),
 		impl: nil,
 		heading: "",

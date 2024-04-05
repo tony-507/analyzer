@@ -120,3 +120,40 @@ func TestRedundancyMonitorPtsMode(t *testing.T) {
 	}
 	assert.Equal(t, expected, rm.GetDisplayData())
 }
+
+func TestScte35Monitor(t *testing.T) {
+	m := impl.GetScte35Monitor()
+	spliceTime := 10 * int64(27_000_000)
+	preRollForABC := []int64{8, 6, 4}
+	preRollForDEF := []int64{4}
+	expected := []string{}
+
+	for _, preroll := range preRollForABC {
+		buf := tttKernel.MakeSimpleBuf([]byte{})
+		buf.SetField("pid", 100, false)
+		unit := common.NewMediaUnit(buf, common.DATA_UNIT)
+		data := common.NewScte35Data(spliceTime - preroll * 27_000_000, spliceTime, preroll * 90_000)
+		unit.Data = &data
+		m.Feed(unit, "abc")
+		expected = append(expected, fmt.Sprintf("|%15d|%15d|%15d|%15d", 100, spliceTime - preroll * 27_000_000, spliceTime, preroll * 1000))
+	}
+
+	for idx, preroll := range preRollForDEF {
+		buf := tttKernel.MakeSimpleBuf([]byte{})
+		buf.SetField("pid", 100, false)
+		unit := common.NewMediaUnit(buf, common.DATA_UNIT)
+		data := common.NewScte35Data(spliceTime - preroll * 27_000_000, spliceTime, preroll * 90_000)
+		unit.Data = &data
+		m.Feed(unit, "def")
+		expected[idx] += fmt.Sprintf("|%15d|%15d|%15d|%15d", 100, spliceTime - preroll * 27_000_000, spliceTime, preroll * 1000)
+	}
+
+	expected[1] += fmt.Sprintf("|%15s|%15s|%15s|%15s", "", "", "", "")
+	expected[2] += fmt.Sprintf("|%15s|%15s|%15s|%15s", "", "", "", "")
+
+	for i := range expected {
+		expected[i] += "|"
+	}
+
+	assert.Equal(t, expected, m.GetDisplayData())
+}
