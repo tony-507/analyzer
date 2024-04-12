@@ -51,7 +51,7 @@ func (m *Scte35Monitor) Feed(unit tttKernel.CmUnit, inputId string) {
 }
 
 func (m *Scte35Monitor) GetFields() []string {
-	return []string{"Pid", "PTS", "Splice Time", "Pre-roll"}
+	return []string{"Pid", "Preroll"}
 }
 
 func (m *Scte35Monitor) HasInputId(inputId string) bool {
@@ -72,9 +72,9 @@ func (m *Scte35Monitor) GetDisplayData() []string {
 		for idx := 0; idx < maxLength; idx++ {
 			if idx < len(m.data[id]) {
 				datum := m.data[id][idx]
-				res[idx] += fmt.Sprintf("|%15d|%15d|%15d|%15d", datum.pid, datum.pts, datum.spliceTime, datum.preRoll)
+				res[idx] += fmt.Sprintf("|%15d|%15d", datum.pid, datum.preRoll)
 			} else {
-				res[idx] += fmt.Sprintf("|%15s|%15s|%15s|%15s", "", "", "", "")
+				res[idx] += fmt.Sprintf("|%15s|%15s", "", "")
 			}
 		}
 	}

@@ -135,7 +135,7 @@ func TestScte35Monitor(t *testing.T) {
 		data := common.NewScte35Data(spliceTime - preroll * 27_000_000, spliceTime, preroll * 90_000)
 		unit.Data = &data
 		m.Feed(unit, "abc")
-		expected = append(expected, fmt.Sprintf("|%15d|%15d|%15d|%15d", 100, spliceTime - preroll * 27_000_000, spliceTime, preroll * 1000))
+		expected = append(expected, fmt.Sprintf("|%15d|%15d", 100, preroll * 1000))
 	}
 
 	for idx, preroll := range preRollForDEF {
@@ -145,11 +145,11 @@ func TestScte35Monitor(t *testing.T) {
 		data := common.NewScte35Data(spliceTime - preroll * 27_000_000, spliceTime, preroll * 90_000)
 		unit.Data = &data
 		m.Feed(unit, "def")
-		expected[idx] += fmt.Sprintf("|%15d|%15d|%15d|%15d", 100, spliceTime - preroll * 27_000_000, spliceTime, preroll * 1000)
+		expected[idx] += fmt.Sprintf("|%15d|%15d", 100, preroll * 1000)
 	}
 
-	expected[1] += fmt.Sprintf("|%15s|%15s|%15s|%15s", "", "", "", "")
-	expected[2] += fmt.Sprintf("|%15s|%15s|%15s|%15s", "", "", "", "")
+	expected[1] += fmt.Sprintf("|%15s|%15s", "", "")
+	expected[2] += fmt.Sprintf("|%15s|%15s", "", "")
 
 	for i := range expected {
 		expected[i] += "|"
