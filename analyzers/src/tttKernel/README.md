@@ -1,20 +1,14 @@
 # tttKernel
 
-This is a kernel module for ttt application. It provisions a ttt script and input arguments to build a work graph.
-
-## APIs
-
-tttKernel exports only a single API:
-```
-tttKernel.StartApp(script string, input []string)
-```
-One just needs to provide the ttt script as well as the input arguments in order to run the application.
+This is the kernel module for the application. It provisions a  script and input arguments to build a graph connecting different plugins.
 
 ## Plugin Management
 
-This module does not support dynamic library loading. If one would like to add a customised plugin, please add an entry in graphNode.go to allow kernel to get the plugin.
+This application does not support dynamic library loading.
 
-The plugin needs to inherit the interface IPlugin.
+To add a new plugin,
+* Create a class inheriting the interface `IPlugin`.
+* Register the plugin with your own plugin selector function.
 
 ## ttt Scripting Syntax
 

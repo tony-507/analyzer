@@ -1,36 +1,52 @@
 # Analyzer
 
-An MPEG toy program written in Go. The program can be built with Go >= 1.13.
+An MPEG toy program written in Go. The program can be built with `go >= 1.13` and `make`.
 
 ## Quick start
 
-Fetch common build scripts
 ```
 $> git clone git@github.com:tony-507/build-tools.git
-$> ln -sf build-tools/build-tools/build-local.sh build-local.sh
-```
-
-Run build flow
-```
-$> ./build-local.sh
+$> cd analyzers
+$> make
 ```
 
 Built output can be found at `analyzers/build/`. Integration test output can be found at `analyzers/test/output`.
 
 ## Architecture
 
-This project uses plugin-worker architecture.
+There are several components in the application.
 
-A plugin is specified for a type of job, e.g. ioReader plugin is responsible for reading input. It exports interfaces for interactions.
+### Plugins
 
-A worker coordinates work between plugins by systematically calling their interfaces. In this project, tttKernel is the package containing the worker. It exports a simple API
+A plugin is specified for a type of job, e.g. ioReader plugin is responsible for reading input, tsdemux demultiplexes a transport stream.
+
+All plugins implement a set of interfaces for handling the data flow.
+
+### Kernel
+
+A kernel coordinates different plugins by calling their interfaces. In this project, tttKernel is the package containing the worker. It exposes a simple API for one to run the application.
 ```
-tttKernel.StartApp(script string, input []string)
+tttKernel.StartService(params []OverallParams, selectPlugin func(string) IPlugin)
 ```
-for one to run the application. The script parameter is a `.ttt` file with specified syntax that describes the plugins. It allows one to configure plugins' parameters and construct a workflow among plugins. The input parameter is the list of input arguments that provide further flexibility on using a script.
+
+The `params` parameter describes how the properties of plugins used, including their properties and how they are connected. It allows one to configure plugins' parameters and construct a workflow among plugins. The `selectPlugin` parameter provides a plugin selector for kernel to select appropriate plugin for each plugin in `params`.
 
 For detail on syntax of the script, refer to documentation in tttKernel.
 
+### Controller
+
+A controller is responsible for determining the parameters passed to the kernel according to the application requirement.
+
+The application requirement is specified by a `.ttt` file.
+
 ## Testing
 
-This projects contains codes for unit tests and integration tests using Go's native testing package. One can check the coverage of the tests with the output html file.
+To run test:
+```
+$> make run-test
+```
+
+To generate coverage report:
+```
+$> make coverage
+```
