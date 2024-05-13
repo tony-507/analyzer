@@ -67,94 +67,65 @@ func newScriptParser() scriptParser {
 
 // Read from script and input to prepare plugins and the respective parameters
 func (sp *scriptParser) buildParams(script string, input []string, lim int) {
-	if lim < 0 {
-		lim = 99999
-	}
 	lines := strings.FieldsFunc(script, func(r rune) bool { return r == ';' || r == '\n' })
 	syntaxErrLine := 0
 	msg := ""
-	conditionalStack := make([]bool, 0) // Stack of if-blocks
-	for lNum, line := range lines {
+
+	lNum := 0
+	shouldRun := true
+
+	if lim < 0 {
+		lim = len(lines)
+	}
+
+	for lNum < len(lines) {
 		if lNum >= lim {
 			break
 		}
-		line = strings.TrimSpace(line)
-		// Skip empty line
-		if len(line) == 0 {
-			continue
-		}
 
-		// Handle functions, declarations and conditionals
-		origTokens := strings.FieldsFunc(line, func(r rune) bool { return r == '(' || r == ',' || r == ')' || r == '|' || r == '=' || r == ' ' })
+		tokens := parseLine(lines[lNum])
 
-		tokens := make([]string, 0)
-		// Remove spaces
-		for idx := range origTokens {
-			origTokens[idx] = strings.TrimSpace(origTokens[idx])
-			if len(origTokens[idx]) > 0 {
-				tokens = append(tokens, origTokens[idx])
-			}
-		}
-
-		// Skip lines in unrelated if-block
-		runLine := true
-		if len(conditionalStack) > 0 {
-			runLine = conditionalStack[len(conditionalStack)-1]
-		}
-
-		if tokens[0] == "end" {
-			if len(conditionalStack) > 1 {
-				conditionalStack = conditionalStack[:len(conditionalStack)-1]
-			} else {
-				conditionalStack = make([]bool, 0)
-			}
-			continue
-		}
-
-		if !runLine {
+		if len(tokens) == 0 || (!shouldRun && tokens[0] != "end") {
+			lNum++
 			continue
 		}
 
 		switch tokens[0] {
-		// Built-in functions
+		case "//":
+			// Description
+			sp.description = strings.Join(tokens[1:], " ")
 		case "link":
+			// Link two plugins
 			if len(tokens) != 3 {
 				panic(fmt.Sprintf("Wrong number of input: %d, %v", len(tokens), tokens))
 			}
 			sp.linkPlugins(tokens[1], tokens[2])
 		case "alias":
+			// Set alias to a variable
 			sp.setAlias(tokens[1], tokens[2])
-		// Control flows
 		case "if":
+			// Conditional
 			initFrom := []rune(tokens[1])
 			switch initFrom[0] {
 			case '$':
 				if len(tokens) != 3 {
 					tokens = append(tokens, "")
 				}
-				runConditional := sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]) != ""
-				conditionalStack = append(conditionalStack, runConditional)
+				shouldRun = sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]) != ""
 			default:
-				panic("Unknown condition for if block")
+				syntaxErrLine = lNum
+				msg = "Unknown condition for if block"
+				break
 			}
-		case "//":
-			sp.description = strings.Join(tokens[1:], " ")
-		// Declarations
+		case "end":
+			// End of control flow
+			shouldRun = true
 		default:
-			if len(tokens) != 3 {
-				tokens = append(tokens, "")
-			}
-			initFrom := []rune(tokens[1])
-			switch initFrom[0] {
-			case '#':
-				sp.declarePlugin(tokens[0], string(initFrom[1:]))
-			case '$':
-				// User input
-				sp.declareVariable(tokens[0], sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]))
-			default:
-				sp.declareVariable(tokens[0], sp.resolveRHS(tokens[1]))
-			}
+			// Declaration
+			sp.declare(tokens, input)
 		}
+
+		lNum++
 	}
 
 	if syntaxErrLine > 0 {
@@ -171,6 +142,22 @@ func (sp *scriptParser) linkPlugins(parent string, child string) {
 		sp.edgeMap[parent] = append(sp.edgeMap[parent], sp.getValueFromName(child))
 	} else {
 		sp.edgeMap[parent] = []string{sp.getValueFromName(child)}
+	}
+}
+
+func (sp *scriptParser) declare(tokens []string, input []string) {
+	if len(tokens) != 3 {
+		tokens = append(tokens, "")
+	}
+	initFrom := []rune(tokens[1])
+	switch initFrom[0] {
+	case '#':
+		sp.declarePlugin(tokens[0], string(initFrom[1:]))
+	case '$':
+		// User input
+		sp.declareVariable(tokens[0], sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]))
+	default:
+		sp.declareVariable(tokens[0], sp.resolveRHS(tokens[1]))
 	}
 }
 
@@ -282,4 +269,23 @@ func (sp *scriptParser) resolveRHS(rhs string) string {
 		return x
 	}
 	return rhs
+}
+
+func parseLine(line string) []string {
+	origTokens := strings.FieldsFunc(
+		line,
+		func(r rune) bool {
+			return r == '(' || r == ',' || r == ')' || r == '|' || r == '=' || r == ' '
+		},
+	)
+
+	tokens := make([]string, 0)
+	for idx := range origTokens {
+		origTokens[idx] = strings.TrimSpace(origTokens[idx])
+		if len(origTokens[idx]) > 0 {
+			tokens = append(tokens, origTokens[idx])
+		}
+	}
+
+	return tokens
 }
