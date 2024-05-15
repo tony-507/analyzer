@@ -60,6 +60,16 @@ func TestRunPartialNestedConditional(t *testing.T) {
 	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Nested conditional fails")
 }
 
+func TestRunAfterUnexecutedConditional(t *testing.T) {
+	script := "if $y; x = $x; end; y = $x;"
+	input := []string{"-x", "hi"}
+	ctrl := newController()
+
+	ctrl.parser.buildParams(script, input, -1)
+
+	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Unexecuted conditional fails")
+}
+
 func TestGetEmptyAttributeString(t *testing.T) {
 	v := scriptVar{name: "dummy", varType: _VAR_PLUGIN, value: "dummy_1", attributes: make([]*scriptVar, 0)}
 	s := v.getAttributeStr()
