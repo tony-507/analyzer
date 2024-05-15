@@ -74,6 +74,9 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 	lNum := 0
 	shouldRun := true
 
+	// For loop handling
+	loopIdx := -1
+
 	if lim < 0 {
 		lim = len(lines)
 	}
@@ -111,7 +114,7 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 				if len(tokens) != 3 {
 					tokens = append(tokens, "")
 				}
-				shouldRun = sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]) != ""
+				shouldRun = sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2], loopIdx) != ""
 			default:
 				syntaxErrLine = lNum
 				msg = "Unknown condition for if block"
@@ -122,7 +125,7 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 			shouldRun = true
 		default:
 			// Declaration
-			sp.declare(tokens, input)
+			sp.declare(tokens, input, loopIdx)
 		}
 
 		lNum++
@@ -145,19 +148,31 @@ func (sp *scriptParser) linkPlugins(parent string, child string) {
 	}
 }
 
-func (sp *scriptParser) declare(tokens []string, input []string) {
+/*
+ * Declare a variable
+ * - tokens: array in the form of [name, value, default]
+ * - input: user input in the form of [flag, value, flag, value, ...]
+ * - idx: index in for loop, default to be -1
+ */
+func (sp *scriptParser) declare(tokens []string, input []string, idx int) {
 	if len(tokens) != 3 {
 		tokens = append(tokens, "")
 	}
-	initFrom := []rune(tokens[1])
+
+	name, value, def := tokens[0], tokens[1], tokens[2]
+
+	initFrom := []rune(value)
+
+	target := string(initFrom[1:])
+
 	switch initFrom[0] {
 	case '#':
-		sp.declarePlugin(tokens[0], string(initFrom[1:]))
+		sp.declarePlugin(name, target)
 	case '$':
 		// User input
-		sp.declareVariable(tokens[0], sp.getValueFromArgs(input, string(initFrom[1:]), tokens[2]))
+		sp.declareVariable(name, sp.getValueFromArgs(input, target, def, idx))
 	default:
-		sp.declareVariable(tokens[0], sp.resolveRHS(tokens[1]))
+		sp.declareVariable(name, sp.resolveRHS(tokens[1]))
 	}
 }
 
@@ -236,7 +251,25 @@ func (sp *scriptParser) getVariable(components []string, createIfNeeded bool) *s
 	return match
 }
 
-func (sp *scriptParser) getValueFromArgs(input []string, opt string, def string) string {
+func (sp *scriptParser) getValueFromArgs(input []string, opt string, def string, idx int) string {
+	// Try "$opt"
+	v_default := sp.getValueWithName(input, opt)
+	if v_default != "" {
+		return v_default
+	}
+
+	if idx >= 0 {
+		// Try "$opt_$idx"
+		v_idx := sp.getValueWithName(input, opt+"_"+strconv.Itoa(idx))
+		if v_idx != "" {
+			return v_idx
+		}
+	}
+
+	return def
+}
+
+func (sp *scriptParser) getValueWithName(input []string, opt string) string {
 	for idx, param := range input {
 		firstChar := []rune(param)[0]
 		if firstChar == '-' {
@@ -249,7 +282,7 @@ func (sp *scriptParser) getValueFromArgs(input []string, opt string, def string)
 			}
 		}
 	}
-	return def
+	return ""
 }
 
 func (sp *scriptParser) getValueFromName(name string) string {
