@@ -75,6 +75,8 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 	shouldRun := true
 
 	// For loop handling
+	loopVar := ""
+	loopMax := -1
 	loopIdx := -1
 
 	if lim < 0 {
@@ -120,9 +122,34 @@ func (sp *scriptParser) buildParams(script string, input []string, lim int) {
 				msg = "Unknown condition for if block"
 				break
 			}
+		case "for":
+			// For loop
+			loopVar = tokens[1]
+
+			input = append(input, loopVar)
+			input = append(input, strconv.Itoa(loopIdx))
+
+			split := strings.Split(tokens[3], "..")
+			loopIdx, _ = strconv.Atoi(split[0])
+			loopMax, _ = strconv.Atoi(split[1])
 		case "end":
 			// End of control flow
 			shouldRun = true
+			if loopMax != -1 {
+				loopIdx++
+
+				input = input[:len(input)-2]
+
+				if loopIdx == loopMax {
+					loopVar = ""
+					loopMax = -1
+					loopIdx = -1
+				} else {
+					input = append(input, loopVar)
+					input = append(input, strconv.Itoa(loopIdx))
+				}
+			}
+
 		default:
 			// Declaration
 			sp.declare(tokens, input, loopIdx)

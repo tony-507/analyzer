@@ -70,6 +70,18 @@ func TestRunAfterUnexecutedConditional(t *testing.T) {
 	assert.Equal(t, "hi", ctrl.parser.variables[0].value, "Unexecuted conditional fails")
 }
 
+func TestForLoop(t *testing.T) {
+	script := "for i in 0..2; alias(i, x); end;";
+	input := []string{"-2", "hi"};
+	ctrl := newController();
+
+	ctrl.parser.buildParams(script, input, -1);
+
+	for _, v :=  range ctrl.parser.variables {
+		assert.Equal(t, "hi", v.value, "Value of variable is not hi");
+	}
+}
+
 func TestGetEmptyAttributeString(t *testing.T) {
 	v := scriptVar{name: "dummy", varType: _VAR_PLUGIN, value: "dummy_1", attributes: make([]*scriptVar, 0)}
 	s := v.getAttributeStr()
