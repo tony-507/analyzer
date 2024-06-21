@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/logging"
@@ -19,6 +21,50 @@ var AppVersion = "unknown"
 
 func Version() string {
 	return AppVersion
+}
+
+func ReaderBuilder(addr *string, idx int) (PluginBuilder, error) {
+	rv := NewPluginBuilder()
+	rv.SetName("InputReader_" + fmt.Sprintf("%d", idx))
+
+	u, e := url.Parse(*addr)
+	if e != nil {
+		return rv, e
+	}
+
+	var err error = nil
+	switch u.Scheme {
+	case "file":
+		fileProp := NewProperty("FileInput")
+		fileProp.AddValue("Fname", NewProperty(u.Path))
+
+		rv.SetProperty("Source", NewProperty("_SOURCE_FILE"))
+		rv.SetProperty("FileInput", fileProp)
+	case "udp":
+		rv.SetProperty("Source", NewProperty("_SOURCE_UDP"))
+	default:
+		err = errors.New("Unsupported scheme")
+	}
+
+	return rv, err
+}
+
+func LinkPlugin(parent *PluginBuilder, child *PluginBuilder) {
+	parent.AddChild(child.name)
+}
+
+func LinkPlugins(plugins []*PluginBuilder) {
+	for i := 0; i < len(plugins)-1; i++ {
+		LinkPlugin(plugins[i], plugins[i+1])
+	}
+}
+
+func Start(pluginParams *[]tttKernel.OverallParams, env *tttKernel.Resource) {
+	provider := tttKernel.NewWorker()
+
+	provider.UpdateResource(*env)
+
+	provider.StartService(*pluginParams, selectPlugin)
 }
 
 func ListApp(resourceDir string) {
