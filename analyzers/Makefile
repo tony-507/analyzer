@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-default: clean build copy-resources
+default: clean build
 .PHONY: build
 
 clean:
@@ -12,11 +12,7 @@ build:
 		-ldflags "-X github.com/tony-507/analyzers/src/controller.AppVersion=$$(date -u '+%Y_%m_%d_%H_%M_%S')" \
 		-o ./build/bin/ ./cmd/...
 
-copy-resources:
-	mkdir -p ./build/bin/.resources/.
-	cp ./test/resources/apps/* ./build/bin/.resources/.
-
-run-test: build
+run-test: clean build
 	go install github.com/jstemmer/go-junit-report
 	binPath="$$(go env GOPATH)/bin/" && \
 	pkgList=$$(go list ./... | grep -v /resources | grep -v /logs | grep -v /testUtils | grep -v /cmd) && \

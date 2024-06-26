@@ -1,4 +1,4 @@
-package integration
+package integration_test
 
 // Integration test spec
 
@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/tony-507/analyzers/src/logging"
-	"github.com/tony-507/analyzers/src/controller"
 	"github.com/tony-507/analyzers/test/schema"
 	"github.com/tony-507/analyzers/test/validator"
 )
@@ -43,11 +43,6 @@ func readTestCases(testCaseDir string) []string {
 	return specs
 }
 
-// TODO How to validate?
-func TestListApp(t *testing.T) {
-	controller.ListApp("./resources/apps/")
-}
-
 func TestStartApp(t *testing.T) {
 	specs := readTestCases("resources/testCases")
 
@@ -67,7 +62,7 @@ func TestStartApp(t *testing.T) {
 			panic(err)
 		}
 
-		inFile := "resources/assets/" + tc.Source
+		inFile := filepath.Join(getOutputDir(), "resources/assets/", tc.Source)
 
 		for _, app := range tc.App {
 			outFolder := getOutputDir() + "/output/" + caseName + "/" + app + "/"
@@ -81,18 +76,18 @@ func TestStartApp(t *testing.T) {
 				switch app {
 				case "tsa":
 					args = []string{
-						"-f", inFile,
+						"-addr", fmt.Sprintf("file://%s", inFile),
 						"-o", outFolder,
 					}
 				case "editCap":
 					args = []string{
-						"-f", inFile,
+						"-addr", fmt.Sprintf("file://%s", inFile),
 						"-o", outFolder,
-						"--maxInCnt", "50",
+						"-maxInCnt", "50",
 					}
-				case "tsMon":
+				case "tsMonitor":
 					args = []string{
-						"-f1", inFile,
+						"-addr", fmt.Sprintf("file://%s", inFile),
 						"-o", outFolder,
 					}
 				default:
@@ -101,11 +96,19 @@ func TestStartApp(t *testing.T) {
 
 				// Run app
 				fmt.Println("Running app")
-				controller.StartApp("./resources/apps/", app, args)
+				cmd := exec.Command(
+					fmt.Sprintf("./../build/bin/%s", app),
+					args...,
+				)
+
+				err := cmd.Run()
+				if err != nil {
+					panic(err)
+				}
 
 				// Perform validations
 				fmt.Println("Performing validations")
-				err := validator.PerformValidation(app, outFolder, tc.Expected)
+				err = validator.PerformValidation(app, outFolder, tc.Expected)
 				if err != nil {
 					panic(err)
 				}

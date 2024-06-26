@@ -1,6 +1,6 @@
 {
 	"source": "EBPTimeCode.ts",
-	"app": ["tsa","tsMon"],
+	"app": ["tsa","tsMonitor"],
 	"expected": {
 		"tsa": {
 			"file": [
