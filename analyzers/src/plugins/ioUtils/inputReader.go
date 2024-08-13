@@ -3,6 +3,7 @@ package ioUtils
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/logging"
@@ -99,16 +100,26 @@ func (ir *inputReaderPlugin) SetParameter(m_parameter string) {
 	ir.stat.outCnt = 0
 	srcType := "unknown"
 
-	switch param.Source {
-	case _SOURCE_DUMMY:
+	u, e := url.Parse(param.Uri)
+	if e != nil {
+		panic(e)
+	}
+
+	switch u.Scheme {
+	case "file":
+		srcType = "file"
+		ir.impl = fileReader.FileReader(ir.name, u.Path)
+	case "udp":
+		srcType = "UDP"
+		udp := udpInputParam{
+			Address: u.Host,
+			Itf:     u.Query()["interface"][0],
+			Timeout: 0,
+		}
+		ir.impl = udpReader(&udp, ir.name)
+	default:
 		srcType = "dummy"
 		ir.impl = &dummyReader{}
-	case _SOURCE_FILE:
-		srcType = "file"
-		ir.impl = fileReader.FileReader(ir.name, param.FileInput.Fname)
-	case _SOURCE_UDP:
-		srcType = "UDP"
-		ir.impl = udpReader(&param.UdpInput, ir.name)
 	}
 
 	if (param.Protocols != "") {

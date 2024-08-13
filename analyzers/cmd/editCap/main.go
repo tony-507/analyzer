@@ -25,10 +25,9 @@ func main() {
 		return
 	}
 
-	readerBuilder, err := controller.ReaderBuilder(&addr, 0)
-	if err != nil {
-		panic(err)
-	}
+	readerBuilder:= controller.NewPluginBuilder()
+	readerBuilder.SetName("InputReader_0")
+	readerBuilder.SetProperty("Uri", controller.NewProperty(addr))
 	readerBuilder.SetProperty("Protocols", controller.NewProperty("TS"))
 	readerBuilder.SetProperty("SkipCnt", controller.NewProperty(skipCnt))
 	readerBuilder.SetProperty("MaxInCnt", controller.NewProperty(maxInCnt))

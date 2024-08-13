@@ -13,11 +13,10 @@ import (
 
 func TestReaderSetParameter(t *testing.T) {
 	specs := []string{
-		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"dummy.ts\"}}",
-		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc.ts\"}}",
-		"{\"Source\":\"_SOURCE_FILE\",\"FileInput\":{\"Fname\":\"hello.abc\"}}",
+		"{\"Uri\":\"file://dummy.ts\"}",
+		"{\"Uri\":\"file://hello.abc.ts\"}",
+		"{\"Uri\":\"file://hello.abc\"}",
 	}
-
 
 	for _, param := range specs {
 		fr := inputReaderPlugin{name: "dummy", logger: logging.CreateLogger("dummy")}
@@ -31,9 +30,9 @@ func TestReaderSetParameter(t *testing.T) {
 
 func TestReaderDeliverUnit(t *testing.T) {
 	specs := []string{
-		"{\"Source\": \"_SOURCE_DUMMY\"}",
-		"{\"Source\": \"_SOURCE_DUMMY\",\"SkipCnt\":2}",  // Deliver with skipping does not change behaviour
-		"{\"Source\": \"_SOURCE_DUMMY\",\"MaxInCnt\":2}", // Deliver with max input count
+		"{\"Uri\": \"dummy://\"}",
+		"{\"Uri\": \"dummy://\",\"SkipCnt\":2}",  // Deliver with skipping does not change behaviour
+		"{\"Uri\": \"dummy://\",\"MaxInCnt\":2}", // Deliver with max input count
 	}
 
 	expectedDeliverCnt := []int{5, 5, 2}
@@ -61,14 +60,14 @@ func TestReaderDeliverUnit(t *testing.T) {
 
 func TestTsParser(t *testing.T) {
 	parser := protocol.TsParser()
-	data := make([]byte, protocol.TS_PKT_SIZE * 7)
+	data := make([]byte, protocol.TS_PKT_SIZE*7)
 	for i := 0; i < 7; i++ {
 		for j := 0; j < protocol.TS_PKT_SIZE; j++ {
-			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
+			data[i*protocol.TS_PKT_SIZE+j] = byte(i)
 		}
 	}
 	resList := parser.Parse(&protocol.ParseResult{Buffer: data})
-	for idx, res := range(resList) {
+	for idx, res := range resList {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}
 }
@@ -88,14 +87,14 @@ func TestRtpParser(t *testing.T) {
 
 func TestParseWithParsers(t *testing.T) {
 	// Ensure no infinite loop or weird stuff
-	data := make([]byte, protocol.TS_PKT_SIZE * 7)
+	data := make([]byte, protocol.TS_PKT_SIZE*7)
 	for i := 0; i < 7; i++ {
 		for j := 0; j < protocol.TS_PKT_SIZE; j++ {
-			data[i * protocol.TS_PKT_SIZE + j] = byte(i)
+			data[i*protocol.TS_PKT_SIZE+j] = byte(i)
 		}
 	}
 	resList := protocol.ParseWithParsers([]protocol.IParser{protocol.GetParser(protocol.PROT_TS), protocol.GetParser(protocol.PROT_TS)}, &protocol.ParseResult{Buffer: data})
-	for idx, res := range(resList) {
+	for idx, res := range resList {
 		assert.Equal(t, byte(idx), res.GetBuffer()[0], "Packet value not equal")
 	}
 }

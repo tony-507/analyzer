@@ -30,11 +30,9 @@ func main() {
 	builders := make([]tttKernel.OverallParams, 0)
 
 	for idx, addr := range strings.Split(addresses, ",") {
-		readerBuilder, err := controller.ReaderBuilder(&addr, idx)
-		if err != nil {
-			panic(err)
-		}
-
+		readerBuilder := controller.NewPluginBuilder()
+		readerBuilder.SetName(fmt.Sprintf("InputReader_%d", idx))
+		readerBuilder.SetProperty("Uri", controller.NewProperty(addr))
 		readerBuilder.SetProperty("Protocols", controller.NewProperty("TS"))
 		readerBuilder.SetProperty("SkipCnt", controller.NewProperty(skipCnt))
 		readerBuilder.SetProperty("MaxInCnt", controller.NewProperty(maxInCnt))

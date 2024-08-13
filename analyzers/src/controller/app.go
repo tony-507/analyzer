@@ -1,10 +1,8 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"strings"
 
 	"github.com/tony-507/analyzers/src/logging"
@@ -13,40 +11,14 @@ import (
 
 // Migration in progress
 type tttController struct {
-	logger      logging.Log
-	parser      scriptParser
+	logger logging.Log
+	parser scriptParser
 }
 
 var AppVersion = "unknown"
 
 func Version() string {
 	return AppVersion
-}
-
-func ReaderBuilder(addr *string, idx int) (PluginBuilder, error) {
-	rv := NewPluginBuilder()
-	rv.SetName("InputReader_" + fmt.Sprintf("%d", idx))
-
-	u, e := url.Parse(*addr)
-	if e != nil {
-		return rv, e
-	}
-
-	var err error = nil
-	switch u.Scheme {
-	case "file":
-		fileProp := NewProperty("FileInput")
-		fileProp.AddValue("Fname", NewProperty(u.Path))
-
-		rv.SetProperty("Source", NewProperty("_SOURCE_FILE"))
-		rv.SetProperty("FileInput", fileProp)
-	case "udp":
-		rv.SetProperty("Source", NewProperty("_SOURCE_UDP"))
-	default:
-		err = errors.New("Unsupported scheme")
-	}
-
-	return rv, err
 }
 
 func LinkPlugin(parent *PluginBuilder, child *PluginBuilder) {
@@ -101,8 +73,8 @@ func StartApp(resourceDir string, appName string, input []string) {
 
 func newController() tttController {
 	return tttController{
-		logger:    logging.CreateLogger("Controller"),
-		parser:    newScriptParser(),
+		logger: logging.CreateLogger("Controller"),
+		parser: newScriptParser(),
 	}
 }
 
