@@ -14,11 +14,13 @@ func main() {
 	var outDir string
 	var skipCnt string
 	var maxInCnt string
+	var redundancy string
 
 	flag.StringVar(&addresses, "addr", "", "Comma-separated list of URIs to monitor")
 	flag.StringVar(&outDir, "o", "./output", "Output directory")
 	flag.StringVar(&skipCnt, "skipCnt", "0", "Skip count")
 	flag.StringVar(&maxInCnt, "maxInCnt", "0", "Max input packet count")
+	flag.StringVar(&redundancy, "redundancy", "None", "Redundancy time reference")
 
 	flag.Parse()
 
@@ -31,7 +33,9 @@ func main() {
 
 	monitorBuilder := controller.NewPluginBuilder()
 	monitorBuilder.SetName("OutputMonitor_0")
-	monitorBuilder.SetProperty("Redundancy.TimeRef", controller.NewProperty("Pts"))
+	if redundancy != "None" {
+		monitorBuilder.SetProperty("Redundancy.TimeRef", controller.NewProperty(redundancy))
+	}
 
 	builders = append(builders, monitorBuilder.Build())
 
